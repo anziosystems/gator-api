@@ -5,9 +5,9 @@ const router = require('express').Router();
 const passport = require('passport');
 const passport_setup = require('./passport-setup');
 const jwt = require('jsonwebtoken');
-var callbackURL = 'http://localhost:8080/callback';
+//var callbackURL = 'http://localhost:8080/callback';
 //UI URL
-//var callbackURL = 'http://a-gator.s3-website-us-east-1.amazonaws.com/callback'
+var callbackURL = 'http://a-gator.s3-website-us-east-1.amazonaws.com/callback';
 router.get('/login', (req, res) => {
     // callbackURL = req.query.callbackUrl ;
     //res.send('/github');
