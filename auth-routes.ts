@@ -6,6 +6,7 @@ const passport_setup = require('./passport-setup');
 const jwt = require('jsonwebtoken');
 //var callbackURL = 'http://localhost:8080/callback';
 //UI URL
+
 var callbackURL = 'http://a-gator.s3-website-us-east-1.amazonaws.com/callback'
 
 router.get('/login', (req: any, res: any) => {
