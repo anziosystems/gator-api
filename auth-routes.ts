@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 //var callbackURL = 'http://localhost:8080/callback';
 //UI URL
 
-var callbackURL = 'http://a-gator.s3-website-us-east-1.amazonaws.com/callback'
+var callbackURL: any = 'http://d2tl74699hlt2l.cloudfront.net/callback'
 
 router.get('/login', (req: any, res: any) => {
   // callbackURL = req.query.callbackUrl ;
@@ -15,6 +15,7 @@ router.get('/login', (req: any, res: any) => {
 });
 
 router.get('/github', passport.authenticate('github'), (req: any, res: any) => {
+  callbackURL = req.query.callbackUrl 
   //This function will never be called.
 });
 

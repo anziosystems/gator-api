@@ -12,7 +12,7 @@
     "watch": "tsc -w",
     "prestart": "npm run build",
     "start": "node ./dist/app.js",
-    "build:production": "npm run prestart && npm prune --production",
+    "build:prod": "npm run prestart && npm prune --production",
     "test": "mocha -r ts-node/register Test/*.ts",
     "prettier:cli": "prettier \"**/*.ts\" \"**/*.js\" \"**/*.md\"",
     "prettier:check": "npm run prettier:cli -- -l",

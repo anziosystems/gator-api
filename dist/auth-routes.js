@@ -7,12 +7,13 @@ const passport_setup = require('./passport-setup');
 const jwt = require('jsonwebtoken');
 //var callbackURL = 'http://localhost:8080/callback';
 //UI URL
-var callbackURL = 'http://a-gator.s3-website-us-east-1.amazonaws.com/callback';
+var callbackURL = 'http://d2tl74699hlt2l.cloudfront.net/callback';
 router.get('/login', (req, res) => {
     // callbackURL = req.query.callbackUrl ;
     //res.send('/github');
 });
 router.get('/github', passport.authenticate('github'), (req, res) => {
+    callbackURL = req.query.callbackUrl;
     //This function will never be called.
 });
 router.get('/logout', (req, res) => {
