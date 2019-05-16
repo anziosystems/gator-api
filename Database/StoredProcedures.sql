@@ -433,7 +433,14 @@ SET QUOTED_IDENTIFIER ON
 GO
  
 /* If state is null then get all the pull Request */
-CREATE PROCEDURE [dbo].[PullRequest4Devs]
+/****** Object:  StoredProcedure [dbo].[PullRequest4Devs]    Script Date: 5/16/2019 10:54:55 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ 
+/* If state is null then get all the pull Request */
+ALTER PROCEDURE [dbo].[PullRequest4Devs]
 (
 	@Org varchar(100),
 	@login varchar(200),
@@ -475,7 +482,7 @@ BEGIN
 							WHERE LastUpdated between CAST (cast (getdate() - @Day as char(12)) AS DateTime) and Cast (CAST(getdate() as char(12)) as DateTime)
 							AND Org = @Org
 							AND login = @login 
-							AND (State = 'open' or State = 'closed') 
+							AND (State = 'opened' or State = 'open' or State = 'closed' or State = 'close') 
 						) AS TopRow JOIN  PullRequestDetails PR ON 
 							PR.Url = TopRow.Url
 								       WHERE  TopRow.[ROW NUMBER] <= @pageSize 
@@ -496,7 +503,7 @@ BEGIN
 						SELECT * , ROW_NUMBER () Over (partition by Org order by [LastUpdated] desc) as [ROW NUMBER]  from [vwOpenClosedPR] 
 							WHERE LastUpdated between CAST (cast (getdate() - @Day as char(12)) AS DateTime) and Cast (CAST(getdate() as char(12)) as DateTime)
 							AND Org = @Org
-						 	AND (state = 'open' or state = 'closed') 
+						 	AND (State = 'opened' or State = 'open' or State = 'closed' or State = 'close') 
 						) AS TopRow JOIN  PullRequestDetails PR ON 
 							PR.Url = TopRow.Url
 								       WHERE  TopRow.[ROW NUMBER] <= @pageSize 
@@ -512,7 +519,7 @@ BEGIN
 							WHERE LastUpdated between CAST (cast (getdate() - @Day as char(12)) AS DateTime) and Cast (CAST(getdate() as char(12)) as DateTime)
 							AND Org = @Org
 							AND login = @login 
-							AND (state = 'open' or state = 'closed') 
+							AND (State = 'opened' or State = 'open' or State = 'closed' or State = 'close') 
 						) AS TopRow JOIN  PullRequestDetails PR ON 
 							PR.Url = TopRow.Url
 								       WHERE  TopRow.[ROW NUMBER] <= @pageSize 
@@ -523,7 +530,7 @@ BEGIN
 	 
 	
 END
-GO
+
 /****** Object:  StoredProcedure [dbo].[PullRequestCountForLastXDays]    Script Date: 5/9/2019 7:48:43 PM ******/
 SET ANSI_NULLS ON
 GO
