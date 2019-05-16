@@ -28,7 +28,7 @@ describe('Testing SQLRepository POST - Save Tenant', () => {
 });
 
 describe('FillPullRequest', () => {
-  it.only('should return rowsAffected', async () => {
+  it('should return rowsAffected', async () => {
     let gitRepository = new GitRepository();
     await gitRepository.FillPullRequest('1040817', 'LabShare', 'forms', true, true, '').then(result => {
       expect(result.recordset.length).to.greaterThan(0);

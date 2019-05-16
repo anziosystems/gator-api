@@ -128,13 +128,13 @@ describe('PullRequest4Dev', () => {
 });
 
 describe('PullRequestCountForLastXDays', () => {
-  it('should return recordset', async () => {
+  it.only('should return recordset', async () => {
     let sqlRepositoy = new SQLRepository(null);
     let tenant = 'LabShare';
-    let day = 1;
+    let day = 30;
 
     await sqlRepositoy.PullRequestCountForLastXDays(tenant, day).then(result => {
-      expect(result.returnValue).to.greaterThan(0);
+      expect(result.length).to.greaterThan(0);
       console.log(result.returnValue);
     });
   });

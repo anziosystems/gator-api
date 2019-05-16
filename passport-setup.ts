@@ -25,7 +25,6 @@ passport.use(
     {
       clientID: keys.github.clientID,
       clientSecret: keys.github.clientSecret,
-    //  callbackURL: keys.github.callbackURL,
       scope: 'repo user admin:org read:org admin:org_hook admin:repo_hook read:repo_hook write:repo_hook',
     },
     (accessToken: any, refreshToken: any, profile: any, done: any) => {
