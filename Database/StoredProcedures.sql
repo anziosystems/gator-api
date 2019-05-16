@@ -59,12 +59,18 @@ CREATE TABLE [dbo].[PullRequestDetails](
 	[Avatar_Url] [varchar](2000) NOT NULL,
 	[User_Url] [varchar](2000) NOT NULL,
 	[LastUpdated] [datetime] NULL,
- CONSTRAINT [PK_PullRequestDetails] PRIMARY KEY CLUSTERED 
+ CONSTRAINT [PK_PullRequestDetails_1] PRIMARY KEY CLUSTERED 
 (
-	[Id] ASC
+	[Id] ASC,
+	[State] ASC
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
+
+ALTER TABLE [dbo].[PullRequestDetails] ADD  CONSTRAINT [DF_PullRequestDetails_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+
+
 /****** Object:  View [dbo].[vwOpenClosedPR]    Script Date: 5/9/2019 7:48:43 PM ******/
 SET ANSI_NULLS ON
 GO
@@ -589,13 +595,13 @@ BEGIN
 	return @ctr
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SavePR4Repo]    Script Date: 5/9/2019 7:48:43 PM ******/
+/****** Object:  StoredProcedure [dbo].[SavePR4Repo]    Script Date: 5/16/2019 1:21:59 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
  
-CREATE PROCEDURE [dbo].[SavePR4Repo]
+ALTER PROCEDURE [dbo].[SavePR4Repo]
 (
 	@Id varchar(200),
     @Org varchar(1000),
@@ -612,9 +618,7 @@ CREATE PROCEDURE [dbo].[SavePR4Repo]
 )
 AS
 BEGIN
-
-
-		IF EXISTS ( Select * from [dbo].[PullRequestDetails] where Id = @Id)   
+		IF EXISTS ( Select * from [dbo].[PullRequestDetails] where Id = @Id and [State] = @state)   
 			BEGIN
 			UPDATE [PullRequestDetails]  
 					SET LastUpdated = getDate(),
@@ -661,12 +665,7 @@ BEGIN
 			END
 
 END
-GO
-/****** Object:  StoredProcedure [dbo].[SetOrg]    Script Date: 5/9/2019 7:48:43 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+
 -- =============================================
 -- Author:      <Author, , Name>
 -- Create Date: <Create Date, , >
