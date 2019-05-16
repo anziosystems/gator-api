@@ -22,7 +22,6 @@ passport.deserializeUser((id, done) => {
 passport.use(new GitHubStrategy({
     clientID: keys_1.keys.github.clientID,
     clientSecret: keys_1.keys.github.clientSecret,
-    callbackURL: keys_1.keys.github.callbackURL,
     scope: 'repo user admin:org read:org admin:org_hook admin:repo_hook read:repo_hook write:repo_hook',
 }, (accessToken, refreshToken, profile, done) => {
     //Callback with the accessToken

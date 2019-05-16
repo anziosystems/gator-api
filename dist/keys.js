@@ -13,7 +13,7 @@ keys.github = {
   
     check the protocol in settings https and http
     */
-    callbackURL: ' http://localhost:3000/auth/github/redirect',
+    callbackURL: '/auth/github/redirect',
     session: {
         cookieKey: 'RafatSaroshKey',
     },

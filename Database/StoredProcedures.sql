@@ -841,7 +841,8 @@ BEGIN
 		Insert into Tenant (Id, email, UserName, DisplayName, ProfileUrl, Photo, Auth_Token, Refresh_token) Values (@Id,@email, @UserName, @DisplayName, @ProfileUrl, @Photo, @AuthToken, @RefreshToken);
 END
 GO
-/****** Object:  StoredProcedure [dbo].[TopDevForLastXDays]    Script Date: 5/9/2019 7:48:43 PM ******/
+
+/****** Object:  StoredProcedure [dbo].[TopDevForLastXDays]    Script Date: 5/16/2019 11:01:44 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -851,7 +852,7 @@ GO
 -- Create Date: <Create Date, , >
 -- Description: <Description, , >
 -- =============================================
-CREATE PROCEDURE [dbo].[TopDevForLastXDays]
+ALTER PROCEDURE [dbo].[TopDevForLastXDays]
 (
     -- Add the parameters for the stored procedure here
     @Day int = 1, 
@@ -866,11 +867,12 @@ BEGIN
 	select login, Avatar_Url, count(*) as ctr from [vwOpenClosedPR]  where 
 	Created_At between CAST (cast (getdate() - @Day  as char(12)) AS DateTime) and Cast (CAST(getdate()  as char(12)) as DateTime)
 	and Org = @Org
-		and ( state = 'Open' OR  state = 'closed')
+		and (State = 'opened' or State = 'open' or State = 'closed' or State = 'close') 
 			 group by login, Avatar_Url
 				order by ctr desc
 
 END
-GO
+
+
 ALTER DATABASE [git] SET  READ_WRITE 
 GO
