@@ -8,6 +8,8 @@ keys.github = {
   http://localhost:3000/auth/github/redirect
 
   For Azure service URL can be https://gator-api.azurewebsites.net/auth/github/redirect
+
+  check the protocol in settings https and http
   */
   callbackURL: '/auth/github/redirect',
   session: {
