@@ -9,9 +9,8 @@ const jwt = require('jsonwebtoken');
 
 var callbackURL: any = 'http://d2tl74699hlt2l.cloudfront.net/callback'
 
+//this method is not called, used for testing this service project
 router.get('/login', (req: any, res: any) => {
-  // callbackURL = req.query.callbackUrl ;
-  //res.send('/github');
 });
 
 router.get('/github', passport.authenticate('github'), (req: any, res: any) => {
