@@ -5,9 +5,10 @@ const router = require('express').Router();
 const passport = require('passport');
 const passport_setup = require('./passport-setup');
 const jwt = require('jsonwebtoken');
-var callbackURL = 'http://localhost:8080/callback';
+//var callbackURL = 'http://localhost:8080/callback';
 //UI URL
-//var callbackURL: any = 'http://d2tl74699hlt2l.cloudfront.net/callback'
+var callbackURL = 'http://d2tl74699hlt2l.cloudfront.net/callback';
+//this method is not called, used for testing this service project
 router.get('/login', (req, res) => {
 });
 router.get('/github', passport.authenticate('github'), (req, res) => {
