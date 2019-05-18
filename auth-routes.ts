@@ -4,18 +4,15 @@ import {keys} from './keys';
 const passport = require('passport');
 const passport_setup = require('./passport-setup');
 const jwt = require('jsonwebtoken');
-
 //var callbackURL = 'http://localhost:8080/callback';
+var callbackURL = 'https://gator-ui.azurewebsites.net/callback';
 
-//UI URL
-var callbackURL: any = 'http://d2tl74699hlt2l.cloudfront.net/callback'
-
-//this method is not called, used for testing this service project
 router.get('/login', (req: any, res: any) => {
+  // callbackURL = req.query.callbackUrl ;
+  //res.send('/github');
 });
 
 router.get('/github', passport.authenticate('github'), (req: any, res: any) => {
-  callbackURL = req.query.callbackUrl 
   //This function will never be called.
 });
 
