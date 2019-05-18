@@ -7,9 +7,8 @@ const jwt = require('jsonwebtoken');
 //var callbackURL = 'http://localhost:8080/callback';
 var callbackURL = 'https://gator-ui.azurewebsites.net/callback';
 
+//This method is not called any more, it is here for the test
 router.get('/login', (req: any, res: any) => {
-  // callbackURL = req.query.callbackUrl ;
-  //res.send('/github');
 });
 
 router.get('/github', passport.authenticate('github'), (req: any, res: any) => {
