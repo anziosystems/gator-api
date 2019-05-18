@@ -4,7 +4,8 @@ import {keys} from './keys';
 const passport = require('passport');
 const passport_setup = require('./passport-setup');
 const jwt = require('jsonwebtoken');
-var callbackURL = 'http://localhost:8080/callback';
+//var callbackURL = 'http://localhost:8080/callback';
+var callbackURL = 'https://gator-ui.azurewebsites.net/callback';
 
 router.get('/login', (req: any, res: any) => {
   // callbackURL = req.query.callbackUrl ;
