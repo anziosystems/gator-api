@@ -218,8 +218,7 @@ class SQLRepository {
     if (recordSet.recordset.length > 0) {
       this.myCache.set(cacheKey, recordSet.recordset);
       return recordSet.recordset;
-    } else 
-        return ;
+    } else return;
   }
 
   //GetPR
@@ -239,11 +238,9 @@ class SQLRepository {
     if (recordSet.recordset.length > 0) {
       this.myCache.set(cacheKey, recordSet.recordset);
       return recordSet.recordset;
+    } else {
+      return;
     }
-    else {
-      return ;
-    }
-   
   }
 
   /*
@@ -321,10 +318,8 @@ class SQLRepository {
       return val.recordset[0].Auth_Token;
     }
     const recordSet = await this.GetTenant(id);
-    if (recordSet)
-      return recordSet[0].Auth_Token;
-    else 
-      return ;
+    if (recordSet) return recordSet[0].Auth_Token;
+    else return;
   }
 
   async TopDevForLastXDays(org: string, day: number = 1) {

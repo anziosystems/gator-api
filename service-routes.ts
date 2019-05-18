@@ -3,14 +3,13 @@ const router = require('express').Router();
 
 import {SQLRepository} from './Lib/sqlRepository';
 import {GitRepository} from './Lib/gitRepository';
-import { RSA_PKCS1_OAEP_PADDING } from 'constants';
+import {RSA_PKCS1_OAEP_PADDING} from 'constants';
 let sqlRepositoy = new SQLRepository(null);
 let gitRepository = new GitRepository();
 const jwt = require('jsonwebtoken');
 const verifyOptions = {
   algorithm: ['RS256'],
 };
-
 
 function checkToken(req: any, res: any) {
   try {
@@ -28,10 +27,9 @@ function getTenant(req: any, res: any) {
   try {
     const token = req.headers['authorization']; //it is tenantId in header
     const result = jwt.verify(token, 'JWTSuperSecret', verifyOptions);
-    if(result)
-      return result;
+    if (result) return result;
     else {
-      return ;
+      return;
     }
   } catch (ex) {
     return;
@@ -46,15 +44,16 @@ router.get('/Namaste', (req: any, res: any) => {
   }
 });
 
-
 router.get('/GetHookStatus', (req: any, res: any) => {
   if (!checkToken(req, res)) {
     return '{val: false, code: 404, message: "Auth Failed"}';
   }
   const tenantId = getTenant(req, res);
 
-  gitRepository.GetHookStatus(tenantId, req.query.org).then(result => {
-    /* 
+  gitRepository
+    .GetHookStatus(tenantId, req.query.org)
+    .then(result => {
+      /* 
     [
     {
         "type": "Organization",
@@ -78,17 +77,17 @@ router.get('/GetHookStatus', (req: any, res: any) => {
     }
 ]
     */
-    if (result) {
-      return res.json({val: true});
-    }
-    else {
+      if (result) {
+        return res.json({val: true});
+      } else {
+        return res.json({val: false});
+      }
+      //return res.json(result.recordset);
+    })
+    .catch(ex => {
+      console.log(ex);
       return res.json({val: false});
-    }
-    //return res.json(result.recordset);
-  }).catch(ex  => {
-    console.log (ex);
-    return res.json({val: false});
-  });
+    });
 });
 
 router.get('/TopDevForLastXDays', (req: any, res: any) => {
@@ -207,7 +206,7 @@ router.get('/GetPRfromGit', (req: any, res: any) => {
   const tenantId = getTenant(req, res);
   gitRepository.GetRepos(tenantId, req.query.org, req.query.bustTheCache, req.query.getFromGit).then(result => {
     for (let i = 0; i < result.length; i++) {
-       const res = gitRepository.FillPullRequest(tenantId, req.query.org, result[i].RepoName);
+      const res = gitRepository.FillPullRequest(tenantId, req.query.org, result[i].RepoName);
     }
     return res.json(result.length);
   });

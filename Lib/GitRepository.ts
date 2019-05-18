@@ -162,7 +162,7 @@ class GitRepository {
 
       return header;
     } catch (ex) {
-      console.log('MakeGitRequest: ' + ex + " tenantId: " + tenantId);
+      console.log('MakeGitRequest: ' + ex + ' tenantId: ' + tenantId);
     }
   }
 
