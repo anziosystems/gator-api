@@ -36,12 +36,22 @@ passport.use(new GitHubStrategy({
     tenant.UserName = profile.username;
     tenant.DisplayName = profile.displayName;
     tenant.Id = profile.id;
-    if (profile.photos[0]) {
-        tenant.Photo = profile.photos[0].value;
+    tenant.Photo = '';
+    tenant.Email = '';
+    if (Array.isArray(profile.photos)) {
+        if (profile.photos.length > 0) {
+            if (profile.photos[0]) {
+                tenant.Photo = profile.photos[0].value;
+            }
+        }
     }
     tenant.ProfileUrl = profile.profileUrl;
-    if (profile.emails[0]) {
-        tenant.Email = profile.emails[0].value;
+    if (Array.isArray(profile.emails)) {
+        if (profile.emails.length > 0) {
+            if (profile.emails[0]) {
+                tenant.Email = profile.emails[0].value;
+            }
+        }
     }
     let sqlRepositoy = new sqlRepository_1.SQLRepository(null);
     sqlRepositoy.saveTenant(tenant).then(result => {

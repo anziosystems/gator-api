@@ -49,31 +49,33 @@ router.get('/GetHookStatus', (req, res) => {
         return '{val: false, code: 404, message: "Auth Failed"}';
     }
     const tenantId = getTenant(req, res);
-    gitRepository.GetHookStatus(tenantId, req.query.org).then(result => {
+    gitRepository
+        .GetHookStatus(tenantId, req.query.org)
+        .then(result => {
         /*
-        [
-        {
-            "type": "Organization",
-            "id": 100742919,
-            "name": "web",
-            "active": true,
-            "events": [
-                "pull_request",
-                "push"
-            ],
-            "config": {
-                "content_type": "application/json",
-                "secret": "********",
-                "url": "https://gitanziohook.azurewebsites.net/api/httptrigger",
-                "insecure_ssl": "0"
-            },
-            "updated_at": "2019-04-08T23:05:07Z",
-            "created_at": "2019-04-08T23:05:07Z",
-            "url": "https://api.github.com/orgs/LabShare/hooks/100742919",
-            "ping_url": "https://api.github.com/orgs/LabShare/hooks/100742919/pings"
-        }
-    ]
-        */
+      [
+      {
+          "type": "Organization",
+          "id": 100742919,
+          "name": "web",
+          "active": true,
+          "events": [
+              "pull_request",
+              "push"
+          ],
+          "config": {
+              "content_type": "application/json",
+              "secret": "********",
+              "url": "https://gitanziohook.azurewebsites.net/api/httptrigger",
+              "insecure_ssl": "0"
+          },
+          "updated_at": "2019-04-08T23:05:07Z",
+          "created_at": "2019-04-08T23:05:07Z",
+          "url": "https://api.github.com/orgs/LabShare/hooks/100742919",
+          "ping_url": "https://api.github.com/orgs/LabShare/hooks/100742919/pings"
+      }
+  ]
+      */
         if (result) {
             return res.json({ val: true });
         }
@@ -81,7 +83,8 @@ router.get('/GetHookStatus', (req, res) => {
             return res.json({ val: false });
         }
         //return res.json(result.recordset);
-    }).catch(ex => {
+    })
+        .catch(ex => {
         console.log(ex);
         return res.json({ val: false });
     });
