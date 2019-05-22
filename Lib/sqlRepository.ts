@@ -64,6 +64,38 @@ class SQLRepository {
     }
   }
 
+  //return 0 if not a valid tenant or the token more than 7 days old
+  async CheckToken(tenantId: number) {
+    try {
+      await this.createPool();
+      const request = await this.pool.request();
+      request.input('Id', sql.Int, tenantId);
+      const recordSet = await request.execute('CheckTenant');
+      return recordSet.recordset[0].Result === 1 ;
+    } catch (ex) {
+      console.log (ex);
+      return false;
+    }
+  }
+
+
+  
+  async GetRepositoryPR(org: string, repo: string, day: string, pageSize: string) {
+    try {
+      await this.createPool();
+      const request = await this.pool.request();
+      request.input('repo', sql.VarChar(100), repo);
+      request.input('org', sql.VarChar(100), org);
+      request.input('day', sql.Int, day);
+      request.input('PageSize', sql.Int, pageSize);
+      const recordSet = await request.execute('GetRepositoryPR');
+      return recordSet.recordset[0].Result === 1 ;
+    } catch (ex) {
+      console.log (ex);
+      return false;
+    }
+  }
+
   async saveTenant(tenant: Tenant) {
     try {
       await this.createPool();

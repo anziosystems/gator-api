@@ -14,7 +14,12 @@ function checkToken(req, res) {
     try {
         const token = req.headers['authorization'];
         const result = jwt.verify(token, 'JWTSuperSecret', verifyOptions);
-        return true;
+        sqlRepositoy.CheckToken(result).then(r => {
+            if (r)
+                return true;
+            else
+                return false;
+        });
     }
     catch (ex) {
         return false;
@@ -38,7 +43,7 @@ function getTenant(req, res) {
 }
 router.get('/Namaste', (req, res) => {
     if (!checkToken(req, res)) {
-        return res.json('{val: false, code: 404, message: "Auth Failed"}');
+        return res.json({ val: false, code: 404, message: "Auth Failed" });
     }
     else {
         return res.json({ val: 'Namaste beta' });
@@ -46,7 +51,7 @@ router.get('/Namaste', (req, res) => {
 });
 router.get('/GetHookStatus', (req, res) => {
     if (!checkToken(req, res)) {
-        return '{val: false, code: 404, message: "Auth Failed"}';
+        return res.json({ val: false, code: 404, message: "Auth Failed" });
     }
     const tenantId = getTenant(req, res);
     gitRepository
@@ -89,9 +94,17 @@ router.get('/GetHookStatus', (req, res) => {
         return res.json({ val: false });
     });
 });
+router.get('/GetRepositoryPR', (req, res) => {
+    if (!checkToken(req, res)) {
+        return res.json({ val: false, code: 404, message: "Auth Failed" });
+    }
+    sqlRepositoy.GetRepositoryPR(req.query.org, req.query.repo, req.query.day, req.query.pageSize).then(result => {
+        return res.json(result);
+    });
+});
 router.get('/TopDevForLastXDays', (req, res) => {
     if (!checkToken(req, res)) {
-        return '{val: false, code: 404, message: "Auth Failed"}';
+        return res.json({ val: false, code: 404, message: "Auth Failed" });
     }
     if (!req.query.day) {
         req.query.day = '1';
@@ -120,7 +133,7 @@ returns
 */
 router.get('/PullRequestCountForLastXDays', (req, res) => {
     if (!checkToken(req, res)) {
-        return '{val: false, code: 404, message: "Auth Failed"}';
+        return res.json({ val: false, code: 404, message: "Auth Failed" });
     }
     if (!req.query.day) {
         req.query.day = '1';
@@ -132,7 +145,7 @@ router.get('/PullRequestCountForLastXDays', (req, res) => {
 });
 router.get('/PullRequestForLastXDays', (req, res) => {
     if (!checkToken(req, res)) {
-        return '{val: false, code: 404, message: "Auth Failed"}';
+        return res.json({ val: false, code: 404, message: "Auth Failed" });
     }
     if (!req.query.day) {
         req.query.day = '1';
@@ -144,7 +157,7 @@ router.get('/PullRequestForLastXDays', (req, res) => {
 });
 router.get('/GetTopRespositories4XDays', (req, res) => {
     if (!checkToken(req, res)) {
-        return '{val: false, code: 404, message: "Auth Failed"}';
+        return res.json({ val: false, code: 404, message: "Auth Failed" });
     }
     if (!req.query.day) {
         req.query.day = '1';
@@ -156,7 +169,7 @@ router.get('/GetTopRespositories4XDays', (req, res) => {
 });
 router.get('/PullRequest4Dev', (req, res) => {
     if (!checkToken(req, res)) {
-        return '{val: false, code: 404, message: "Auth Failed"}';
+        return res.json({ val: false, code: 404, message: "Auth Failed" });
     }
     if (!req.query.day) {
         req.query.day = '1';
@@ -169,7 +182,7 @@ router.get('/PullRequest4Dev', (req, res) => {
 //    /GetOrg?tenantId='rsarosh@hotmail.com'&bustTheCache=false&getFromGit = true
 router.get('/GetOrg', (req, res) => {
     if (!checkToken(req, res)) {
-        return '{val: false, code: 404, message: "Auth Failed"}';
+        return res.json({ val: false, code: 404, message: "Auth Failed" });
     }
     const tenantId = getTenant(req, res);
     gitRepository.GetOrg(tenantId, req.query.bustTheCache, req.query.getFromGit).then(result => {
@@ -179,7 +192,7 @@ router.get('/GetOrg', (req, res) => {
 //    /GetOrg?tenantId='rsarosh@hotmail.com'&Org='LabShare'&bustTheCache=false&getFromGit = true
 router.get('/GetRepos', (req, res) => {
     if (!checkToken(req, res)) {
-        return '{val: false, code: 404, message: "Auth Failed"}';
+        return res.json({ val: false, code: 404, message: "Auth Failed" });
     }
     const tenantId = getTenant(req, res);
     gitRepository.GetRepos(tenantId, req.query.org, req.query.bustTheCache, req.query.getFromGit).then(result => {
@@ -190,7 +203,7 @@ router.get('/GetRepos', (req, res) => {
 });
 router.get('/GetPRfromGit', (req, res) => {
     if (!checkToken(req, res)) {
-        return '{val: false, code: 404, message: "Auth Failed"}';
+        return res.json({ val: false, code: 404, message: "Auth Failed" });
     }
     const tenantId = getTenant(req, res);
     gitRepository.GetRepos(tenantId, req.query.org, req.query.bustTheCache, req.query.getFromGit).then(result => {
@@ -209,7 +222,7 @@ router.get('/SetRepoCollection', (req, res) => {
 });
 router.get('/GetAllRepoCollection4TenantOrg', (req, res) => {
     if (!checkToken(req, res)) {
-        return '{val: false, code: 404, message: "Auth Failed"}';
+        return res.json({ val: false, code: 404, message: "Auth Failed" });
     }
     const tenantId = getTenant(req, res);
     sqlRepositoy.GetAllRepoCollection4TenantOrg(tenantId, req.query.org, req.query.bustTheCache).then(result => {
@@ -219,7 +232,7 @@ router.get('/GetAllRepoCollection4TenantOrg', (req, res) => {
 //collectionName
 router.get('/GetRepoCollectionByName', (req, res) => {
     if (!checkToken(req, res)) {
-        return '{val: false, code: 404, message: "Auth Failed"}';
+        return res.json({ val: false, code: 404, message: "Auth Failed" });
     }
     sqlRepositoy.GetAllRepoCollection4TenantOrg(req.query.collectionName, req.query.bustTheCache).then(result => {
         return res.json(result.recordset);
@@ -227,7 +240,7 @@ router.get('/GetRepoCollectionByName', (req, res) => {
 });
 router.get('/SetupWebHook', (req, res) => {
     if (!checkToken(req, res)) {
-        return '{val: false, code: 404, message: "Auth Failed"}';
+        return res.json({ val: false, code: 404, message: "Auth Failed" });
     }
     const tenantId = getTenant(req, res);
     gitRepository.SetupWebHook(tenantId, req.query.org).then(result => {

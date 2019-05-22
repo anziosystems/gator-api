@@ -39,6 +39,40 @@ class SQLRepository {
             }
         });
     }
+    //return 0 if not a valid tenant or the token more than 7 days old
+    CheckToken(tenantId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Id', sql.Int, tenantId);
+                const recordSet = yield request.execute('CheckTenant');
+                return recordSet.recordset[0].Result === 1;
+            }
+            catch (ex) {
+                console.log(ex);
+                return false;
+            }
+        });
+    }
+    GetRepositoryPR(org, repo, day, pageSize) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('repo', sql.VarChar(100), repo);
+                request.input('org', sql.VarChar(100), org);
+                request.input('day', sql.Int, day);
+                request.input('PageSize', sql.Int, pageSize);
+                const recordSet = yield request.execute('GetRepositoryPR');
+                return recordSet.recordset[0].Result === 1;
+            }
+            catch (ex) {
+                console.log(ex);
+                return false;
+            }
+        });
+    }
     saveTenant(tenant) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
