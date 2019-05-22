@@ -71,15 +71,13 @@ class SQLRepository {
       const request = await this.pool.request();
       request.input('Id', sql.Int, tenantId);
       const recordSet = await request.execute('CheckTenant');
-      return recordSet.recordset[0].Result === 1 ;
+      return recordSet.recordset[0].Result === 1;
     } catch (ex) {
-      console.log (ex);
+      console.log(ex);
       return false;
     }
   }
 
-
-  
   async GetRepositoryPR(org: string, repo: string, day: string, pageSize: string) {
     try {
       await this.createPool();
@@ -89,9 +87,9 @@ class SQLRepository {
       request.input('day', sql.Int, day);
       request.input('PageSize', sql.Int, pageSize);
       const recordSet = await request.execute('GetRepositoryPR');
-      return recordSet.recordset[0].Result === 1 ;
+      return recordSet.recordset;
     } catch (ex) {
-      console.log (ex);
+      console.log(ex);
       return false;
     }
   }

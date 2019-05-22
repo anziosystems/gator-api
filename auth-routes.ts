@@ -24,7 +24,6 @@ router.get('/logout', (req: any, res: any) => {
 //this is callbacked with authorization Code, this code is taken by passport and made another call to get the access code
 //which you can see in passport-setup.ts file
 router.get('/github/redirect', passport.authenticate('github'), (req: any, res: any) => {
-
   const token = jwt.sign(req.user.id, 'JWTSuperSecret');
   res.redirect(callbackURL + '?token=' + token);
 });

@@ -65,7 +65,7 @@ class SQLRepository {
                 request.input('day', sql.Int, day);
                 request.input('PageSize', sql.Int, pageSize);
                 const recordSet = yield request.execute('GetRepositoryPR');
-                return recordSet.recordset[0].Result === 1;
+                return recordSet.recordset;
             }
             catch (ex) {
                 console.log(ex);

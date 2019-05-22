@@ -43,7 +43,7 @@ passport.use(
       tenant.Id = profile.id;
       tenant.Photo = '';
       tenant.Email = '';
-      
+
       if (Array.isArray(profile.photos)) {
         if (profile.photos.length > 0) {
           if (profile.photos[0]) {

@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
       "experimentalDecorators": true,
+      "emitDecoratorMetadata": true,
     "module": "commonjs",
     "target": "es6",
     "outDir": "dist",
@@ -11,6 +12,7 @@
     "baseUrl": ".",
     "noImplicitAny": true,
     "moduleResolution": "node",
+    "allowJs": true,
     "paths": {
           "*": [
               "node_modules/*",
