@@ -1,5 +1,4 @@
 let sql = require('mssql');
-import {sqlConfigSetting} from './sqlConfig';
 import * as _ from 'lodash';
 import {isNullOrUndefined} from 'util';
 import {EMLINK} from 'constants';
@@ -42,6 +41,7 @@ class SQLRepository {
   raw: string;
   pool: any;
   myCache: any;
+  sqlConfigSetting: any = {};
 
   constructor(obj: any) {
     //for get calls there may not be any obj
@@ -56,8 +56,20 @@ class SQLRepository {
 
     this.createPool();
   }
+
+
+
+
+
   async createPool() {
     if (!this.pool) {
+      sqlConfigSetting.server = process.env.SQL_Sever; 
+      sqlConfigSetting.database = process.env.SQL_Database ;
+      sqlConfigSetting.user = process.env.SQL_User;
+      sqlConfigSetting.password = process.env.SQL_Password;
+      sqlConfigSetting.port = 1433;
+      sqlConfigSetting.encrypt = true;
+
       await new sql.ConnectionPool(sqlConfigSetting).connect().then((pool: any) => {
         this.pool = pool;
       });
@@ -67,10 +79,16 @@ class SQLRepository {
   //return 0 if not a valid tenant or the token more than 7 days old
   async CheckToken(tenantId: number) {
     try {
+      let cacheKey = 'CheckToken' + tenantId ;
+      let val = this.myCache.get(cacheKey);
+      if (val) {
+        return val;
+      }
       await this.createPool();
       const request = await this.pool.request();
       request.input('Id', sql.Int, tenantId);
       const recordSet = await request.execute('CheckTenant');
+      this.myCache.set (cacheKey, recordSet.recordset[0].Result === 1);
       return recordSet.recordset[0].Result === 1;
     } catch (ex) {
       console.log(ex);
@@ -80,6 +98,11 @@ class SQLRepository {
 
   async GetRepositoryPR(org: string, repo: string, day: string, pageSize: string) {
     try {
+      let cacheKey = 'GetRepositoryPR' + org+repo+day ;
+      let val = this.myCache.get(cacheKey);
+      if (val) {
+        return val;
+      }
       await this.createPool();
       const request = await this.pool.request();
       request.input('repo', sql.VarChar(100), repo);
@@ -87,47 +110,12 @@ class SQLRepository {
       request.input('day', sql.Int, day);
       request.input('PageSize', sql.Int, pageSize);
       const recordSet = await request.execute('GetRepositoryPR');
+      this.myCache.set (cacheKey, recordSet.recordset);
       return recordSet.recordset;
     } catch (ex) {
       console.log(ex);
       return false;
     }
-  }
-
-  async saveTenant(tenant: Tenant) {
-    try {
-      await this.createPool();
-      const request = await this.pool.request();
-      if (!tenant.Photo) {
-        tenant.Photo = '';
-      }
-      if (!tenant.DisplayName) {
-        tenant.DisplayName = '';
-      }
-      request.input('Id', sql.Int, tenant.Id);
-      request.input('email', sql.VarChar(200), tenant.Email);
-      request.input('UserName', sql.VarChar(200), tenant.UserName);
-      request.input('DisplayName', sql.VarChar(200), tenant.DisplayName);
-      request.input('ProfileUrl', sql.VarChar(1000), tenant.ProfileUrl);
-      request.input('AuthToken', sql.VarChar(4000), tenant.AuthToken);
-      request.input('RefreshToken', sql.VarChar(4000), tenant.RefreshToken);
-      request.input('Photo', sql.VarChar(1000), tenant.Photo);
-      const recordSet = await request.execute('SetTenant');
-      return recordSet;
-    } catch (ex) {
-      return ex;
-    }
-  }
-
-  async SetRepoCollection(tenantId: string, org: string, repoCollectionName: string, repos: string) {
-    await this.createPool();
-    const request = await this.pool.request();
-    request.input('TenantId', sql.VarChar(200), tenantId);
-    request.input('Org', sql.VarChar(200), org);
-    request.input('Repos', sql.VarChar(8000), repos);
-    request.input('CollectionName', sql.VarChar(200), repoCollectionName);
-    const recordSet = await request.execute('SetRepoCollection');
-    return recordSet;
   }
 
   async GetAllRepoCollection4TenantOrg(tenantId: string, org: string, bustTheCache: Boolean = false) {
@@ -149,13 +137,19 @@ class SQLRepository {
 
   async SaveRepo(email: string, org: string, repos: string[]) {
     try {
+      if (repos == undefined)
+        return;
+      if (repos.length === 0 ){
+        console.log('No repo to be saved!')
+        return;  
+      }
       await this.createPool();
       const request = await this.pool.request();
       let repoDetails: string;
       for (let i = 0; i < repos.length; i++) {
         let repo: any = repos[i];
         let createdAt = String(repo.createdAt).substr(0, 10);
-        console.log('SaveRepo' + org + ' ' + repo);
+        console.log(`SaveRepo = org: ${org} repo: ${repo.name}`);
         request.input('TenantId', sql.VarChar(200), email);
         request.input('Organization', sql.VarChar(200), org);
         request.input('Id', sql.VarChar(200), repo.id);
@@ -273,74 +267,7 @@ class SQLRepository {
     }
   }
 
-  /*
-    Saves only action === 'opened' || action === 'closed' || action === 'edited'
-  */
-  async SavePR4Repo(org: string, repo: string, body: string) {
-    try {
-      await this.createPool();
-      let pr = JSON.parse(body);
-      let id: string;
-      let url: string;
-      let state: string;
-      let title: string;
-      let created_at: string;
-      let pr_body: string;
-      let login: string;
-      let avatar_url: string;
-      let user_url: string;
-
-      const request = await this.pool.request();
-      let nodes = pr.data.viewer.organization.repository.pullRequests.nodes;
-
-      //nodes.forEach(async (elm: any) => {
-      for (let i = 0; i < nodes.length; i++) {
-        let elm = nodes[i];
-        if ('greenkeeper' === elm.author.login) continue;
-        if (elm.action === 'opened' || elm.action === 'closed' || elm.action === 'edited') {
-          //move one
-        } else {
-          continue;
-        }
-        id = elm.id;
-        url = elm.url;
-        state = elm.action; //Found out state has too much noise but action open and close is better
-        title = elm.title;
-        created_at = elm.createdAt;
-        pr_body = elm.body;
-        if (!pr_body) {
-          pr_body = ' ';
-        }
-        if (pr_body.length > 1999) {
-          pr_body = pr_body.substr(0, 1998);
-        }
-        login = elm.author.login;
-        avatar_url = elm.author.avatarUrl;
-        user_url = elm.author.url;
-
-        request.input('Id', sql.VarChar(200), id);
-        request.input('Org', sql.VarChar(1000), org);
-        request.input('Repo', sql.VarChar(1000), repo);
-        request.input('Url', sql.VarChar(1000), url);
-        request.input('State', sql.VarChar(50), state);
-        request.input('Title', sql.VarChar(5000), title);
-        request.input('Created_At', sql.VarChar(20), created_at);
-        request.input('Body', sql.VarChar(2000), pr_body);
-        request.input('Login', sql.VarChar(100), login);
-        request.input('Avatar_Url', sql.VarChar(2000), avatar_url);
-        request.input('User_Url', sql.VarChar(2000), user_url);
-        try {
-          let x = await request.execute('SavePR4Repo');
-        } catch (ex) {
-          console.log(ex);
-        }
-      }
-    } catch (ex) {
-      return false;
-    }
-    return true;
-  }
-
+  
   async GetToken(id: number) {
     let cacheKey = 'GetTenant -' + id;
     let val = this.myCache.get(cacheKey);
@@ -513,6 +440,127 @@ class SQLRepository {
       console.log(err);
     }
   }
+  async saveTenant(tenant: Tenant) {
+    try {
+      await this.createPool();
+      const request = await this.pool.request();
+      if (!tenant.Photo) {
+        tenant.Photo = '';
+      }
+      if (!tenant.DisplayName) {
+        tenant.DisplayName = '';
+      }
+      request.input('Id', sql.Int, tenant.Id);
+      request.input('email', sql.VarChar(200), tenant.Email);
+      request.input('UserName', sql.VarChar(200), tenant.UserName);
+      request.input('DisplayName', sql.VarChar(200), tenant.DisplayName);
+      request.input('ProfileUrl', sql.VarChar(1000), tenant.ProfileUrl);
+      request.input('AuthToken', sql.VarChar(4000), tenant.AuthToken);
+      request.input('RefreshToken', sql.VarChar(4000), tenant.RefreshToken);
+      request.input('Photo', sql.VarChar(1000), tenant.Photo);
+      const recordSet = await request.execute('SetTenant');
+      return recordSet;
+    } catch (ex) {
+      return ex;
+    }
+  }
+
+  async SetRepoCollection(tenantId: string, org: string, repoCollectionName: string, repos: string) {
+    await this.createPool();
+    const request = await this.pool.request();
+    request.input('TenantId', sql.VarChar(200), tenantId);
+    request.input('Org', sql.VarChar(200), org);
+    request.input('Repos', sql.VarChar(8000), repos);
+    request.input('CollectionName', sql.VarChar(200), repoCollectionName);
+    const recordSet = await request.execute('SetRepoCollection');
+    return recordSet;
+  }
+
+  /*
+    Saves only action === 'opened' || action === 'closed' || action === 'edited'
+  */
+ async SavePR4Repo(org: string, repo: string, body: string) {
+  try {
+    await this.createPool();
+    let pr = JSON.parse(body);
+    let id: string;
+    let url: string;
+    let state: string;
+    let title: string;
+    let created_at: string;
+    let pr_body: string;
+    let login: string;
+    let avatar_url: string;
+    let user_url: string;
+
+    const request = await this.pool.request();
+    let nodes = pr.data.viewer.organization.repository.pullRequests.nodes;
+    if  (nodes == undefined) {
+      console.log (`No PR found for org: ${org} Repo: ${repo}`);
+    }
+    if  (nodes.length === 0) {
+      console.log (`No PR found for org: ${org} Repo: ${repo}`);
+    }
+    
+    if  (nodes.length > 0) {
+      console.log (`${nodes.length} PR found for org: ${org} Repo: ${repo}`);
+    }
+    
+
+    //nodes.forEach(async (elm: any) => {
+    for (let i = 0; i < nodes.length; i++) {
+      let elm = nodes[i];
+      if (elm.author.login == undefined) {
+        console.log ('login is invalid')
+        continue;
+      }
+      if (elm.author.login.startsWith('greenkeeper')) continue;
+      if (elm.author.login.startsWith('semantic-release-bot')) continue;
+      if (elm.action === 'opened' || elm.action === 'closed' || elm.action === 'edited') {
+        //move one
+      } else {
+        continue;
+      }
+      id = elm.id;
+      url = elm.url;
+      state = elm.action; //Found out state has too much noise but action open and close is better
+      title = elm.title;
+      created_at = elm.createdAt;
+      pr_body = elm.body;
+      if (!pr_body) {
+        pr_body = ' ';
+      }
+      if (pr_body.length > 1999) {
+        pr_body = pr_body.substr(0, 1998);
+      }
+      login = elm.author.login;
+      avatar_url = elm.author.avatarUrl;
+      user_url = elm.author.url;
+
+      request.input('Id', sql.VarChar(200), id);
+      request.input('Org', sql.VarChar(1000), org);
+      request.input('Repo', sql.VarChar(1000), repo);
+      request.input('Url', sql.VarChar(1000), url);
+      request.input('State', sql.VarChar(50), state);
+      request.input('Title', sql.VarChar(5000), title);
+      request.input('Created_At', sql.VarChar(20), created_at);
+      request.input('Body', sql.VarChar(2000), pr_body);
+      request.input('Login', sql.VarChar(100), login);
+      request.input('Avatar_Url', sql.VarChar(2000), avatar_url);
+      request.input('User_Url', sql.VarChar(2000), user_url);
+      try {
+        let x = await request.execute('SavePR4Repo');
+        console.log (`Saved PR for org:${org} repo: ${repo}`);
+      } catch (ex) {
+        console.log(ex);
+        console.log (`Error! While saving PR for org:${org} repo: ${repo}`);
+      }
+    }
+  } catch (ex) {
+    return false;
+  }
+  return true;
+}
 
   private shredObject(obj: any): PullRequest {
     let pr: PullRequest = new PullRequest();

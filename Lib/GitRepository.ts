@@ -38,7 +38,7 @@ class GitRepository {
   //Gets the PR for a Organization and a repo
 
   async GetPullRequestFromGit(tenantId: string, org: string, repo: string) {
-    console.log('going to git for: ' + org + ' repo :' + repo);
+    console.log(`Getting PR from git for org: ${org}  repo :${repo}`);
     let graphQL =
       `{\"query\":\"{viewer  {  name          organization(login: \\"` +
       org +
@@ -47,19 +47,16 @@ class GitRepository {
       `\\") { name            pullRequests(last: 10) {  nodes { id  url  state  title   permalink   createdAt  body  repository { name } author                                                                                                                                                                                { login  avatarUrl url                                           }            }          }        }      }    }  }\",\"variables\":{}}`;
 
     try {
-      request(
-        await this.makeGitRequest(tenantId, graphQL),
-
-        async (error: any, response: any, body: any) => {
-          if (response.statusCode === 200) {
-            await this.sqlRepository.SavePR4Repo(org, repo, body);
-          } else {
-            console.log('FillPullRequest: ' + body);
-          }
-        },
-      );
+      request(await this.makeGitRequest(tenantId, graphQL), async (error: any, response: any, body: any) => {
+        if (response.statusCode === 200) {
+          
+          await this.sqlRepository.SavePR4Repo(org, repo, body);
+        } else {
+          console.log('GetPullRequestFromGit: ' + body);
+        }
+      });
     } catch (ex) {
-      console.log(ex);
+      console.log(`GetPullRequestFromGit Error! => ${ex}`);
     }
   }
 
@@ -106,13 +103,18 @@ class GitRepository {
 
         async (error: any, response: any, body: any) => {
           if (response.statusCode === 200) {
-            await this.sqlRepository.SaveRepo(tenantId, org, JSON.parse(body).data.organization.repositories.nodes);
-            let pageInfo = JSON.parse(body).data.organization.repositories.pageInfo;
-            if (pageInfo.hasNextPage) {
-              this.GetRepoFromGit(tenantId, org, pageInfo.endCursor); //ooph! Recursive call
+            let result = JSON.parse(body);
+            if (!result.data) {
+              console.log('No organization found for org:' + org);
+            } else {
+              await this.sqlRepository.SaveRepo(tenantId, org, result.data.organization.repositories.nodes);
+              let pageInfo = result.data.organization.repositories.pageInfo;
+              if (pageInfo.hasNextPage) {
+                this.GetRepoFromGit(tenantId, org, pageInfo.endCursor); //ooph! Recursive call
+              }
             }
           } else {
-            console.log('GetRpo: ' + body);
+            console.log('GetRpoFromGit: org - ' + org + ' - ' + body);
           }
         },
       );
@@ -128,7 +130,9 @@ class GitRepository {
       this.sqlRepository.myCache.del(cacheKey);
     }
 
-    if (!getFromGit) {
+    if (getFromGit) {
+      return await this.GetRepoFromGit(tenantId, org);
+    } else {
       //Get from local store
       let result = this.sqlRepository.myCache.get(cacheKey);
       if (result) {
@@ -197,7 +201,7 @@ class GitRepository {
         }
       });
     } catch (ex) {
-      console.log(ex);
+      console.log(`WebHook setup fail: ${ex}`);
     }
   }
 

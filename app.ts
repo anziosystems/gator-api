@@ -28,7 +28,7 @@ app.use(function(req: any, res: any, next: any) {
 app.use(
   cookieSession({
     key: 'git-user',
-    secret: keys.github.session.cookieKey,
+    secret: process.env.Session_Key, // keys.github.session.cookieKey,
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, //1 day
       secure: false, //https://stackoverflow.com/questions/11277779/passportjs-deserializeuser-never-called - didn't help though

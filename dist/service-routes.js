@@ -46,11 +46,6 @@ function validateToken(req, res, next) {
         }
     });
 }
-router.get('/GetOrg', validateToken, (req, res) => {
-    gitRepository.GetOrg(getTenant(req, res), req.query.bustTheCache, req.query.getFromGit).then(result => {
-        return res.json(result);
-    });
-});
 function getTenant(req, res) {
     try {
         const token = req.headers['authorization']; //it is tenantId in header
@@ -65,6 +60,11 @@ function getTenant(req, res) {
         return;
     }
 }
+router.get('/GetOrg', validateToken, (req, res) => {
+    gitRepository.GetOrg(getTenant(req, res), req.query.bustTheCache, req.query.getFromGit).then(result => {
+        return res.json(result);
+    });
+});
 router.get('/GetHookStatus', validateToken, (req, res) => {
     const tenantId = getTenant(req, res);
     gitRepository
@@ -180,7 +180,7 @@ router.get('/GetRepos', validateToken, (req, res) => {
 });
 router.get('/GetPRfromGit', validateToken, (req, res) => {
     const tenantId = getTenant(req, res);
-    gitRepository.GetRepos(tenantId, req.query.org, req.query.bustTheCache, req.query.getFromGit).then(result => {
+    gitRepository.GetRepos(tenantId, req.query.org, false, false).then(result => {
         for (let i = 0; i < result.length; i++) {
             const res = gitRepository.FillPullRequest(tenantId, req.query.org, result[i].RepoName);
         }

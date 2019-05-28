@@ -23,8 +23,8 @@ passport.deserializeUser((id: any, done) => {
 passport.use(
   new GitHubStrategy(
     {
-      clientID: keys.github.clientID,
-      clientSecret: keys.github.clientSecret,
+      clientID:  process.env.GITHUB_ClientID, //keys.github.clientID,
+      clientSecret: process.env.GITHUB_ClientSecret,
       scope: 'repo user admin:org read:org admin:org_hook admin:repo_hook read:repo_hook write:repo_hook',
     },
     (accessToken: any, refreshToken: any, profile: any, done: any) => {
