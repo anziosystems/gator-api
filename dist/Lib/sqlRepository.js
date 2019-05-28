@@ -34,8 +34,8 @@ class SQLRepository {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.pool) {
                 console.log('=> inside create pool');
-                console.log(`=> Server Name: ${process.env.SQL_Sever}`);
-                this.sqlConfigSetting.server = process.env.SQL_Sever;
+                console.log(`=> Server Name: ${process.env.SQL_Server}`);
+                this.sqlConfigSetting.server = process.env.SQL_Server;
                 this.sqlConfigSetting.database = process.env.SQL_Database;
                 this.sqlConfigSetting.user = process.env.SQL_User;
                 this.sqlConfigSetting.password = process.env.SQL_Password;
