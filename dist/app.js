@@ -4,6 +4,7 @@ const app = express();
 const authRoutes = require('./auth-routes');
 const serviceRoutes = require('./service-routes');
 const cookieSession = require('cookie-session');
+const Passport = require('Passport');
 const session = require('express-session');
 app.set('view engine', 'ejs');
 app.use(cors());
@@ -28,9 +29,9 @@ app.use(cookieSession({
     httpOnly: false,
 }));
 app.use(session({ secret: 'cats' }));
-//initialize passport
-app.use(passport.initialize());
-app.use(passport.session());
+//initialize Passport
+app.use(Passport.initialize());
+app.use(Passport.session());
 app.use('/auth', authRoutes);
 app.use('/service', serviceRoutes);
 app.get('/', (req, res) => {

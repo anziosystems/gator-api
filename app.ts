@@ -3,13 +3,12 @@ const cors = require('cors');
 const app = express();
 const authRoutes = require('./auth-routes');
 const serviceRoutes = require('./service-routes');
-
 const cookieSession = require('cookie-session');
-
+const Passport = require('Passport');
 const session = require('express-session');
-
 app.set('view engine', 'ejs');
 app.use(cors());
+
 
 app.use(function(req: any, res: any, next: any) {
   res.header('Access-Control-Allow-Origin', '*');
@@ -30,16 +29,16 @@ app.use(
     secret: process.env.Session_Key, // keys.github.session.cookieKey,
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, //1 day
-      secure: false, //https://stackoverflow.com/questions/11277779/passportjs-deserializeuser-never-called - didn't help though
+      secure: false, //https://stackoverflow.com/questions/11277779/Passportjs-deserializeuser-never-called - didn't help though
     },
     httpOnly: false,
   }),
 );
 
 app.use(session({secret: 'cats'}));
-//initialize passport
-app.use(passport.initialize());
-app.use(passport.session());
+//initialize Passport
+app.use(Passport.initialize());
+app.use(Passport.session());
 
 app.use('/auth', authRoutes);
 app.use('/service', serviceRoutes);
