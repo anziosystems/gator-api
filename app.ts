@@ -53,4 +53,6 @@ app.get('/success', (req: any, res: any) => {
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log('listenting for request on port 3000');
+  console.log (`=> Server Name: ${process.env['SQL_Sever']}`);
+
 });
