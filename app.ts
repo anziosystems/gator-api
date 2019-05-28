@@ -55,7 +55,7 @@ app.listen(port, () => {
   console.log('===================================================');
   console.log('listenting for request on port 3000');
   console.log('===================================================');
-  console.log(process.env.SQL_Sever);
-  console.log (`=> Server Name: ${process.env['SQL_Sever']}`);
+  console.log(process.env.SQL_Server);
+  console.log (`=> Server Name: ${process.env['SQL_Server']}`);
 
 });
