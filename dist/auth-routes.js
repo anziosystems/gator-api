@@ -1,5 +1,3 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 //https://www.youtube.com/watch?v=or1_A4sJ-oY
 const router = require('express').Router();
 const passport = require('passport');

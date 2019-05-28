@@ -1,6 +1,5 @@
 //https://www.youtube.com/watch?v=or1_A4sJ-oY
 const router = require('express').Router();
-import {keys} from './keys';
 const passport = require('passport');
 const passport_setup = require('./passport-setup');
 const jwt = require('jsonwebtoken');
@@ -15,6 +14,7 @@ router.get('/github', passport.authenticate('github'), (req: any, res: any) => {
 });
 
 router.get('/logout', (req: any, res: any) => {
+  
   res.send('logging.out');
 });
 

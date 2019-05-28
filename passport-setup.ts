@@ -1,5 +1,4 @@
 import * as passport from 'passport';
-import {keys} from './keys';
 const GitHubStrategy = require('passport-github').Strategy;
 import {SQLRepository, Tenant} from './Lib/sqlRepository';
 const express = require('express');

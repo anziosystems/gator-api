@@ -3,10 +3,9 @@ const cors = require('cors');
 const app = express();
 const authRoutes = require('./auth-routes');
 const serviceRoutes = require('./service-routes');
-const passport_setup = require('./passport-setup');
+
 const cookieSession = require('cookie-session');
-import {keys} from './keys';
-const passport = require('passport');
+
 const session = require('express-session');
 
 app.set('view engine', 'ejs');

@@ -63,14 +63,14 @@ class SQLRepository {
 
   async createPool() {
     if (!this.pool) {
-      sqlConfigSetting.server = process.env.SQL_Sever; 
-      sqlConfigSetting.database = process.env.SQL_Database ;
-      sqlConfigSetting.user = process.env.SQL_User;
-      sqlConfigSetting.password = process.env.SQL_Password;
-      sqlConfigSetting.port = 1433;
-      sqlConfigSetting.encrypt = true;
+      this.sqlConfigSetting.server = process.env.SQL_Sever; 
+      this.sqlConfigSetting.database = process.env.SQL_Database ;
+      this.sqlConfigSetting.user = process.env.SQL_User;
+      this.sqlConfigSetting.password = process.env.SQL_Password;
+      this.sqlConfigSetting.port = 1433;
+      this.sqlConfigSetting.encrypt = true;
 
-      await new sql.ConnectionPool(sqlConfigSetting).connect().then((pool: any) => {
+      await new sql.ConnectionPool(this.sqlConfigSetting).connect().then((pool: any) => {
         this.pool = pool;
       });
     }

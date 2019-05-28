@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const passport = require("passport");
-const keys_1 = require("./keys");
 const GitHubStrategy = require('passport-github').Strategy;
 const sqlRepository_1 = require("./Lib/sqlRepository");
 const express = require('express');
@@ -20,8 +19,8 @@ passport.deserializeUser((id, done) => {
     });
 });
 passport.use(new GitHubStrategy({
-    clientID: keys_1.keys.github.clientID,
-    clientSecret: keys_1.keys.github.clientSecret,
+    clientID: process.env.GITHUB_ClientID,
+    clientSecret: process.env.GITHUB_ClientSecret,
     scope: 'repo user admin:org read:org admin:org_hook admin:repo_hook read:repo_hook write:repo_hook',
 }, (accessToken, refreshToken, profile, done) => {
     //Callback with the accessToken

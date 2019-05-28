@@ -9,7 +9,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 let sql = require('mssql');
-const sqlConfig_1 = require("./sqlConfig");
 const _ = require("lodash");
 const util_1 = require("util");
 const NodeCache = require('node-cache');
@@ -20,6 +19,7 @@ class Tenant {
 exports.Tenant = Tenant;
 class SQLRepository {
     constructor(obj) {
+        this.sqlConfigSetting = {};
         //for get calls there may not be any obj
         if (obj) {
             this.pr = this.shredObject(obj);
@@ -33,7 +33,13 @@ class SQLRepository {
     createPool() {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.pool) {
-                yield new sql.ConnectionPool(sqlConfig_1.sqlConfigSetting).connect().then((pool) => {
+                this.sqlConfigSetting.server = process.env.SQL_Sever;
+                this.sqlConfigSetting.database = process.env.SQL_Database;
+                this.sqlConfigSetting.user = process.env.SQL_User;
+                this.sqlConfigSetting.password = process.env.SQL_Password;
+                this.sqlConfigSetting.port = 1433;
+                this.sqlConfigSetting.encrypt = true;
+                yield new sql.ConnectionPool(this.sqlConfigSetting).connect().then((pool) => {
                     this.pool = pool;
                 });
             }

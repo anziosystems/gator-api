@@ -1,14 +1,9 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 const express = require('express');
 const cors = require('cors');
 const app = express();
 const authRoutes = require('./auth-routes');
 const serviceRoutes = require('./service-routes');
-const passport_setup = require('./passport-setup');
 const cookieSession = require('cookie-session');
-const keys_1 = require("./keys");
-const passport = require('passport');
 const session = require('express-session');
 app.set('view engine', 'ejs');
 app.use(cors());
@@ -25,7 +20,7 @@ app.use(function (req, res, next) {
 // }));
 app.use(cookieSession({
     key: 'git-user',
-    secret: keys_1.keys.github.session.cookieKey,
+    secret: process.env.Session_Key,
     cookie: {
         maxAge: 24 * 60 * 60 * 1000,
         secure: false,
