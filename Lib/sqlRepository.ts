@@ -63,6 +63,7 @@ class SQLRepository {
 
   async createPool() {
     if (!this.pool) {
+      console.log ("=> Server Name: " + process.env.SQL_Sever);
       this.sqlConfigSetting.server = process.env.SQL_Sever; 
       this.sqlConfigSetting.database = process.env.SQL_Database ;
       this.sqlConfigSetting.user = process.env.SQL_User;
