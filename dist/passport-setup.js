@@ -5,30 +5,28 @@ const GitHubStrategy = require('passport-github').Strategy;
 const sqlRepository_1 = require("./Lib/sqlRepository");
 const express = require('express');
 const app = express();
-passport.serializeUser((user, done) => {
-    try {
-        console.log('==> inside serialize - userid: ' + user.id);
-        done(null, user.id);
-        //Note if in done you will add full user, then deserializedUser does not get called.
-    }
-    catch (ex) {
-        console.log(`==> serializeUser: ${ex}`);
-    }
-});
-passport.deserializeUser((id, done) => {
-    try {
-        console.log(`==> Inside DeserializeUser - id: ${id}`);
-        let sqlRepositoy = new sqlRepository_1.SQLRepository(null);
-        sqlRepositoy.GetTenant(id).then(result => {
-            console.log('==> inside deserialize - user.id: ' + id);
-            //do something with Tenant details
-            done(null, result);
-        });
-    }
-    catch (ex) {
-        console.log(`==> deserializeUser ${ex}`);
-    }
-});
+// passport.serializeUser((user: any, done) => {
+//   try {
+//   console.log('==> inside serialize - userid: ' + user.id);
+//   done(null, user.id);
+//   //Note if in done you will add full user, then deserializedUser does not get called.
+//   } catch (ex) {
+//     console.log(`==> serializeUser: ${ex}`);
+//   }
+// });
+// passport.deserializeUser((id: any, done) => {
+//   try {
+//     console.log (`==> Inside DeserializeUser - id: ${id}`);
+//     let sqlRepositoy = new SQLRepository(null);
+//     sqlRepositoy.GetTenant(id).then(result => {
+//       console.log('==> inside deserialize - user.id: ' + id);
+//       //do something with Tenant details
+//       done(null, result);
+//     });
+//   } catch (ex) {
+//     console.log(`==> deserializeUser ${ex}`);
+//   }
+// });
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_ClientID,
     clientSecret: process.env.GITHUB_ClientSecret,
