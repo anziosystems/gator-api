@@ -49,7 +49,6 @@ class GitRepository {
     try {
       request(await this.makeGitRequest(tenantId, graphQL), async (error: any, response: any, body: any) => {
         if (response.statusCode === 200) {
-          
           await this.sqlRepository.SavePR4Repo(org, repo, body);
         } else {
           console.log('GetPullRequestFromGit: ' + body);

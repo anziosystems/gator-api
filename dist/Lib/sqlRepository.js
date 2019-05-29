@@ -449,7 +449,7 @@ class SQLRepository {
             }
             catch (ex) {
                 console.log(`==> ${ex}`);
-                return null;
+                return ex;
             }
         });
     }

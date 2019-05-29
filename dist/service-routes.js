@@ -49,7 +49,7 @@ function validateToken(req, res, next) {
 function getTenant(req, res) {
     try {
         const token = req.headers['authorization']; //it is tenantId in header
-        const result = jwt.verify(token, 'JWTSuperSecret', verifyOptions);
+        const result = jwt.verify(token, process.env.Session_Key, verifyOptions);
         if (result)
             return result;
         else {

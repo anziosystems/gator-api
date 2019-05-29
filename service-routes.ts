@@ -39,7 +39,7 @@ function validateToken(req: any, res: any, next: any) {
 function getTenant(req: any, res: any) {
   try {
     const token = req.headers['authorization']; //it is tenantId in header
-    const result = jwt.verify(token, 'JWTSuperSecret', verifyOptions);
+    const result = jwt.verify(token, process.env.Session_Key, verifyOptions);
     if (result) return result;
     else {
       return;
@@ -55,7 +55,6 @@ router.get('/GetOrg', validateToken, (req: any, res: any) => {
     return res.json(result);
   });
 });
-
 
 router.get('/GetHookStatus', validateToken, (req: any, res: any) => {
   const tenantId = getTenant(req, res);

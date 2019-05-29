@@ -3,6 +3,8 @@ const router = require('express').Router();
 const passport = require('passport');
 const passport_setup = require('./passport-setup');
 const jwt = require('jsonwebtoken');
+const dotenv = require('dotenv');
+dotenv.config();
 //var callbackURL = 'http://localhost:8080/callback';
 let callbackURL = 'https://gator-ui.azurewebsites.net/callback';
 
@@ -14,7 +16,6 @@ router.get('/github', passport.authenticate('github'), (req: any, res: any) => {
 });
 
 router.get('/logout', (req: any, res: any) => {
-  
   res.send('logging.out');
 });
 
@@ -24,7 +25,7 @@ router.get('/logout', (req: any, res: any) => {
 //this is callbacked with authorization Code, this code is taken by passport and made another call to get the access code
 //which you can see in passport-setup.ts file
 router.get('/github/redirect', passport.authenticate('github'), (req: any, res: any) => {
-  const token = jwt.sign(req.user.id, 'JWTSuperSecret');
+  const token = jwt.sign(req.user, process.env.Session_Key);
   res.redirect(callbackURL + '?token=' + token);
 });
 

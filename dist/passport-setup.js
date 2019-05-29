@@ -3,32 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const passport = require("passport");
 const GitHubStrategy = require('passport-github').Strategy;
 const sqlRepository_1 = require("./Lib/sqlRepository");
-const express = require('express');
-const app = express();
-passport.serializeUser((user, done) => {
-    try {
-        console.log('==> inside serialize - userid: ' + user.id);
-        done(null, user.id);
-        //Note if in done you will add full user, then deserializedUser does not get called.
-    }
-    catch (ex) {
-        console.log(`==> serializeUser: ${ex}`);
-    }
-});
-passport.deserializeUser((id, done) => {
-    try {
-        console.log(`==> Inside DeserializeUser - id: ${id}`);
-        let sqlRepositoy = new sqlRepository_1.SQLRepository(null);
-        sqlRepositoy.GetTenant(id).then(result => {
-            console.log('==> inside deserialize - user.id: ' + id);
-            //do something with Tenant details
-            done(null, result);
-        });
-    }
-    catch (ex) {
-        console.log(`==> deserializeUser ${ex}`);
-    }
-});
+const dotenv = require('dotenv');
+dotenv.config();
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_ClientID,
     clientSecret: process.env.GITHUB_ClientSecret,
@@ -39,6 +15,7 @@ passport.use(new GitHubStrategy({
     console.log('==> refreshToken:' + refreshToken);
     console.log('==> profile:' + profile.username);
     console.log('==> profile.id:' + profile.id);
+    console.log(`==> clientID: ${process.env.GITHUB_ClientID}`);
     let tenant = new sqlRepository_1.Tenant();
     tenant.AuthToken = accessToken;
     if (!refreshToken)
@@ -66,12 +43,12 @@ passport.use(new GitHubStrategy({
     }
     let sqlRepositoy = new sqlRepository_1.SQLRepository(null);
     sqlRepositoy.saveTenant(tenant).then(result => {
-        // console.log (`==> passport.use ${result} result.message: ${result.message}`)
-        // if (result) {
-        //   return done(result, profile);
-        // }
+        if (result.message) {
+            //if error then pass the error message
+            return done(result, profile.id);
+        }
         console.log(`==> passport.use calling done with null, id: ${profile.id}`);
-        return done(null, profile);
+        return done(null, String(profile.id));
     });
 }));
 //# sourceMappingURL=passport-setup.js.map
