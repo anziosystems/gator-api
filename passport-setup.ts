@@ -11,18 +11,23 @@ passport.serializeUser((user: any, done) => {
 });
 
 passport.deserializeUser((id: any, done) => {
-  let sqlRepositoy = new SQLRepository(null);
-  sqlRepositoy.GetTenant(id).then(result => {
-    console.log('inside deserialize - user.id: ' + id);
-    //do something with Tenant details
-    done(null, result);
-  });
+  try {
+    console.log (`Inside DeserializeUser - id: ${id}`);
+    let sqlRepositoy = new SQLRepository(null);
+    sqlRepositoy.GetTenant(id).then(result => {
+      console.log('inside deserialize - user.id: ' + id);
+      //do something with Tenant details
+      done(null, result);
+    });
+  } catch (ex) {
+    console.log(ex);
+  }
 });
 
 passport.use(
   new GitHubStrategy(
     {
-      clientID:  process.env.GITHUB_ClientID, //keys.github.clientID,
+      clientID: process.env.GITHUB_ClientID, //keys.github.clientID,
       clientSecret: process.env.GITHUB_ClientSecret,
       scope: 'repo user admin:org read:org admin:org_hook admin:repo_hook read:repo_hook write:repo_hook',
     },

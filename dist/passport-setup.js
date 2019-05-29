@@ -11,12 +11,18 @@ passport.serializeUser((user, done) => {
     //Note if in done you will add full user, then deserializedUser does not get called.
 });
 passport.deserializeUser((id, done) => {
-    let sqlRepositoy = new sqlRepository_1.SQLRepository(null);
-    sqlRepositoy.GetTenant(id).then(result => {
-        console.log('inside deserialize - user.id: ' + id);
-        //do something with Tenant details
-        done(null, result);
-    });
+    try {
+        console.log(`Inside DeserializeUser - id: ${id}`);
+        let sqlRepositoy = new sqlRepository_1.SQLRepository(null);
+        sqlRepositoy.GetTenant(id).then(result => {
+            console.log('inside deserialize - user.id: ' + id);
+            //do something with Tenant details
+            done(null, result);
+        });
+    }
+    catch (ex) {
+        console.log(ex);
+    }
 });
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_ClientID,

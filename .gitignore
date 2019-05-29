@@ -6,3 +6,4 @@ dist/Lib/SqlConfig - Copy.js.map
 dist/gator-api.zip
 dist/Test/
 dist/app.zip
+.env

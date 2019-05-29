@@ -42,11 +42,7 @@ app.get('/success', (req, res) => {
 });
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-    console.log('===================================================');
-    console.log(process.env);
     console.log('listenting for request on port 3000');
     console.log('===================================================');
-    console.log(process.env.SQL_Server);
-    console.log(`=> Server Name: ${process.env['SQL_Server']}`);
 });
 //# sourceMappingURL=app.js.map
