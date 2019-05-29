@@ -18,11 +18,6 @@ app.use(function(req: any, res: any, next: any) {
   next();
 });
 
-// app.use (cookieSession ({
-//   keys:keys.github.session.cookieKey,
-//   maxAge: 24*60*60*1000
-// }));
-
 app.use(
   cookieSession({
     key: 'git-user',

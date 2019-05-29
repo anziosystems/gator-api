@@ -15,10 +15,6 @@ app.use(function (req, res, next) {
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     next();
 });
-// app.use (cookieSession ({
-//   keys:keys.github.session.cookieKey,
-//   maxAge: 24*60*60*1000
-// }));
 app.use(cookieSession({
     key: 'git-user',
     secret: process.env.Session_Key,

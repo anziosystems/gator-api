@@ -5,22 +5,22 @@ const express = require('express');
 const app = express();
 
 passport.serializeUser((user: any, done) => {
-  console.log('inside serialize- userid: ' + user.id);
+  console.log('==> inside serialize- userid: ' + user.id);
   done(null, user.id);
   //Note if in done you will add full user, then deserializedUser does not get called.
 });
 
 passport.deserializeUser((id: any, done) => {
   try {
-    console.log (`Inside DeserializeUser - id: ${id}`);
+    console.log (`==> Inside DeserializeUser - id: ${id}`);
     let sqlRepositoy = new SQLRepository(null);
     sqlRepositoy.GetTenant(id).then(result => {
-      console.log('inside deserialize - user.id: ' + id);
+      console.log('==> inside deserialize - user.id: ' + id);
       //do something with Tenant details
       done(null, result);
     });
   } catch (ex) {
-    console.log(ex);
+    console.log(`==> ${ex}`);
   }
 });
 
@@ -33,9 +33,9 @@ passport.use(
     },
     (accessToken: any, refreshToken: any, profile: any, done: any) => {
       //Callback with the accessToken
-      console.log('accessToken: ' + accessToken);
-      console.log('refreshToken:' + refreshToken);
-      console.log('profile:' + profile.username);
+      console.log('==> accessToken: ' + accessToken);
+      console.log('==> refreshToken:' + refreshToken);
+      console.log('==> profile:' + profile.username);
 
       let tenant = new Tenant();
       tenant.AuthToken = accessToken;
@@ -67,9 +67,11 @@ passport.use(
 
       let sqlRepositoy = new SQLRepository(null);
       sqlRepositoy.saveTenant(tenant).then(result => {
+        console.log (`==> passport.use ${result} result.message: ${result.message}`)
         if (result.message) {
           return done(result, profile);
         }
+        console.log (`==> passport.use calling done with null`)
         return done(null, profile);
       });
     },

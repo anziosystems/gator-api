@@ -57,6 +57,7 @@ function getTenant(req, res) {
         }
     }
     catch (ex) {
+        console.log(`==> ${ex}`);
         return;
     }
 }
@@ -103,7 +104,7 @@ router.get('/GetHookStatus', validateToken, (req, res) => {
         //return res.json(result.recordset);
     })
         .catch(ex => {
-        console.log(ex);
+        console.log(`==> GetHookStatus ${ex}`);
         return res.json({ val: false });
     });
 });

@@ -426,6 +426,7 @@ class SQLRepository {
     saveTenant(tenant) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
+                console.log('inside saveTenant');
                 yield this.createPool();
                 const request = yield this.pool.request();
                 if (!tenant.Photo) {
@@ -443,10 +444,12 @@ class SQLRepository {
                 request.input('RefreshToken', sql.VarChar(4000), tenant.RefreshToken);
                 request.input('Photo', sql.VarChar(1000), tenant.Photo);
                 const recordSet = yield request.execute('SetTenant');
+                console.log('==> saveTenant done successfully');
                 return recordSet;
             }
             catch (ex) {
-                return ex;
+                console.log(`==> ${ex}`);
+                return null;
             }
         });
     }
@@ -482,13 +485,13 @@ class SQLRepository {
                 const request = yield this.pool.request();
                 let nodes = pr.data.viewer.organization.repository.pullRequests.nodes;
                 if (nodes == undefined) {
-                    console.log(`No PR found for org: ${org} Repo: ${repo}`);
+                    console.log(`==> No PR found for org: ${org} Repo: ${repo}`);
                 }
                 if (nodes.length === 0) {
-                    console.log(`No PR found for org: ${org} Repo: ${repo}`);
+                    console.log(`==> No PR found for org: ${org} Repo: ${repo}`);
                 }
                 if (nodes.length > 0) {
-                    console.log(`${nodes.length} PR found for org: ${org} Repo: ${repo}`);
+                    console.log(`==> ${nodes.length} PR found for org: ${org} Repo: ${repo}`);
                 }
                 //nodes.forEach(async (elm: any) => {
                 for (let i = 0; i < nodes.length; i++) {
@@ -535,11 +538,11 @@ class SQLRepository {
                     request.input('User_Url', sql.VarChar(2000), user_url);
                     try {
                         let x = yield request.execute('SavePR4Repo');
-                        console.log(`Saved PR for org:${org} repo: ${repo}`);
+                        console.log(`==> Saved PR for org:${org} repo: ${repo}`);
                     }
                     catch (ex) {
                         console.log(ex);
-                        console.log(`Error! While saving PR for org:${org} repo: ${repo}`);
+                        console.log(`==> Error! While saving PR for org:${org} repo: ${repo}`);
                     }
                 }
             }
@@ -570,7 +573,7 @@ class SQLRepository {
             pr.PullId = _.get(obj.body, 'pull_request.url');
         }
         catch (err) {
-            console.log(err);
+            console.log(`==> ${err}`);
         }
         return pr;
     }
