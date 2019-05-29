@@ -5,9 +5,13 @@ const express = require('express');
 const app = express();
 
 passport.serializeUser((user: any, done) => {
-  console.log('==> inside serialize- userid: ' + user.id);
+  try {
+  console.log('==> inside serialize - userid: ' + user.id);
   done(null, user.id);
   //Note if in done you will add full user, then deserializedUser does not get called.
+  } catch (ex) {
+    console.log(`==> serializeUser: ${ex}`);
+  }
 });
 
 passport.deserializeUser((id: any, done) => {
@@ -20,7 +24,7 @@ passport.deserializeUser((id: any, done) => {
       done(null, result);
     });
   } catch (ex) {
-    console.log(`==> ${ex}`);
+    console.log(`==> deserializeUser ${ex}`);
   }
 });
 
@@ -67,10 +71,10 @@ passport.use(
 
       let sqlRepositoy = new SQLRepository(null);
       sqlRepositoy.saveTenant(tenant).then(result => {
-        console.log (`==> passport.use ${result} result.message: ${result.message}`)
-        if (result) {
-          return done(result, profile);
-        }
+        // console.log (`==> passport.use ${result} result.message: ${result.message}`)
+        // if (result) {
+        //   return done(result, profile);
+        // }
         console.log (`==> passport.use calling done with null`)
         return done(null, profile);
       });
