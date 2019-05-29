@@ -442,7 +442,7 @@ class SQLRepository {
   }
   async saveTenant(tenant: Tenant) {
     try {
-      console.log('inside saveTenant');
+      console.log('==> inside saveTenant');
       await this.createPool();
       const request = await this.pool.request();
       if (!tenant.Photo) {

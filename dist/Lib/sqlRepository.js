@@ -426,7 +426,7 @@ class SQLRepository {
     saveTenant(tenant) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                console.log('inside saveTenant');
+                console.log('==> inside saveTenant');
                 yield this.createPool();
                 const request = yield this.pool.request();
                 if (!tenant.Photo) {

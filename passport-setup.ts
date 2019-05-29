@@ -68,7 +68,7 @@ passport.use(
       let sqlRepositoy = new SQLRepository(null);
       sqlRepositoy.saveTenant(tenant).then(result => {
         console.log (`==> passport.use ${result} result.message: ${result.message}`)
-        if (result.message) {
+        if (result) {
           return done(result, profile);
         }
         console.log (`==> passport.use calling done with null`)
