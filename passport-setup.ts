@@ -40,7 +40,7 @@ passport.use(
       console.log('==> accessToken: ' + accessToken);
       console.log('==> refreshToken:' + refreshToken);
       console.log('==> profile:' + profile.username);
-
+      console.log('==> profile.id:' + profile.id);
       let tenant = new Tenant();
       tenant.AuthToken = accessToken;
       if (!refreshToken) refreshToken = '';
@@ -75,7 +75,7 @@ passport.use(
         // if (result) {
         //   return done(result, profile);
         // }
-        console.log (`==> passport.use calling done with null`)
+        console.log (`==> passport.use calling done with null, id: ${profile.id}`)
         return done(null, profile);
       });
     },
