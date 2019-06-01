@@ -37,7 +37,7 @@ class GitRepository {
 
   //Gets the PR for a Organization and a repo
 
-  async GetPullRequestFromGit(tenantId: string, org: string, repo: string) {
+  async getPullRequestFromGit(tenantId: string, org: string, repo: string) {
     console.log(`Getting PR from git for org: ${org}  repo :${repo}`);
     let graphQL =
       `{\"query\":\"{viewer  {  name          organization(login: \\"` +
@@ -49,7 +49,7 @@ class GitRepository {
     try {
       request(await this.makeGitRequest(tenantId, graphQL), async (error: any, response: any, body: any) => {
         if (response.statusCode === 200) {
-          await this.sqlRepository.SavePR4Repo(org, repo, body);
+          await this.sqlRepository.savePR4Repo(org, repo, body);
         } else {
           console.log('GetPullRequestFromGit: ' + body);
         }
@@ -59,7 +59,7 @@ class GitRepository {
     }
   }
 
-  async FillPullRequest(tenantId: string, org: string, repo: string, bustTheCache: Boolean = false, getFromGit: Boolean = false, endCursor: string = '') {
+  async fillPullRequest(tenantId: string, org: string, repo: string, bustTheCache: Boolean = false, getFromGit: Boolean = false, endCursor: string = '') {
     let cacheKey = 'FillPullRequest' + tenantId + org + repo;
     if (bustTheCache) {
       this.sqlRepository.myCache.del(cacheKey);
@@ -72,24 +72,61 @@ class GitRepository {
         return result;
       }
       //Get from sql
-      result = await this.sqlRepository.GetPR4Repo(org, repo);
+      result = await this.sqlRepository.getPR4Repo(org, repo);
       if (result) {
         return result;
       } else {
         //Lets go to git
-        await this.GetPullRequestFromGit(tenantId, org, repo);
+        await this.getPullRequestFromGit(tenantId, org, repo);
         //git call has put the PR in SQL, now lets get it from (cache).
-        return await this.sqlRepository.GetPR4Repo(org, repo);
+        return await this.sqlRepository.getPR4Repo(org, repo);
       }
     } else {
       //Lets go to git
-      await this.GetPullRequestFromGit(tenantId, org, repo);
+      await this.getPullRequestFromGit(tenantId, org, repo);
       //git call has put the PR in SQL, now lets get it from (cache).
-      return await this.sqlRepository.GetPR4Repo(org, repo);
+      return await this.sqlRepository.getPR4Repo(org, repo);
     }
   }
 
-  async GetRepoFromGit(tenantId: string, org: string, endCursor: string = '') {
+  async getDevsFromGit(tenantId: string, org: string, endCursor: string = '') {
+    let graphQL = '';
+    if (endCursor) {
+      graphQL = `{\"query\":\"query {  organization(login: ` + org + `) {  name  membersWithRole(first: 100 , after: \\"` + endCursor + `\\") { nodes { name login  email avatarUrl  } pageInfo { endCursor  hasNextPage }}}}\",\"variables\":{}}`;
+    } else {
+      graphQL = `{\"query\":\"query {  organization(login: ` + org + `) {  name  membersWithRole(first: 100) { nodes { name login  email  avatarUrl  } pageInfo { endCursor  hasNextPage }}}}\",\"variables\":{}}`;
+    }
+    try {
+      request(
+        await this.makeGitRequest(tenantId, graphQL),
+
+        async (error: any, response: any, body: any) => {
+          if (response.statusCode === 200) {
+            let result = JSON.parse(body);
+            if (!result.data) {
+              console.log('No Devs found for org:' + org);
+            } else {
+              await this.sqlRepository.saveDevs(tenantId, org, result.data.organization.membersWithRole.nodes);
+              if (result.data.organization.membersWithRole.pageInfo) {
+                let pageInfo = result.data.organization.membersWithRole.pageInfo;
+                if (pageInfo.hasNextPage) {
+                  this.getDevsFromGit(tenantId, org, pageInfo.endCursor); //ooph! Recursive call
+                }
+              }
+            }
+          } else {
+            console.log('getDevsFromGit: org - ' + org + ' - ' + body);
+          }
+        },
+      );
+      //git call has put the org in SQL, now lets get it from (cache).
+      return await this.sqlRepository.getDevs(tenantId, org);
+    } catch (ex) {
+      console.log(ex);
+    }
+  }
+
+  async getRepoFromGit(tenantId: string, org: string, endCursor: string = '') {
     let graphQL = '';
     if (endCursor) {
       graphQL = `{\"query\":\"query {  organization(login: ` + org + `) { repositories(first: 50 , after: \\"` + endCursor + `\\") {      nodes {id  name  isDisabled isArchived description homepageUrl createdAt } pageInfo { endCursor hasNextPage  } }  }}\",\"variables\":{}}`;
@@ -106,10 +143,10 @@ class GitRepository {
             if (!result.data) {
               console.log('No organization found for org:' + org);
             } else {
-              await this.sqlRepository.SaveRepo(tenantId, org, result.data.organization.repositories.nodes);
+              await this.sqlRepository.saveRepo(tenantId, org, result.data.organization.repositories.nodes);
               let pageInfo = result.data.organization.repositories.pageInfo;
               if (pageInfo.hasNextPage) {
-                this.GetRepoFromGit(tenantId, org, pageInfo.endCursor); //ooph! Recursive call
+                this.getRepoFromGit(tenantId, org, pageInfo.endCursor); //ooph! Recursive call
               }
             }
           } else {
@@ -118,38 +155,39 @@ class GitRepository {
         },
       );
       //git call has put the org in SQL, now lets get it from (cache).
-      return await this.sqlRepository.GetRepo(tenantId, org, false);
+      return await this.sqlRepository.getRepo(tenantId, org, false);
     } catch (ex) {
       console.log(ex);
     }
   }
-  async GetRepos(tenantId: string, org: string, bustTheCache: Boolean = false, getFromGit: Boolean = false) {
+
+  async getRepos(tenantId: string, org: string, bustTheCache: Boolean = false, getFromGit: Boolean = false) {
     let cacheKey = 'GetRepos' + tenantId + org;
     if (bustTheCache) {
       this.sqlRepository.myCache.del(cacheKey);
     }
 
     if (getFromGit) {
-      return await this.GetRepoFromGit(tenantId, org);
+      return await this.getRepoFromGit(tenantId, org);
     } else {
       //Get from local store
       let result = this.sqlRepository.myCache.get(cacheKey);
       if (result) {
         return result;
       }
-      result = await this.sqlRepository.GetRepo(tenantId, org);
+      result = await this.sqlRepository.getRepo(tenantId, org);
       if (result[0]) {
         this.sqlRepository.myCache.set(cacheKey, result);
         return result;
       } else {
-        return await this.GetRepoFromGit(tenantId, org);
+        return await this.getRepoFromGit(tenantId, org);
       }
     }
   }
 
   async makeGitRequest(tenantId: string, graphQL: string, gUri: string = 'https://api.github.com/graphql', method: string = 'POST') {
     try {
-      const token = 'Bearer ' + (await this.sqlRepository.GetToken(Number(tenantId)));
+      const token = 'Bearer ' + (await this.sqlRepository.getToken(Number(tenantId)));
       let header = {
         method: method,
         uri: gUri,
@@ -169,7 +207,7 @@ class GitRepository {
     }
   }
 
-  async SetupWebHook(tenantId: string, org: string) {
+  async setupWebHook(tenantId: string, org: string) {
     //Lets go to git
     const graphQL = `{
       "name": "web",
@@ -204,7 +242,7 @@ class GitRepository {
     }
   }
 
-  async GetOrg(tenantId: string, bustTheCache: Boolean = false, getFromGit: Boolean = false) {
+  async getOrg(tenantId: string, bustTheCache: Boolean = false, getFromGit: Boolean = false) {
     //Lets check in our local sql tables first
     let cacheKey = 'GetOrg' + tenantId;
 
@@ -214,7 +252,7 @@ class GitRepository {
 
     if (!getFromGit) {
       //Get from local store
-      const result = await this.sqlRepository.GetOrg(tenantId);
+      const result = await this.sqlRepository.getOrg(tenantId);
       return result;
     }
     //Lets go to git
@@ -222,14 +260,14 @@ class GitRepository {
     try {
       request(await this.makeGitRequest(tenantId, graphQL), async (error: any, response: any, body: any) => {
         if (response.statusCode === 200) {
-          await this.sqlRepository.SaveOrg(tenantId, JSON.parse(response.body).data.viewer.organizations.nodes);
+          await this.sqlRepository.saveOrg(tenantId, JSON.parse(response.body).data.viewer.organizations.nodes);
         } else {
           console.log('error: ' + response.statusCode);
           console.log(body);
         }
       });
       //git call has put the org in SQL, now lets get it from (cache).
-      return await this.sqlRepository.GetOrg(tenantId, false);
+      return await this.sqlRepository.getOrg(tenantId, false);
     } catch (ex) {
       console.log(ex);
     }

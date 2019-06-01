@@ -8,7 +8,7 @@ import * as jsonBadData from './data/Sample.data.json';
 import {SQLRepository, Tenant} from '../Lib/sqlRepository';
 import {GitRepository} from '../Lib/GitRepository';
 
-describe('Testing SQLRepository POST - Save Tenant', () => {
+describe('SaveTenant', () => {
   it('should return rowsAffected', async () => {
     let sqlRepositoy = new SQLRepository(null);
     let tenant = new Tenant();
@@ -22,7 +22,7 @@ describe('Testing SQLRepository POST - Save Tenant', () => {
     tenant.Email = 'rsarosh@hotmail.com';
 
     await sqlRepositoy.saveTenant(tenant).then(result => {
-      expect(result.rowsAffected[0]).to.eq(1);
+      expect(result).to.greaterThan(0);
     });
   });
 });
@@ -30,9 +30,8 @@ describe('Testing SQLRepository POST - Save Tenant', () => {
 describe('FillPullRequest', () => {
   it('should return rowsAffected', async () => {
     let gitRepository = new GitRepository();
-    await gitRepository.FillPullRequest('1040817', 'LabShare', 'forms', true, true, '').then(result => {
-      expect(result.recordset.length).to.greaterThan(0);
-      console.log(result.recordset[0]);
+    await gitRepository.fillPullRequest('1040817', 'LabShare', 'forms', true, true, '').then(result => {
+      expect(result.length).to.greaterThan(0);
     });
   });
 });

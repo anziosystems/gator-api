@@ -13,7 +13,7 @@ const verifyOptions = {
 
 async function isTokenValid(tenantId: number): Promise<boolean> {
   try {
-    return await sqlRepositoy.CheckToken(tenantId).then(r => {
+    return await sqlRepositoy.checkToken(tenantId).then(r => {
       if (r) {
         return true;
       } else {
@@ -51,7 +51,7 @@ function getTenant(req: any, res: any) {
 }
 
 router.get('/GetOrg', validateToken, (req: any, res: any) => {
-  gitRepository.GetOrg(getTenant(req, res), req.query.bustTheCache, req.query.getFromGit).then(result => {
+  gitRepository.getOrg(getTenant(req, res), req.query.bustTheCache, req.query.getFromGit).then(result => {
     return res.json(result);
   });
 });
@@ -100,7 +100,7 @@ router.get('/GetHookStatus', validateToken, (req: any, res: any) => {
 });
 
 router.get('/GetRepositoryPR', validateToken, (req: any, res: any) => {
-  sqlRepositoy.GetRepositoryPR(req.query.org, req.query.repo, req.query.day, req.query.pageSize).then(result => {
+  sqlRepositoy.getRepoPR(req.query.org, req.query.repo, req.query.day, req.query.pageSize).then(result => {
     return res.json(result);
   });
 });
@@ -109,7 +109,7 @@ router.get('/TopDevForLastXDays', validateToken, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
-  sqlRepositoy.TopDevForLastXDays(req.query.org, req.query.day).then(result => {
+  sqlRepositoy.getTopDev4LastXDays(req.query.org, req.query.day).then(result => {
     return res.json(result);
   });
 });
@@ -135,7 +135,7 @@ router.get('/PullRequestCountForLastXDays', validateToken, (req: any, res: any) 
   if (!req.query.day) {
     req.query.day = '1';
   }
-  sqlRepositoy.PullRequestCountForLastXDays(req.query.org, req.query.day).then(result => {
+  sqlRepositoy.getPRCount4LastXDays(req.query.org, req.query.day).then(result => {
     return res.json(result);
   });
 });
@@ -144,7 +144,7 @@ router.get('/PullRequestForLastXDays', validateToken, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
-  sqlRepositoy.PullRequestForLastXDays(getTenant(req, res), req.query.day).then(result => {
+  sqlRepositoy.getPR4LastXDays(getTenant(req, res), req.query.day).then(result => {
     return res.json(result);
   });
 });
@@ -153,7 +153,7 @@ router.get('/GetTopRespositories4XDays', validateToken, (req: any, res: any) => 
   if (!req.query.day) {
     req.query.day = '1';
   }
-  sqlRepositoy.GetTopRespositories4XDays(req.query.org, req.query.day).then(result => {
+  sqlRepositoy.getTopRepo4XDays(req.query.org, req.query.day).then(result => {
     return res.json(result);
   });
 });
@@ -162,14 +162,14 @@ router.get('/PullRequest4Dev', validateToken, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
-  sqlRepositoy.PullRequest4Dev(req.query.org, req.query.day, req.query.login, req.query.action, req.query.pageSize).then(result => {
+  sqlRepositoy.getPR4Dev(req.query.org, req.query.day, req.query.login, req.query.action, req.query.pageSize).then(result => {
     return res.json(result);
   });
 });
 
 //    /GetOrg?tenantId='rsarosh@hotmail.com'&Org='LabShare'&bustTheCache=false&getFromGit = true
 router.get('/GetRepos', validateToken, (req: any, res: any) => {
-  gitRepository.GetRepos(getTenant(req, res), req.query.org, req.query.bustTheCache, req.query.getFromGit).then(result => {
+  gitRepository.getRepos(getTenant(req, res), req.query.org, req.query.bustTheCache, req.query.getFromGit).then(result => {
     if (result) {
       return res.json(result);
     }
@@ -178,36 +178,30 @@ router.get('/GetRepos', validateToken, (req: any, res: any) => {
 
 router.get('/GetPRfromGit', validateToken, (req: any, res: any) => {
   const tenantId = getTenant(req, res);
-  gitRepository.GetRepos(tenantId, req.query.org, false, false).then(result => {
+  gitRepository.getRepos(tenantId, req.query.org, false, false).then(result => {
     for (let i = 0; i < result.length; i++) {
-      const res = gitRepository.FillPullRequest(tenantId, req.query.org, result[i].RepoName);
+      const res = gitRepository.fillPullRequest(tenantId, req.query.org, result[i].RepoName);
     }
     return res.json(result.length);
   });
 });
 
-//  /SetRepoCollection?tenantId=rsarosh@hotmail.com&org=Labshare&repoCollectionName=Collection1&repos=Repo1,Repo2,Repo3
-router.get('/SetRepoCollection', validateToken, (req: any, res: any) => {
-  sqlRepositoy.SetRepoCollection(getTenant(req, res), req.query.org, req.query.repoCollectionName, req.query.repos).then(result => {
-    return res.json(result);
-  });
-});
 
 router.get('/GetAllRepoCollection4TenantOrg', validateToken, (req: any, res: any) => {
-  sqlRepositoy.GetAllRepoCollection4TenantOrg(getTenant(req, res), req.query.org, req.query.bustTheCache).then(result => {
+  sqlRepositoy.getAllRepoCollection4TenantOrg(getTenant(req, res), req.query.org, req.query.bustTheCache).then(result => {
     return res.json(result);
   });
 });
 
 //collectionName
 router.get('/GetRepoCollectionByName', validateToken, (req: any, res: any) => {
-  sqlRepositoy.GetAllRepoCollection4TenantOrg(req.query.collectionName, req.query.bustTheCache).then(result => {
+  sqlRepositoy.getAllRepoCollection4TenantOrg(req.query.collectionName, req.query.bustTheCache).then(result => {
     return res.json(result.recordset);
   });
 });
 
 router.get('/SetupWebHook', validateToken, (req: any, res: any) => {
-  gitRepository.SetupWebHook(getTenant(req, res), req.query.org).then(result => {
+  gitRepository.setupWebHook(getTenant(req, res), req.query.org).then((result:any)  => {
     return res.json(result);
   });
 });

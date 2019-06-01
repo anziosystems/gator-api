@@ -41,7 +41,7 @@ class GitRepository {
         });
     }
     //Gets the PR for a Organization and a repo
-    GetPullRequestFromGit(tenantId, org, repo) {
+    getPullRequestFromGit(tenantId, org, repo) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log(`Getting PR from git for org: ${org}  repo :${repo}`);
             let graphQL = `{\"query\":\"{viewer  {  name          organization(login: \\"` +
@@ -52,7 +52,7 @@ class GitRepository {
             try {
                 request(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                     if (response.statusCode === 200) {
-                        yield this.sqlRepository.SavePR4Repo(org, repo, body);
+                        yield this.sqlRepository.savePR4Repo(org, repo, body);
                     }
                     else {
                         console.log('GetPullRequestFromGit: ' + body);
@@ -64,7 +64,7 @@ class GitRepository {
             }
         });
     }
-    FillPullRequest(tenantId, org, repo, bustTheCache = false, getFromGit = false, endCursor = '') {
+    fillPullRequest(tenantId, org, repo, bustTheCache = false, getFromGit = false, endCursor = '') {
         return __awaiter(this, void 0, void 0, function* () {
             let cacheKey = 'FillPullRequest' + tenantId + org + repo;
             if (bustTheCache) {
@@ -77,26 +77,64 @@ class GitRepository {
                     return result;
                 }
                 //Get from sql
-                result = yield this.sqlRepository.GetPR4Repo(org, repo);
+                result = yield this.sqlRepository.getPR4Repo(org, repo);
                 if (result) {
                     return result;
                 }
                 else {
                     //Lets go to git
-                    yield this.GetPullRequestFromGit(tenantId, org, repo);
+                    yield this.getPullRequestFromGit(tenantId, org, repo);
                     //git call has put the PR in SQL, now lets get it from (cache).
-                    return yield this.sqlRepository.GetPR4Repo(org, repo);
+                    return yield this.sqlRepository.getPR4Repo(org, repo);
                 }
             }
             else {
                 //Lets go to git
-                yield this.GetPullRequestFromGit(tenantId, org, repo);
+                yield this.getPullRequestFromGit(tenantId, org, repo);
                 //git call has put the PR in SQL, now lets get it from (cache).
-                return yield this.sqlRepository.GetPR4Repo(org, repo);
+                return yield this.sqlRepository.getPR4Repo(org, repo);
             }
         });
     }
-    GetRepoFromGit(tenantId, org, endCursor = '') {
+    getDevsFromGit(tenantId, org, endCursor = '') {
+        return __awaiter(this, void 0, void 0, function* () {
+            let graphQL = '';
+            if (endCursor) {
+                graphQL = `{\"query\":\"query {  organization(login: ` + org + `) {  name  membersWithRole(first: 100 , after: \\"` + endCursor + `\\") { nodes { name login  email avatarUrl  } pageInfo { endCursor  hasNextPage }}}}\",\"variables\":{}}`;
+            }
+            else {
+                graphQL = `{\"query\":\"query {  organization(login: ` + org + `) {  name  membersWithRole(first: 100) { nodes { name login  email  avatarUrl  } pageInfo { endCursor  hasNextPage }}}}\",\"variables\":{}}`;
+            }
+            try {
+                request(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
+                    if (response.statusCode === 200) {
+                        let result = JSON.parse(body);
+                        if (!result.data) {
+                            console.log('No Devs found for org:' + org);
+                        }
+                        else {
+                            yield this.sqlRepository.saveDevs(tenantId, org, result.data.organization.membersWithRole.nodes);
+                            if (result.data.organization.membersWithRole.pageInfo) {
+                                let pageInfo = result.data.organization.membersWithRole.pageInfo;
+                                if (pageInfo.hasNextPage) {
+                                    this.getDevsFromGit(tenantId, org, pageInfo.endCursor); //ooph! Recursive call
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        console.log('getDevsFromGit: org - ' + org + ' - ' + body);
+                    }
+                }));
+                //git call has put the org in SQL, now lets get it from (cache).
+                return yield this.sqlRepository.getDevs(tenantId, org);
+            }
+            catch (ex) {
+                console.log(ex);
+            }
+        });
+    }
+    getRepoFromGit(tenantId, org, endCursor = '') {
         return __awaiter(this, void 0, void 0, function* () {
             let graphQL = '';
             if (endCursor) {
@@ -113,10 +151,10 @@ class GitRepository {
                             console.log('No organization found for org:' + org);
                         }
                         else {
-                            yield this.sqlRepository.SaveRepo(tenantId, org, result.data.organization.repositories.nodes);
+                            yield this.sqlRepository.saveRepo(tenantId, org, result.data.organization.repositories.nodes);
                             let pageInfo = result.data.organization.repositories.pageInfo;
                             if (pageInfo.hasNextPage) {
-                                this.GetRepoFromGit(tenantId, org, pageInfo.endCursor); //ooph! Recursive call
+                                this.getRepoFromGit(tenantId, org, pageInfo.endCursor); //ooph! Recursive call
                             }
                         }
                     }
@@ -125,21 +163,21 @@ class GitRepository {
                     }
                 }));
                 //git call has put the org in SQL, now lets get it from (cache).
-                return yield this.sqlRepository.GetRepo(tenantId, org, false);
+                return yield this.sqlRepository.getRepo(tenantId, org, false);
             }
             catch (ex) {
                 console.log(ex);
             }
         });
     }
-    GetRepos(tenantId, org, bustTheCache = false, getFromGit = false) {
+    getRepos(tenantId, org, bustTheCache = false, getFromGit = false) {
         return __awaiter(this, void 0, void 0, function* () {
             let cacheKey = 'GetRepos' + tenantId + org;
             if (bustTheCache) {
                 this.sqlRepository.myCache.del(cacheKey);
             }
             if (getFromGit) {
-                return yield this.GetRepoFromGit(tenantId, org);
+                return yield this.getRepoFromGit(tenantId, org);
             }
             else {
                 //Get from local store
@@ -147,13 +185,13 @@ class GitRepository {
                 if (result) {
                     return result;
                 }
-                result = yield this.sqlRepository.GetRepo(tenantId, org);
+                result = yield this.sqlRepository.getRepo(tenantId, org);
                 if (result[0]) {
                     this.sqlRepository.myCache.set(cacheKey, result);
                     return result;
                 }
                 else {
-                    return yield this.GetRepoFromGit(tenantId, org);
+                    return yield this.getRepoFromGit(tenantId, org);
                 }
             }
         });
@@ -161,7 +199,7 @@ class GitRepository {
     makeGitRequest(tenantId, graphQL, gUri = 'https://api.github.com/graphql', method = 'POST') {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const token = 'Bearer ' + (yield this.sqlRepository.GetToken(Number(tenantId)));
+                const token = 'Bearer ' + (yield this.sqlRepository.getToken(Number(tenantId)));
                 let header = {
                     method: method,
                     uri: gUri,
@@ -181,7 +219,7 @@ class GitRepository {
             }
         });
     }
-    SetupWebHook(tenantId, org) {
+    setupWebHook(tenantId, org) {
         return __awaiter(this, void 0, void 0, function* () {
             //Lets go to git
             const graphQL = `{
@@ -219,7 +257,7 @@ class GitRepository {
             }
         });
     }
-    GetOrg(tenantId, bustTheCache = false, getFromGit = false) {
+    getOrg(tenantId, bustTheCache = false, getFromGit = false) {
         return __awaiter(this, void 0, void 0, function* () {
             //Lets check in our local sql tables first
             let cacheKey = 'GetOrg' + tenantId;
@@ -228,7 +266,7 @@ class GitRepository {
             }
             if (!getFromGit) {
                 //Get from local store
-                const result = yield this.sqlRepository.GetOrg(tenantId);
+                const result = yield this.sqlRepository.getOrg(tenantId);
                 return result;
             }
             //Lets go to git
@@ -236,7 +274,7 @@ class GitRepository {
             try {
                 request(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                     if (response.statusCode === 200) {
-                        yield this.sqlRepository.SaveOrg(tenantId, JSON.parse(response.body).data.viewer.organizations.nodes);
+                        yield this.sqlRepository.saveOrg(tenantId, JSON.parse(response.body).data.viewer.organizations.nodes);
                     }
                     else {
                         console.log('error: ' + response.statusCode);
@@ -244,7 +282,7 @@ class GitRepository {
                     }
                 }));
                 //git call has put the org in SQL, now lets get it from (cache).
-                return yield this.sqlRepository.GetOrg(tenantId, false);
+                return yield this.sqlRepository.getOrg(tenantId, false);
             }
             catch (ex) {
                 console.log(ex);

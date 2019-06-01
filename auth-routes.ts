@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 dotenv.config();
 //var callbackURL = 'http://localhost:8080/callback';
-let callbackURL = 'https://gator-ui.azurewebsites.net/callback';
+let callbackURL = process.env.CALL_BACK_URL; //'https://gator-ui.azurewebsites.net/callback';
 
 //This method is not called any more, it is here for the test
 router.get('/login', (req: any, res: any) => {});

@@ -12,21 +12,39 @@ let sql = require('mssql');
 const _ = require("lodash");
 const util_1 = require("util");
 const NodeCache = require('node-cache');
+const dotenv = require('dotenv');
+dotenv.config();
 class PullRequest {
 }
 class Tenant {
 }
 exports.Tenant = Tenant;
+/*
+  TenantId is GitId for the logged in user
+*/
 class SQLRepository {
     constructor(obj) {
         this.sqlConfigSetting = {};
+        this.CACHE_DURATION_SEC = 600;
+        this.TENANT_LEN = 50;
+        this.ORG_LEN = 200;
+        this.REPO_LEN = 200;
+        this.REPO_ID_LEN = 100;
+        this.URL_LEN = 2000;
+        this.STATE_LEN = 50;
+        this.ACTION_LEN = 50;
+        this.TITLE_LEN = 2000;
+        this.BODY_LEN = 2000;
+        this.LOGIN_LEN = 100;
+        this.AVATAR_URL_LEN = 2000;
+        this.USER_URL_LEN = 2000;
         //for get calls there may not be any obj
         if (obj) {
             this.pr = this.shredObject(obj);
             this.raw = obj.body;
         }
         if (!this.myCache) {
-            this.myCache = new NodeCache({ stdTTL: 300, checkperiod: 120 });
+            this.myCache = new NodeCache({ stdTTL: this.CACHE_DURATION_SEC, checkperiod: 120 });
         }
         this.createPool();
     }
@@ -41,12 +59,13 @@ class SQLRepository {
                 this.sqlConfigSetting.encrypt = true;
                 yield new sql.ConnectionPool(this.sqlConfigSetting).connect().then((pool) => {
                     this.pool = pool;
+                    //console.log(`==> createPool is successfull`);
                 });
             }
         });
     }
     //return 0 if not a valid tenant or the token more than 7 days old
-    CheckToken(tenantId) {
+    checkToken(tenantId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 let cacheKey = 'CheckToken' + tenantId;
@@ -62,86 +81,56 @@ class SQLRepository {
                 return recordSet.recordset[0].Result === 1;
             }
             catch (ex) {
-                console.log(ex);
+                console.log(`==> CheckToken {ex}`);
                 return false;
             }
         });
     }
-    GetRepositoryPR(org, repo, day, pageSize) {
+    getRepoPR(org, repo, day, pageSize) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let cacheKey = 'GetRepositoryPR' + org + repo + day;
+                let cacheKey = 'GetRepoPR' + org + repo + day;
                 let val = this.myCache.get(cacheKey);
                 if (val) {
                     return val;
                 }
                 yield this.createPool();
                 const request = yield this.pool.request();
-                request.input('repo', sql.VarChar(100), repo);
-                request.input('org', sql.VarChar(100), org);
+                request.input('repo', sql.VarChar(this.REPO_LEN), repo);
+                request.input('org', sql.VarChar(this.ORG_LEN), org);
                 request.input('day', sql.Int, day);
                 request.input('PageSize', sql.Int, pageSize);
-                const recordSet = yield request.execute('GetRepositoryPR');
+                const recordSet = yield request.execute('GetRepoPR');
                 this.myCache.set(cacheKey, recordSet.recordset);
                 return recordSet.recordset;
             }
             catch (ex) {
-                console.log(ex);
+                console.log(`==> getRepoPR {ex}`);
                 return false;
             }
         });
     }
-    GetAllRepoCollection4TenantOrg(tenantId, org, bustTheCache = false) {
+    getAllRepoCollection4TenantOrg(tenantId, org, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();
             const request = yield this.pool.request();
-            request.input('TenantId', sql.VarChar(200), tenantId);
-            request.input('Org', sql.VarChar(200), org);
+            request.input('TenantId', sql.Int, Number(tenantId));
+            request.input('Org', sql.VarChar(this.ORG_LEN), org);
             const recordSet = yield request.execute('[GetAllRepoCollection4TenantOrg]');
-            return recordSet;
-        });
-    }
-    GetRepoCollectionByName(repoCollectionName, bustTheCache = false) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.createPool();
-            const request = yield this.pool.request();
-            request.input('CollectionName', sql.VarChar(200), repoCollectionName);
-            const recordSet = yield request.execute('GetRepoCollectionByName');
             return recordSet.recordset;
         });
     }
-    SaveRepo(email, org, repos) {
+    getDevs(tenantId, org) {
         return __awaiter(this, void 0, void 0, function* () {
-            try {
-                if (repos == undefined)
-                    return;
-                if (repos.length === 0) {
-                    console.log('No repo to be saved!');
-                    return;
-                }
-                yield this.createPool();
-                const request = yield this.pool.request();
-                let repoDetails;
-                for (let i = 0; i < repos.length; i++) {
-                    let repo = repos[i];
-                    let createdAt = String(repo.createdAt).substr(0, 10);
-                    console.log(`SaveRepo = org: ${org} repo: ${repo.name}`);
-                    request.input('TenantId', sql.VarChar(200), email);
-                    request.input('Organization', sql.VarChar(200), org);
-                    request.input('Id', sql.VarChar(200), repo.id);
-                    request.input('name', sql.VarChar(200), repo.name);
-                    request.input('desc', sql.VarChar(200), repo.description);
-                    request.input('HomePage', sql.VarChar(200), repo.homepageUrl);
-                    request.input('CreatedAt', sql.VarChar(10), createdAt);
-                    const recordSet = yield request.execute('SetRepos');
-                }
-            }
-            catch (ex) {
-                return ex;
-            }
+            yield this.createPool();
+            const request = yield this.pool.request();
+            request.input('org', sql.VarChar(this.ORG_LEN), org);
+            request.input('TenantId', sql.Int, Number(tenantId));
+            const recordSet = yield request.execute('GetDevs');
+            return recordSet.recordset;
         });
     }
-    GetRepo(tenantId, org, bustTheCache = false) {
+    getRepo(tenantId, org, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
             let cacheKey = 'GetRepo' + tenantId + org;
             if (bustTheCache) {
@@ -153,8 +142,8 @@ class SQLRepository {
             }
             yield this.createPool();
             const request = yield this.pool.request();
-            request.input('TenantId', sql.VarChar(200), tenantId);
-            request.input('Organization', sql.VarChar(200), org);
+            request.input('TenantId', sql.Int, Number(tenantId));
+            request.input('Org', sql.VarChar(this.ORG_LEN), org);
             const recordSet = yield request.execute('GetRepos');
             if (recordSet) {
                 this.myCache.set(cacheKey, recordSet.recordset);
@@ -162,26 +151,9 @@ class SQLRepository {
             return recordSet.recordset;
         });
     }
-    SaveOrg(email, orgs) {
+    getOrg(tenantId, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            try {
-                yield this.createPool();
-                const request = yield this.pool.request();
-                for (let i = 0; i < orgs.length; i++) {
-                    let org = orgs[i];
-                    request.input('TenantId', sql.VarChar(200), email);
-                    request.input('Org', sql.VarChar(1000), org.name);
-                    const recordSet = yield request.execute('SetOrg');
-                }
-            }
-            catch (ex) {
-                return ex;
-            }
-        });
-    }
-    GetOrg(email, bustTheCache = false) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let cacheKey = 'GetOrg' + email;
+            let cacheKey = 'GetOrg' + tenantId;
             if (bustTheCache) {
                 this.myCache.del(cacheKey);
             }
@@ -191,7 +163,7 @@ class SQLRepository {
             }
             yield this.createPool();
             const request = yield this.pool.request();
-            request.input('TenantId', sql.VarChar(200), email);
+            request.input('TenantId', sql.Int, Number(tenantId));
             const recordSet = yield request.execute('GetOrg');
             if (recordSet.recordset) {
                 this.myCache.set(cacheKey, recordSet.recordset);
@@ -200,7 +172,7 @@ class SQLRepository {
         });
     }
     //Token will return UserName, DisplayName, ProfileURL, AuthToken, LastUpdated and Photo (URL)
-    GetTenant(id) {
+    getTenant(id) {
         return __awaiter(this, void 0, void 0, function* () {
             let cacheKey = 'GetTenant-' + id;
             let val = this.myCache.get(cacheKey);
@@ -213,14 +185,15 @@ class SQLRepository {
             const recordSet = yield request.execute('GetTenant');
             if (recordSet.recordset.length > 0) {
                 this.myCache.set(cacheKey, recordSet.recordset);
+                console.log(`==> getTenant is successfull for id:${id} `);
                 return recordSet.recordset;
             }
             else
                 return;
         });
     }
-    //GetPR
-    GetPR4Repo(org, repo, bustTheCache = false) {
+    //GetPR4Repo
+    getPR4Repo(org, repo, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();
             let cacheKey = 'GetPR4Repo -' + org + repo;
@@ -229,8 +202,8 @@ class SQLRepository {
                 return val;
             }
             const request = yield this.pool.request();
-            request.input('org', sql.VarChar(1000), org);
-            request.input('repo', sql.VarChar(1000), repo);
+            request.input('org', sql.VarChar(this.ORG_LEN), org);
+            request.input('repo', sql.VarChar(this.REPO_LEN), repo);
             const recordSet = yield request.execute('GetPR4Repo');
             if (recordSet.recordset.length > 0) {
                 this.myCache.set(cacheKey, recordSet.recordset);
@@ -241,68 +214,68 @@ class SQLRepository {
             }
         });
     }
-    GetToken(id) {
+    getToken(id) {
         return __awaiter(this, void 0, void 0, function* () {
-            let cacheKey = 'GetTenant -' + id;
+            let cacheKey = 'GetTenant -' + id; //cacheKey is GetTenant because i am reading there cache value. This is different from norm
             let val = this.myCache.get(cacheKey);
             if (val) {
                 return val.recordset[0].Auth_Token;
             }
-            const recordSet = yield this.GetTenant(id);
+            const recordSet = yield this.getTenant(id);
             if (recordSet)
                 return recordSet[0].Auth_Token;
             else
                 return;
         });
     }
-    TopDevForLastXDays(org, day = 1) {
+    getTopDev4LastXDays(org, day = 1) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();
             const request = yield this.pool.request();
             if (!org) {
                 throw new Error('tenant cannot be null');
             }
-            request.input('Org', sql.VarChar(100), org);
+            request.input('Org', sql.VarChar(this.ORG_LEN), org);
             request.input('Day', sql.Int, day);
             const recordSet = yield request.execute('TopDevForLastXDays');
             return recordSet.recordset;
         });
     }
-    GetPullRequestForId(tenant, id = 1) {
+    getPR4Id(org, id = 1) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();
             const request = yield this.pool.request();
-            if (!tenant) {
+            if (!org) {
                 throw new Error('tenant cannot be null');
             }
-            request.input('Org', sql.VarChar(100), tenant);
+            request.input('Org', sql.VarChar(this.ORG_LEN), org);
             request.input('Id', sql.Int, id);
-            const recordSet = yield request.execute('GetPullRequestforId');
+            const recordSet = yield request.execute('GetPR4Id');
             return recordSet.recordset;
         });
     }
-    PullRequestCountForLastXDays(org, day = 1) {
+    getPRCount4LastXDays(org, day = 1) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();
-            let cacheKey = 'PullRequestCountForLastXDays' + org + day.toString();
+            let cacheKey = 'PRCount4LastXDays' + org + day.toString();
             let val = this.myCache.get(cacheKey);
             if (val) {
                 return val;
             }
             const request = yield this.pool.request();
             if (!org) {
-                throw new Error('tenant cannot be null');
+                throw new Error('org cannot be null');
             }
-            request.input('Org', sql.VarChar(100), org);
+            request.input('Org', sql.VarChar(this.ORG_LEN), org);
             request.input('Day', sql.Int, day);
-            const recordSet = yield request.execute('PullRequestCountForLastXDays');
+            const recordSet = yield request.execute('PRCount4LastXDays');
             if (recordSet.recordset.length > 0) {
                 this.myCache.set(cacheKey, recordSet.recordset);
             }
             return recordSet.recordset;
         });
     }
-    PullRequest4Dev(org, day = 1, login, action, pageSize) {
+    getPR4Dev(org, day = 1, login, action, pageSize) {
         return __awaiter(this, void 0, void 0, function* () {
             let cacheKey = 'PullRequest4Dev' + org + day.toString() + login;
             let val = this.myCache.get(cacheKey);
@@ -312,68 +285,71 @@ class SQLRepository {
             yield this.createPool();
             const request = yield this.pool.request();
             if (!org) {
-                throw new Error('tenant cannot be null');
+                throw new Error('org cannot be null');
             }
             if (pageSize === 0)
                 pageSize = 10;
-            request.input('Org', sql.VarChar(100), org);
+            request.input('Org', sql.VarChar(this.ORG_LEN), org);
             if (util_1.isNullOrUndefined(login) || login === '') {
-                request.input('Login', sql.VarChar(200), 'null');
+                request.input('Login', sql.VarChar(this.LOGIN_LEN), 'null');
             }
             else {
-                request.input('Login', sql.VarChar(200), login);
+                request.input('Login', sql.VarChar(this.LOGIN_LEN), login);
             }
             if (util_1.isNullOrUndefined(action) || action === '') {
-                request.input('Action', sql.VarChar(50), 'null');
+                request.input('Action', sql.VarChar(this.ACTION_LEN), 'null');
             }
             else {
-                request.input('Action', sql.VarChar(50), action);
+                request.input('Action', sql.VarChar(this.ACTION_LEN), action);
             }
             request.input('Day', sql.Int, day);
             request.input('pageSize', sql.Int, pageSize);
-            const recordSet = yield request.execute('PullRequest4Devs');
+            const recordSet = yield request.execute('PR4Devs');
             if (recordSet.recordset.length > 0) {
                 this.myCache.set(cacheKey, recordSet.recordset);
             }
             return recordSet.recordset;
         });
     }
-    LongestPullRequest(tenant, day = 1) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.createPool();
-            const request = yield this.pool.request();
-            if (!tenant) {
-                throw new Error('tenant cannot be null');
-            }
-            request.input('Org', sql.VarChar(100), tenant);
-            request.input('Day', sql.Int, day);
-            const recordSet = yield request.execute('LongestPullRequest');
-            return recordSet;
-        });
-    }
-    GetTopRespositories4XDays(org, day = 1) {
+    /*
+    PullRequest took longest time between open and close
+    */
+    getLongestPR(org, day = 1) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();
             const request = yield this.pool.request();
             if (!org) {
-                throw new Error('tenant cannot be null');
+                throw new Error('org cannot be null');
             }
-            request.input('Org', sql.VarChar(100), org);
+            request.input('Org', sql.VarChar(this.ORG_LEN), org);
             request.input('Day', sql.Int, day);
-            const recordSet = yield request.execute('GetTopRespositories4XDays');
+            const recordSet = yield request.execute('LongestPR');
             return recordSet.recordset;
         });
     }
-    PullRequestForLastXDays(tenant, day = 1) {
+    getTopRepo4XDays(org, day = 1) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();
             const request = yield this.pool.request();
-            if (!tenant) {
-                throw new Error('tenant cannot be null');
+            if (!org) {
+                throw new Error('org cannot be null');
             }
-            request.input('Org', sql.VarChar(100), tenant);
+            request.input('Org', sql.VarChar(this.ORG_LEN), org);
             request.input('Day', sql.Int, day);
-            const recordSet = yield request.execute('PullRequestForLastXDays');
+            const recordSet = yield request.execute('GetTopRepos4XDays');
+            return recordSet.recordset;
+        });
+    }
+    getPR4LastXDays(org, day = 1) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.createPool();
+            const request = yield this.pool.request();
+            if (!org) {
+                throw new Error('org cannot be null');
+            }
+            request.input('Org', sql.VarChar(this.ORG_LEN), org);
+            request.input('Day', sql.Int, day);
+            const recordSet = yield request.execute('PR4LastXDays');
             return recordSet.recordset;
         });
     }
@@ -426,7 +402,7 @@ class SQLRepository {
     saveTenant(tenant) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                console.log('==> inside saveTenant');
+                // console.log('==> inside saveTenant');
                 yield this.createPool();
                 const request = yield this.pool.request();
                 if (!tenant.Photo) {
@@ -443,9 +419,9 @@ class SQLRepository {
                 request.input('AuthToken', sql.VarChar(4000), tenant.AuthToken);
                 request.input('RefreshToken', sql.VarChar(4000), tenant.RefreshToken);
                 request.input('Photo', sql.VarChar(1000), tenant.Photo);
-                const recordSet = yield request.execute('SetTenant');
+                const recordSet = yield request.execute('SaveTenant');
                 console.log('==> saveTenant done successfully');
-                return recordSet;
+                return recordSet.rowsAffected[0];
             }
             catch (ex) {
                 console.log(`==> ${ex}`);
@@ -453,22 +429,10 @@ class SQLRepository {
             }
         });
     }
-    SetRepoCollection(tenantId, org, repoCollectionName, repos) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.createPool();
-            const request = yield this.pool.request();
-            request.input('TenantId', sql.VarChar(200), tenantId);
-            request.input('Org', sql.VarChar(200), org);
-            request.input('Repos', sql.VarChar(8000), repos);
-            request.input('CollectionName', sql.VarChar(200), repoCollectionName);
-            const recordSet = yield request.execute('SetRepoCollection');
-            return recordSet;
-        });
-    }
     /*
       Saves only action === 'opened' || action === 'closed' || action === 'edited'
     */
-    SavePR4Repo(org, repo, body) {
+    savePR4Repo(org, repo, body) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 yield this.createPool();
@@ -500,12 +464,12 @@ class SQLRepository {
                         console.log('login is invalid');
                         continue;
                     }
-                    if (elm.author.login.startsWith('greenkeeper'))
+                    if (elm.author.login.startsWith('greenkeep'))
                         continue;
                     if (elm.author.login.startsWith('semantic-release-bot'))
                         continue;
                     if (elm.action === 'opened' || elm.action === 'closed' || elm.action === 'edited') {
-                        //move one
+                        //move on
                     }
                     else {
                         continue;
@@ -526,23 +490,22 @@ class SQLRepository {
                     avatar_url = elm.author.avatarUrl;
                     user_url = elm.author.url;
                     request.input('Id', sql.VarChar(200), id);
-                    request.input('Org', sql.VarChar(1000), org);
-                    request.input('Repo', sql.VarChar(1000), repo);
-                    request.input('Url', sql.VarChar(1000), url);
-                    request.input('State', sql.VarChar(50), state);
-                    request.input('Title', sql.VarChar(5000), title);
+                    request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                    request.input('Repo', sql.VarChar(this.REPO_LEN), repo);
+                    request.input('Url', sql.VarChar(this.URL_LEN), url);
+                    request.input('State', sql.VarChar(this.STATE_LEN), state);
+                    request.input('Title', sql.VarChar(this.TITLE_LEN), title);
                     request.input('Created_At', sql.VarChar(20), created_at);
-                    request.input('Body', sql.VarChar(2000), pr_body);
-                    request.input('Login', sql.VarChar(100), login);
-                    request.input('Avatar_Url', sql.VarChar(2000), avatar_url);
-                    request.input('User_Url', sql.VarChar(2000), user_url);
+                    request.input('Body', sql.VarChar(this.BODY_LEN), pr_body);
+                    request.input('Login', sql.VarChar(this.LOGIN_LEN), login);
+                    request.input('Avatar_Url', sql.VarChar(this.AVATAR_URL_LEN), avatar_url);
+                    request.input('User_Url', sql.VarChar(this.USER_URL_LEN), user_url);
                     try {
                         let x = yield request.execute('SavePR4Repo');
-                        console.log(`==> Saved PR for org:${org} repo: ${repo}`);
+                        return x.rowsAffected[0];
                     }
                     catch (ex) {
-                        console.log(ex);
-                        console.log(`==> Error! While saving PR for org:${org} repo: ${repo}`);
+                        console.log(`==> Error! While saving PR for org:${org} repo: ${repo} - ${ex}`);
                     }
                 }
             }
@@ -550,6 +513,86 @@ class SQLRepository {
                 return false;
             }
             return true;
+        });
+    }
+    saveOrg(tenantId, orgs) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                for (let i = 0; i < orgs.length; i++) {
+                    let org = orgs[i];
+                    request.input('TenantId', sql.Int, Number(tenantId));
+                    request.input('Org', sql.VarChar(this.ORG_LEN), org.name);
+                    const recordSet = yield request.execute('SaveOrg');
+                    return recordSet.rowsAffected[0];
+                }
+            }
+            catch (ex) {
+                return ex;
+            }
+        });
+    }
+    saveDevs(tenantId, org, devs) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (devs == undefined)
+                    return;
+                if (devs.length === 0) {
+                    console.log('No devs to be saved!');
+                    return;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                for (let i = 0; i < devs.length; i++) {
+                    let dev = devs[i];
+                    let createdAt = String(dev.createdAt).substr(0, 10);
+                    //console.log(`==> SaveDev = org: ${org} dev - Name: ${dev.name} \t| Email: ${dev.email} \t| login: ${dev.login} \t| ${dev.avatarUrl}`);
+                    request.input('TenantId', sql.Int, Number(tenantId));
+                    request.input('Org', sql.VarChar(this.ORG_LEN), org); //
+                    request.input('email', sql.VarChar(200), dev.email); //rsarosh@hotmail.com
+                    request.input('name', sql.VarChar(200), dev.name); //Rafat Sarosh
+                    request.input('login', sql.VarChar(this.LOGIN_LEN), dev.login); //rsarosh
+                    request.input('avatarUrl', sql.VarChar(1200), dev.avatarUrl);
+                    const recordSet = yield request.execute('SaveDev');
+                    return recordSet.rowsAffected[0];
+                }
+            }
+            catch (ex) {
+                return ex;
+            }
+        });
+    }
+    saveRepo(tenantId, org, repos) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (repos == undefined)
+                    return;
+                if (repos.length === 0) {
+                    console.log('No repo to be saved!');
+                    return;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                let repoDetails;
+                for (let i = 0; i < repos.length; i++) {
+                    let repo = repos[i];
+                    let createdAt = String(repo.createdAt).substr(0, 10);
+                    // console.log(`SaveRepo = org: ${org} repo: ${repo.name}`);
+                    request.input('TenantId', sql.Int, Number(tenantId));
+                    request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                    request.input('Id', sql.VarChar(this.REPO_ID_LEN), repo.id);
+                    request.input('name', sql.VarChar(this.REPO_LEN), repo.name);
+                    request.input('desc', sql.VarChar(200), repo.description);
+                    request.input('HomePage', sql.VarChar(200), repo.homepageUrl);
+                    request.input('CreatedAt', sql.VarChar(10), createdAt);
+                    const recordSet = yield request.execute('SaveRepos');
+                    return recordSet.rowsAffected[0];
+                }
+            }
+            catch (ex) {
+                return ex;
+            }
         });
     }
     shredObject(obj) {

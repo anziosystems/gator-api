@@ -49,7 +49,7 @@ passport.deserializeUser(function(id: any, done: any) {
   try {
     console.log(`==> Inside DeserializeUser - id: ${id}`);
     let sqlRepositoy = new SQLRepository(null);
-    sqlRepositoy.GetTenant(id).then(result => {
+    sqlRepositoy.getTenant(id).then(result => {
       console.log('==> inside deserialize - user.id: ' + result[0].Id);
       //do something with Tenant details
       //https://github.com/jaredhanson/passport/issues/6
