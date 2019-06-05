@@ -525,8 +525,8 @@ class SQLRepository {
                     request.input('TenantId', sql.Int, Number(tenantId));
                     request.input('Org', sql.VarChar(this.ORG_LEN), org.name);
                     const recordSet = yield request.execute('SaveOrg');
-                    return recordSet.rowsAffected[0];
                 }
+                return orgs.length;
             }
             catch (ex) {
                 return ex;
