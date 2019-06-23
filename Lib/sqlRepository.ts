@@ -5,6 +5,7 @@ import {EMLINK} from 'constants';
 const NodeCache = require('node-cache');
 const dotenv = require('dotenv');
 dotenv.config();
+let CryptoJS = require("crypto-js");
 
 class PullRequest {
   Org: string;
@@ -211,7 +212,7 @@ class SQLRepository {
     await this.createPool();
     const request = await this.pool.request();
     request.input('Id', sql.Int, id);
-    const recordSet = await request.execute('GetTenant');
+    let recordSet = await request.execute('GetTenant');
     if (recordSet.recordset.length > 0) {
       this.myCache.set(cacheKey, recordSet.recordset);
       console.log(`==> getTenant is successfull for id:${id} `);
@@ -245,10 +246,10 @@ class SQLRepository {
     let cacheKey = 'GetTenant -' + id; //cacheKey is GetTenant because i am reading there cache value. This is different from norm
     let val = this.myCache.get(cacheKey);
     if (val) {
-      return val.recordset[0].Auth_Token;
+      return  this.decrypt ( val.recordset[0].Auth_Token, id.toString());
     }
     const recordSet = await this.getTenant(id);
-    if (recordSet) return recordSet[0].Auth_Token;
+    if (recordSet) return this.decrypt (recordSet[0].Auth_Token, id.toString());
     else return;
   }
 
@@ -429,12 +430,14 @@ class SQLRepository {
       if (!tenant.DisplayName) {
         tenant.DisplayName = '';
       }
+
+      let token = this.encrypt (tenant.AuthToken, tenant.Id.toString());
       request.input('Id', sql.Int, tenant.Id);
       request.input('email', sql.VarChar(200), tenant.Email);
       request.input('UserName', sql.VarChar(200), tenant.UserName);
       request.input('DisplayName', sql.VarChar(200), tenant.DisplayName);
       request.input('ProfileUrl', sql.VarChar(1000), tenant.ProfileUrl);
-      request.input('AuthToken', sql.VarChar(4000), tenant.AuthToken);
+      request.input('AuthToken', sql.VarChar(4000), token);
       request.input('RefreshToken', sql.VarChar(4000), tenant.RefreshToken);
       request.input('Photo', sql.VarChar(1000), tenant.Photo);
       const recordSet = await request.execute('SaveTenant');
@@ -444,6 +447,17 @@ class SQLRepository {
       console.log(`==> ${ex}`);
       return ex;
     }
+  }
+
+  encrypt (token: string, secret: string) {
+   let ciphertext = CryptoJS.AES.encrypt(token, secret);
+   return ciphertext;
+  }
+
+  decrypt (token: string, secret: string) {
+    let bytes = CryptoJS.AES.decrypt(token, secret);
+    let plaintext = bytes.toString(CryptoJS.enc.Utf8);
+    return plaintext;
   }
 
   /*

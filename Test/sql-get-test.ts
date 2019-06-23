@@ -20,7 +20,7 @@ describe('TopDevForLastXDays', () => {
 });
 
 describe('GetOrg', () => {
-  it.only('should return rowsAffected', async () => {
+  it('should return rowsAffected', async () => {
     let gitRepository = new GitRepository();
     await gitRepository.getOrg('1040817', true, true).then(result => {
       expect(result.toTable.length).to.greaterThan(0);
@@ -154,5 +154,16 @@ describe('GetPullRequestForId', () => {
   });
 });
 
-
+describe('TestEncryp', () => {
+  it.only('Both String should be same', () => {
+    let sqlRepositoy = new SQLRepository(null);
+    let s = '1234567890'
+    let key = "1234567890"
+    console.log("==>" + s)
+    let encrypt = sqlRepositoy.encrypt(s, key)
+    let s2 = sqlRepositoy.decrypt(encrypt, key) 
+    console.log("==>" + s2)
+    expect (s).to.equals(s2);
+  });
+});
  
