@@ -256,7 +256,7 @@ class GitRepository {
       return result;
     }
     //Lets go to git
-    const graphQL = `{\"query\": \"query { viewer {name organizations(last: 100) { nodes { name }} }}\",\"variables\":{}}`;
+    const graphQL = `{\"query\": \"query { viewer {name organizations(last: 100) { nodes { name url }} }}\",\"variables\":{}}`;
     try {
       request(await this.makeGitRequest(tenantId, graphQL), async (error: any, response: any, body: any) => {
         if (response.statusCode === 200) {

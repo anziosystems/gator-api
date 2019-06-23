@@ -530,6 +530,8 @@ class SQLRepository {
     return true;
   }
 
+  /* return number of orgs */
+
   async saveOrg(tenantId: string, orgs: string[]) {
     try {
       await this.createPool();
@@ -537,7 +539,8 @@ class SQLRepository {
       for (let i = 0; i < orgs.length; i++) {
         let org: any = orgs[i];
         request.input('TenantId', sql.Int,Number(tenantId));
-        request.input('Org', sql.VarChar(this.ORG_LEN), org.name);
+        request.input('Org', sql.VarChar(this.ORG_LEN), org.url.substr('https://github.com/'.length));
+        request.input('DisplayName', sql.VarChar(this.ORG_LEN), org.name);
         const recordSet = await request.execute('SaveOrg');
       }
       return orgs.length ;

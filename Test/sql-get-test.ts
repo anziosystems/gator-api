@@ -20,7 +20,7 @@ describe('TopDevForLastXDays', () => {
 });
 
 describe('GetOrg', () => {
-  it('should return rowsAffected', async () => {
+  it.only('should return rowsAffected', async () => {
     let gitRepository = new GitRepository();
     await gitRepository.getOrg('1040817', true, true).then(result => {
       expect(result.toTable.length).to.greaterThan(0);
@@ -153,3 +153,6 @@ describe('GetPullRequestForId', () => {
     });
   });
 });
+
+
+ 

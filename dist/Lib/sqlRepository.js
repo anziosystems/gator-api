@@ -515,6 +515,7 @@ class SQLRepository {
             return true;
         });
     }
+    /* return number of orgs */
     saveOrg(tenantId, orgs) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -523,7 +524,8 @@ class SQLRepository {
                 for (let i = 0; i < orgs.length; i++) {
                     let org = orgs[i];
                     request.input('TenantId', sql.Int, Number(tenantId));
-                    request.input('Org', sql.VarChar(this.ORG_LEN), org.name);
+                    request.input('Org', sql.VarChar(this.ORG_LEN), org.url.substr('https://github.com/'.length));
+                    request.input('DisplayName', sql.VarChar(this.ORG_LEN), org.name);
                     const recordSet = yield request.execute('SaveOrg');
                 }
                 return orgs.length;

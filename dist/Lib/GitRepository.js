@@ -270,10 +270,11 @@ class GitRepository {
                 return result;
             }
             //Lets go to git
-            const graphQL = `{\"query\": \"query { viewer {name organizations(last: 100) { nodes { name }} }}\",\"variables\":{}}`;
+            const graphQL = `{\"query\": \"query { viewer {name organizations(last: 100) { nodes { name url }} }}\",\"variables\":{}}`;
             try {
                 request(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                     if (response.statusCode === 200) {
+                        console.log('==> ' + JSON.parse(response.body).data.viewer.organizations.nodes.url);
                         yield this.sqlRepository.saveOrg(tenantId, JSON.parse(response.body).data.viewer.organizations.nodes);
                     }
                     else {
