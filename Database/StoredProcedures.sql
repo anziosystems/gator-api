@@ -1095,10 +1095,8 @@ CREATE PROCEDURE [dbo].[TopDevForLastXDays]
 )
 AS
 BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
 	SET NOCOUNT ON
-
+	/*
 	SELECT login, Avatar_Url, count(*) as ctr
 	FROM [vwOpenClosedPR]
 	WHERE 
@@ -1106,8 +1104,11 @@ BEGIN
 		AND Org = @Org
 		AND (State = 'opened' OR State = 'open' OR State = 'closed' OR State = 'close' OR State = 'commit')
 	GROUP BY  login, Avatar_Url
-	ORDER BY   ctr desc
-
+	ORDER BY   ctr desc    Removing the max pr dev name, it is creating unhealthy competetion 
+	*/
+	SELECT login, Avatar_Url,LastUpdated
+	FROM [vwOpenClosedPR] where  Org = @Org
+	Order by LastUpdated desc
 END
 GO
 ALTER DATABASE [Gator] SET  READ_WRITE 
