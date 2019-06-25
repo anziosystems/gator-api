@@ -57,8 +57,8 @@ router.get('/GetOrg', validateToken, (req: any, res: any) => {
 });
 
 router.get('/GetHookStatus', validateToken, (req: any, res: any) => {
-  const tenantId = getTenant(req, res);
 
+  const tenantId = getTenant(req, res);
   gitRepository
     .GetHookStatus(tenantId, req.query.org)
     .then(result => {
@@ -94,7 +94,9 @@ router.get('/GetHookStatus', validateToken, (req: any, res: any) => {
       //return res.json(result.recordset);
     })
     .catch(ex => {
-      console.log(`==> GetHookStatus ${ex}`);
+      if (ex) {
+        console.log(`==> GetHookStatus ${ex}`);
+      } 
       return res.json({val: false});
     });
 });

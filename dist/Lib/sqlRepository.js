@@ -27,8 +27,10 @@ class SQLRepository {
     constructor(obj) {
         this.sqlConfigSetting = {};
         this.CACHE_DURATION_SEC = 600;
+        this.MESSAGE_LEN = 2000;
         this.TENANT_LEN = 50;
         this.ORG_LEN = 200;
+        this.STATUS_LEN = 50;
         this.REPO_LEN = 200;
         this.REPO_ID_LEN = 100;
         this.URL_LEN = 2000;
@@ -129,6 +131,30 @@ class SQLRepository {
             request.input('TenantId', sql.Int, Number(tenantId));
             const recordSet = yield request.execute('GetDevs');
             return recordSet.recordset;
+        });
+    }
+    saveStatus(tenantId, status, message = '') {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.createPool();
+            const request = yield this.pool.request();
+            if (!message) {
+                message = '';
+            }
+            else {
+                if (message.length >= this.MESSAGE_LEN) {
+                    message = message.substr(0, this.MESSAGE_LEN - 2);
+                }
+            }
+            request.input('status', sql.VarChar(this.STATUS_LEN), status);
+            request.input('message', sql.VarChar(this.MESSAGE_LEN), message);
+            request.input('TenantId', sql.Int, Number(tenantId));
+            const recordSet = yield request.execute('saveStatus');
+            if (recordSet) {
+                return recordSet.rowsAffected.length;
+            }
+            else {
+                return 0;
+            }
         });
     }
     getRepo(tenantId, org, bustTheCache = false) {

@@ -20,24 +20,33 @@ class GitRepository {
     GetHookStatus(tenantId, org) {
         return __awaiter(this, void 0, void 0, function* () {
             const url = 'https://api.github.com/orgs/' + org + '/hooks';
-            console.log('checking hook' + url);
+            console.log('==>checking hook ' + url);
+            this.sqlRepository.saveStatus(tenantId, 'CHECK-HOOK', ' ');
             const reqHeader = yield this.makeGitRequest(tenantId, 'GET', url, 'GET');
-            return new Promise((resolve, reject) => {
-                request(reqHeader, (error, response, body) => {
-                    if (!error && response.statusCode === 200) {
-                        let a = JSON.parse(body);
-                        if (a.length > 0) {
-                            resolve();
+            try {
+                return new Promise((resolve, reject) => {
+                    request(reqHeader, (error, response, body) => {
+                        if (!error && response.statusCode === 200) {
+                            let a = JSON.parse(body);
+                            if (a.length > 0) {
+                                this.sqlRepository.saveStatus(tenantId, 'CHECK-HOOK-SUCCESS-' + org.substr(0, 20), ' ');
+                                resolve();
+                            }
+                            else {
+                                this.sqlRepository.saveStatus(tenantId, 'CHECK-HOOK-FAIL-' + org.substr(0, 20), ' ');
+                                reject();
+                            }
                         }
                         else {
+                            this.sqlRepository.saveStatus(tenantId, 'CHECK-HOOK-FAIL-' + org.substr(0, 20), ' ');
                             reject();
                         }
-                    }
-                    else {
-                        reject();
-                    }
+                    });
                 });
-            });
+            }
+            catch (ex) {
+                console.log('==>GetHookStatus: ' + ex.message);
+            }
         });
     }
     //Gets the PR for a Organization and a repo
@@ -53,13 +62,16 @@ class GitRepository {
                 request(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                     if (response.statusCode === 200) {
                         yield this.sqlRepository.savePR4Repo(org, repo, body);
+                        this.sqlRepository.saveStatus(tenantId, 'GET-PR-SUCCESS-' + org.substr(0, 20), `org: ${org}  repo: ${repo}`);
                     }
                     else {
                         console.log('GetPullRequestFromGit: ' + body);
+                        this.sqlRepository.saveStatus(tenantId, 'GET-PR-FAIL-' + org.substr(0, 20), body);
                     }
                 }));
             }
             catch (ex) {
+                this.sqlRepository.saveStatus(tenantId, 'GET-PR-FAIL-' + org.substr(0, 20), ex);
                 console.log(`GetPullRequestFromGit Error! => ${ex}`);
             }
         });
@@ -148,9 +160,11 @@ class GitRepository {
                     if (response.statusCode === 200) {
                         let result = JSON.parse(body);
                         if (!result.data) {
-                            console.log('No organization found for org:' + org);
+                            console.log('==> No repo found for org:' + org);
+                            this.sqlRepository.saveStatus(tenantId, 'GET-REPO-SUCCESS-' + org.substr(0, 20), 'No repo found for org:' + org);
                         }
                         else {
+                            this.sqlRepository.saveStatus(tenantId, 'GET-REPO-SUCCESS-' + org.substr(0, 20), `${result.data.organization.repositories.nodes.length} repo found for org: ${org}`);
                             yield this.sqlRepository.saveRepo(tenantId, org, result.data.organization.repositories.nodes);
                             let pageInfo = result.data.organization.repositories.pageInfo;
                             if (pageInfo.hasNextPage) {
@@ -159,6 +173,7 @@ class GitRepository {
                         }
                     }
                     else {
+                        this.sqlRepository.saveStatus(tenantId, 'GET-REPO-FAIL-' + org.substr(0, 20), `response status code: ${response.statusCode}`);
                         console.log('GetRpoFromGit: org - ' + org + ' - ' + body);
                     }
                 }));
@@ -166,6 +181,7 @@ class GitRepository {
                 return yield this.sqlRepository.getRepo(tenantId, org, false);
             }
             catch (ex) {
+                this.sqlRepository.saveStatus(tenantId, 'GET-REPO-FAIL-' + org.substr(0, 20), ex);
                 console.log(ex);
             }
         });
@@ -238,14 +254,14 @@ class GitRepository {
             try {
                 yield request(yield this.makeGitRequest(tenantId, graphQL, 'https://api.github.com/orgs/' + org + '/hooks'), (error, response, body) => {
                     if (response.statusCode === 201) {
+                        this.sqlRepository.saveStatus(tenantId, 'SET-HOOK-SUCCESS-' + org.substr(0, 20), ' ');
                         console.log('Successfully hook is setup');
-                        console.log(body);
                         return 1;
                     }
                     else {
                         if (response.statusCode === 422) {
-                            console.log('error: ' + response.statusCode);
-                            console.log(body);
+                            this.sqlRepository.saveStatus(tenantId, 'SET-HOOK-FAIL-' + org.substr(0, 20), `response status: ${response.statusCode}`);
+                            console.log('warning: (hook already existing' + response.statusCode);
                             return 1;
                         }
                         return 0;
@@ -253,7 +269,8 @@ class GitRepository {
                 });
             }
             catch (ex) {
-                console.log(`WebHook setup fail: ${ex}`);
+                this.sqlRepository.saveStatus(tenantId, 'SET-HOOK-FAIL-' + org.substr(0, 20), ex);
+                console.log(`==> Could not install webhook for ${org} Status: ${ex.statusCode}`);
             }
         });
     }
@@ -274,9 +291,11 @@ class GitRepository {
             try {
                 request(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                     if (response.statusCode === 200) {
+                        this.sqlRepository.saveStatus(tenantId, 'GET-ORG-SUCCESS');
                         yield this.sqlRepository.saveOrg(tenantId, JSON.parse(response.body).data.viewer.organizations.nodes);
                     }
                     else {
+                        this.sqlRepository.saveStatus(tenantId, 'GET-ORG-FAIL', `status: ${response.statusCode}`);
                         console.log('error: ' + response.statusCode);
                         console.log(body);
                     }
@@ -285,6 +304,7 @@ class GitRepository {
                 return yield this.sqlRepository.getOrg(tenantId, false);
             }
             catch (ex) {
+                this.sqlRepository.saveStatus(tenantId, 'GET-ORG-FAIL', ex);
                 console.log(ex);
             }
         });

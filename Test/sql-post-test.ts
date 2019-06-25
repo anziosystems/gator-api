@@ -27,6 +27,17 @@ describe('SaveTenant', () => {
   });
 });
 
+
+describe('SaveStatus', () => {
+  it('should return rowsAffected', async () => {
+    let sqlRepositoy = new SQLRepository(null);
+    let tenantId: string = '1040817';
+    await sqlRepositoy.saveStatus(tenantId,'Testing', 'Message from Testing' ).then(result => {
+      expect(result).to.greaterThan(0);
+    });
+  });
+});
+
 describe('FillPullRequest', () => {
   it('should return rowsAffected', async () => {
     let gitRepository = new GitRepository();

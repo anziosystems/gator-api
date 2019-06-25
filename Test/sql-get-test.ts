@@ -155,7 +155,7 @@ describe('GetPullRequestForId', () => {
 });
 
 describe('TestEncryp', () => {
-  it.only('Both String should be same', () => {
+  it('Both String should be same', () => {
     let sqlRepositoy = new SQLRepository(null);
     let s = '1234567890'
     let key = "1234567890"

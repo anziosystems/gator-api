@@ -49,9 +49,10 @@ class SQLRepository {
   myCache: any;
   sqlConfigSetting: any = {};
   CACHE_DURATION_SEC: number = 600;
-
+  MESSAGE_LEN: number = 2000;
   TENANT_LEN: number = 50;
   ORG_LEN: number = 200;
+  STATUS_LEN:number = 50;
   REPO_LEN: number = 200;
   REPO_ID_LEN: number = 100;
   URL_LEN: number = 2000;
@@ -151,6 +152,30 @@ class SQLRepository {
     request.input('TenantId', sql.Int, Number (tenantId));
     const recordSet = await request.execute('GetDevs');
     return recordSet.recordset;
+  }
+
+
+  async saveStatus(tenantId: string, status: string, message: string = '') {
+    await this.createPool();
+    const request = await this.pool.request();
+    
+    if (!message) {
+      message ='';
+    } else {
+      if (message.length >= this.MESSAGE_LEN) {
+        message = message.substr (0,this.MESSAGE_LEN - 2) ;
+      }
+    }
+
+    request.input('status', sql.VarChar(this.STATUS_LEN), status);
+    request.input('message', sql.VarChar(this.MESSAGE_LEN), message);
+    request.input('TenantId', sql.Int, Number (tenantId));
+    const recordSet = await request.execute('saveStatus');
+    if (recordSet) {
+      return recordSet.rowsAffected.length;
+    } else {
+      return 0;
+    }
   }
 
   async getRepo(tenantId: string, org: string, bustTheCache: Boolean = false) {

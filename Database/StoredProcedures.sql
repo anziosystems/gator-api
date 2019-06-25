@@ -1,103 +1,86 @@
-/****** Object:  Database [git]    Script Date: 6/1/2019 5:21:46 AM ******/
-CREATE DATABASE [gator]
-(EDITION = 'Standard', SERVICE_OBJECTIVE = 'S0', MAXSIZE = 250 GB)
-WITH CATALOG_COLLATION = SQL_Latin1_General_CP1_CI_AS;
+/****** Object:  Database [Gator]    Script Date: 6/25/2019 1:08:05 PM ******/
+CREATE DATABASE [Gator]  (EDITION = 'Standard', SERVICE_OBJECTIVE = 'S2', MAXSIZE = 250 GB) WITH CATALOG_COLLATION = SQL_Latin1_General_CP1_CI_AS;
 GO
-ALTER DATABASE [git] SET ANSI_NULL_DEFAULT OFF 
+ALTER DATABASE [Gator] SET ANSI_NULL_DEFAULT OFF 
 GO
-ALTER DATABASE [git] SET ANSI_NULLS OFF 
+ALTER DATABASE [Gator] SET ANSI_NULLS OFF 
 GO
-ALTER DATABASE [git] SET ANSI_PADDING OFF 
+ALTER DATABASE [Gator] SET ANSI_PADDING OFF 
 GO
-ALTER DATABASE [git] SET ANSI_WARNINGS OFF 
+ALTER DATABASE [Gator] SET ANSI_WARNINGS OFF 
 GO
-ALTER DATABASE [git] SET ARITHABORT OFF 
+ALTER DATABASE [Gator] SET ARITHABORT OFF 
 GO
-ALTER DATABASE [git] SET AUTO_SHRINK OFF 
+ALTER DATABASE [Gator] SET AUTO_SHRINK OFF 
 GO
-ALTER DATABASE [git] SET AUTO_UPDATE_STATISTICS ON 
+ALTER DATABASE [Gator] SET AUTO_UPDATE_STATISTICS ON 
 GO
-ALTER DATABASE [git] SET CURSOR_CLOSE_ON_COMMIT OFF 
+ALTER DATABASE [Gator] SET CURSOR_CLOSE_ON_COMMIT OFF 
 GO
-ALTER DATABASE [git] SET CONCAT_NULL_YIELDS_NULL OFF 
+ALTER DATABASE [Gator] SET CONCAT_NULL_YIELDS_NULL OFF 
 GO
-ALTER DATABASE [git] SET NUMERIC_ROUNDABORT OFF 
+ALTER DATABASE [Gator] SET NUMERIC_ROUNDABORT OFF 
 GO
-ALTER DATABASE [git] SET QUOTED_IDENTIFIER OFF 
+ALTER DATABASE [Gator] SET QUOTED_IDENTIFIER OFF 
 GO
-ALTER DATABASE [git] SET RECURSIVE_TRIGGERS OFF 
+ALTER DATABASE [Gator] SET RECURSIVE_TRIGGERS OFF 
 GO
-ALTER DATABASE [git] SET AUTO_UPDATE_STATISTICS_ASYNC OFF 
+ALTER DATABASE [Gator] SET AUTO_UPDATE_STATISTICS_ASYNC OFF 
 GO
-ALTER DATABASE [git] SET ALLOW_SNAPSHOT_ISOLATION ON 
+ALTER DATABASE [Gator] SET ALLOW_SNAPSHOT_ISOLATION ON 
 GO
-ALTER DATABASE [git] SET PARAMETERIZATION SIMPLE 
+ALTER DATABASE [Gator] SET PARAMETERIZATION SIMPLE 
 GO
-ALTER DATABASE [git] SET READ_COMMITTED_SNAPSHOT ON 
+ALTER DATABASE [Gator] SET READ_COMMITTED_SNAPSHOT OFF 
 GO
-ALTER DATABASE [git] SET  MULTI_USER 
+ALTER DATABASE [Gator] SET  MULTI_USER 
 GO
-ALTER DATABASE [git] SET ENCRYPTION ON
+ALTER DATABASE [Gator] SET ENCRYPTION ON
 GO
-ALTER DATABASE [git] SET QUERY_STORE = ON
+ALTER DATABASE [Gator] SET QUERY_STORE = ON
 GO
-ALTER DATABASE [git] SET QUERY_STORE (OPERATION_MODE = READ_WRITE, CLEANUP_POLICY = (STALE_QUERY_THRESHOLD_DAYS = 30), DATA_FLUSH_INTERVAL_SECONDS = 900, INTERVAL_LENGTH_MINUTES = 60, MAX_STORAGE_SIZE_MB = 100, QUERY_CAPTURE_MODE = AUTO, SIZE_BASED_CLEANUP_MODE = AUTO)
+ALTER DATABASE [Gator] SET QUERY_STORE (OPERATION_MODE = READ_WRITE, CLEANUP_POLICY = (STALE_QUERY_THRESHOLD_DAYS = 30), DATA_FLUSH_INTERVAL_SECONDS = 900, INTERVAL_LENGTH_MINUTES = 60, MAX_STORAGE_SIZE_MB = 100, QUERY_CAPTURE_MODE = AUTO, SIZE_BASED_CLEANUP_MODE = AUTO)
 GO
-/****** Object:  Table [dbo].[PullRequestDetails]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  Table [dbo].[PullRequestDetails]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[PullRequestDetails]
-(
-	[Id] [VARCHAR](200) NOT NULL,
-	[Org] [VARCHAR](200) NOT NULL,
-	[Repo] [VARCHAR](200) NOT NULL,
-	[url] [VARCHAR](2000) NOT NULL,
-	[State] [VARCHAR](50) NOT NULL,
-	[Action] [VARCHAR](50) NOT NULL,
-	[Title] [VARCHAR](2000) NULL,
-	[Created_At] [DATETIME] NOT NULL,
-	[Body] [VARCHAR](2000) NOT NULL,
-	[Login] [VARCHAR](100) NOT NULL,
-	[Avatar_Url] [VARCHAR](2000) NOT NULL,
-	[User_Url] [VARCHAR](2000) NOT NULL,
-	[LastUpdated] [DATETIME] NULL,
-	CONSTRAINT [PK_PullRequestDetails_1] PRIMARY KEY CLUSTERED 
+CREATE TABLE [dbo].[PullRequestDetails](
+	[Id] [varchar](200) NOT NULL,
+	[Org] [varchar](200) NOT NULL,
+	[Repo] [varchar](200) NOT NULL,
+	[url] [varchar](2000) NOT NULL,
+	[State] [varchar](50) NOT NULL,
+	[Action] [varchar](50) NULL,
+	[Title] [varchar](2000) NULL,
+	[Created_At] [datetime] NOT NULL,
+	[Body] [varchar](2000) NOT NULL,
+	[Login] [varchar](100) NOT NULL,
+	[Avatar_Url] [varchar](2000) NOT NULL,
+	[User_Url] [varchar](2000) NOT NULL,
+	[LastUpdated] [datetime] NULL,
+ CONSTRAINT [PK_PullRequestDetails_1] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC,
 	[State] ASC
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  View [dbo].[vwOpenClosedPR]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  Table [dbo].[Developers]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-/****** Script for SELECTTopNRows command FROM SSMS  ******/
-CREATE VIEW [dbo].[vwOpenClosedPR]
-AS
-	SELECT DISTINCT Login, State, Action, Created_At, Repo, Avatar_Url, 
-	CAST ( CAST (LastUpdated AS VARCHAR(12)) AS DATEtIME) AS LastUpdated, url, Org
-	FROM dbo.PullRequestDetails
-	WHERE  (State IN ('closed', 'open', 'opened', 'close', 'commit'))
-GO
-/****** Object:  Table [dbo].[Developers]    Script Date: 6/1/2019 5:21:46 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[Developers]
-(
-	[TenantId] [VARCHAR](50) NOT NULL,
-	[Org] [VARCHAR](200) NOT NULL,
-	[Email] [VARCHAR](100) NULL,
-	[Name] [VARCHAR](100) NULL,
-	[login] [VARCHAR](100) NOT NULL,
-	[AvatarUrl] [VARCHAR](2000) NULL,
-	[LastUpdated] [DATETIME] NULL,
-	CONSTRAINT [PK_Developers] PRIMARY KEY CLUSTERED 
+CREATE TABLE [dbo].[Developers](
+	[TenantId] [varchar](50) NOT NULL,
+	[Org] [varchar](200) NOT NULL,
+	[Email] [varchar](100) NULL,
+	[Name] [varchar](100) NULL,
+	[login] [varchar](100) NOT NULL,
+	[AvatarUrl] [varchar](2000) NULL,
+	[LastUpdated] [datetime] NULL,
+ CONSTRAINT [PK_Developers] PRIMARY KEY CLUSTERED 
 (
 	[TenantId] ASC,
 	[Org] ASC,
@@ -105,117 +88,138 @@ CREATE TABLE [dbo].[Developers]
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Tenant]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  View [dbo].[vwOpenClosedPR]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[Tenant]
+/****** Script for SELECTTopNRows command FROM SSMS  ******/
+CREATE VIEW [dbo].[vwOpenClosedPR]
+AS
+SELECT DISTINCT 
+                  dbo.PullRequestDetails.State, dbo.PullRequestDetails.Action, dbo.PullRequestDetails.Created_At, dbo.PullRequestDetails.Repo, dbo.PullRequestDetails.Avatar_Url, CAST(CAST(dbo.PullRequestDetails.LastUpdated AS VARCHAR(12)) 
+                  AS DATEtIME) AS LastUpdated, dbo.PullRequestDetails.url, dbo.PullRequestDetails.Org, ISNULL(NULLIF (dbo.Developers.Name, ''), dbo.Developers.login) AS Login
+FROM     dbo.PullRequestDetails INNER JOIN
+                  dbo.Developers ON dbo.PullRequestDetails.Login = dbo.Developers.login
+WHERE  (dbo.PullRequestDetails.State IN ('closed', 'open', 'opened', 'close', 'commit'))
+GO
+/****** Object:  Table [dbo].[Status]    Script Date: 6/25/2019 1:08:05 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Status](
+	[TenantId] [int] NOT NULL,
+	[Status] [char](50) NOT NULL,
+	[LastUpdated] [datetime] NOT NULL,
+	[Message] [varchar](2000) NULL,
+ CONSTRAINT [PK_Status] PRIMARY KEY CLUSTERED 
 (
-	[Id] [INT] NOT NULL,
-	[Email] [VARCHAR](100) NULL,
-	[UserName] [VARCHAR](100) NULL,
-	[DisplayName] [VARCHAR](200) NULL,
-	[ProfileUrl] [VARCHAR](2000) NULL,
-	[LastUpdated] [DATETIME] NOT NULL,
-	[Auth_Token] [VARCHAR](4000) NULL,
-	[Refresh_Token] [VARCHAR](4000) NULL,
-	[Photo] [VARCHAR](2000) NULL,
-	CONSTRAINT [PK_Tenant] PRIMARY KEY CLUSTERED 
+	[TenantId] ASC,
+	[Status] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Tenant]    Script Date: 6/25/2019 1:08:05 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Tenant](
+	[Id] [int] NOT NULL,
+	[Email] [varchar](100) NULL,
+	[UserName] [varchar](100) NULL,
+	[DisplayName] [varchar](200) NULL,
+	[ProfileUrl] [varchar](2000) NULL,
+	[LastUpdated] [datetime] NOT NULL,
+	[Auth_Token] [varchar](4000) NULL,
+	[Refresh_Token] [varchar](4000) NULL,
+	[Photo] [varchar](2000) NULL,
+ CONSTRAINT [PK_Tenant] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[TenantOrg]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  Table [dbo].[TenantOrg]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[TenantOrg]
-(
-	[TenantId] [INT] NOT NULL,
-	[Org] [VARCHAR](200) NOT NULL,
-	[LastUpdated] [DATETIME] NULL
+CREATE TABLE [dbo].[TenantOrg](
+	[TenantId] [int] NOT NULL,
+	[Org] [varchar](200) NOT NULL,
+	[LastUpdated] [datetime] NULL,
+	[DisplayName] [varchar](200) NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[TenantRepos]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  Table [dbo].[TenantRepos]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[TenantRepos]
-(
-	[TenantId] [VARCHAR](50) NOT NULL,
-	[RepoName] [VARCHAR](200) NOT NULL,
-	[LastUpdated] [DATETIME] NOT NULL,
-	[LastRefereshed] [DATETIME] NOT NULL,
-	[Org] [VARCHAR](200) NOT NULL,
-	[ID] [VARCHAR](100) NOT NULL,
-	[Desc] [VARCHAR](200) NULL,
-	[HomePage] [VARCHAR](2000) NULL,
-	[Created_At] [DATETIME] NULL
+CREATE TABLE [dbo].[TenantRepos](
+	[TenantId] [varchar](50) NOT NULL,
+	[RepoName] [varchar](200) NOT NULL,
+	[LastUpdated] [datetime] NOT NULL,
+	[LastRefereshed] [datetime] NOT NULL,
+	[Org] [varchar](200) NOT NULL,
+	[ID] [varchar](100) NOT NULL,
+	[Desc] [varchar](200) NULL,
+	[HomePage] [varchar](2000) NULL,
+	[Created_At] [datetime] NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[VDevTeam]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  Table [dbo].[VDevTeam]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[VDevTeam]
-(
-	[VirtualTeamId] [INT] IDENTITY(1,1) NOT NULL,
-	[TeamName] [VARCHAR](100) NOT NULL,
-	[TenantId] [VARCHAR](50) NOT NULL,
-	[login] [VARCHAR](100) NOT NULL,
-	[LastUpdated] [DATETIME] NOT NULL
+CREATE TABLE [dbo].[VDevTeam](
+	[VirtualTeamId] [int] IDENTITY(1,1) NOT NULL,
+	[TeamName] [varchar](100) NOT NULL,
+	[TenantId] [varchar](50) NOT NULL,
+	[login] [varchar](100) NOT NULL,
+	[LastUpdated] [datetime] NOT NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[VRepoTeam]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  Table [dbo].[VRepoTeam]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[VRepoTeam]
-(
-	[VirtualTeamId] [INT] IDENTITY(1,1) NOT NULL,
-	[TeamName] [VARCHAR](100) NOT NULL,
-	[TenantId] [VARCHAR](50) NOT NULL,
-	[Repo] [VARCHAR](200) NOT NULL,
-	[LastUpdated] [DATETIME] NOT NULL
+CREATE TABLE [dbo].[VRepoTeam](
+	[VirtualTeamId] [int] IDENTITY(1,1) NOT NULL,
+	[TeamName] [varchar](100) NOT NULL,
+	[TenantId] [varchar](50) NOT NULL,
+	[Repo] [varchar](200) NOT NULL,
+	[LastUpdated] [datetime] NOT NULL
 ) ON [PRIMARY]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [IX_PullRequestDetails]    Script Date: 6/1/2019 5:21:46 AM ******/
-CREATE NONCLUSTERED INDEX [IX_PullRequestDetails] ON [dbo].[PullRequestDetails]
-(
-	[Org] ASC,
-	[Repo] ASC
-)WITH (STATISTICS_NORECOMPUTE = OFF, DROP_EXISTING = OFF, ONLINE = OFF) ON [PRIMARY]
-GO
-SET ANSI_PADDING ON
-GO
-/****** Object:  Index [IX_TenantOrg]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  Index [IX_TenantOrg]    Script Date: 6/25/2019 1:08:05 PM ******/
 CREATE NONCLUSTERED INDEX [IX_TenantOrg] ON [dbo].[TenantOrg]
 (
 	[TenantId] ASC,
 	[Org] ASC
 )WITH (STATISTICS_NORECOMPUTE = OFF, DROP_EXISTING = OFF, ONLINE = OFF) ON [PRIMARY]
 GO
-ALTER TABLE [dbo].[Developers] ADD  CONSTRAINT [DF_Developers_LastUpdated]  DEFAULT (GETDATE()) FOR [LastUpdated]
+ALTER TABLE [dbo].[Developers] ADD  CONSTRAINT [DF_Developers_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
 GO
-ALTER TABLE [dbo].[PullRequestDetails] ADD  CONSTRAINT [DF_PullRequestDetails_LastUpdated]  DEFAULT (GETDATE()) FOR [LastUpdated]
+ALTER TABLE [dbo].[PullRequestDetails] ADD  CONSTRAINT [DF_PullRequestDetails_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
 GO
-ALTER TABLE [dbo].[Tenant] ADD  CONSTRAINT [DF_Tenant_LastUpdated]  DEFAULT (GETDATE()) FOR [LastUpdated]
+ALTER TABLE [dbo].[Status] ADD  CONSTRAINT [DF_Status_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
 GO
-ALTER TABLE [dbo].[TenantOrg] ADD  CONSTRAINT [DF_TenantOrg_LastUpdated]  DEFAULT (GETDATE()) FOR [LastUpdated]
+ALTER TABLE [dbo].[Tenant] ADD  CONSTRAINT [DF_Tenant_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
 GO
-ALTER TABLE [dbo].[TenantRepos] ADD  CONSTRAINT [DF_TenantRepositories_LastUpdated]  DEFAULT (GETDATE()) FOR [LastUpdated]
+ALTER TABLE [dbo].[TenantOrg] ADD  CONSTRAINT [DF_TenantOrg_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
 GO
-ALTER TABLE [dbo].[TenantRepos] ADD  CONSTRAINT [DF_TenantRepositories_LastRefereshed]  DEFAULT (GETDATE()) FOR [LastRefereshed]
+ALTER TABLE [dbo].[TenantRepos] ADD  CONSTRAINT [DF_TenantRepositories_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
 GO
-/****** Object:  StoredProcedure [dbo].[CheckTenant]    Script Date: 6/1/2019 5:21:46 AM ******/
+ALTER TABLE [dbo].[TenantRepos] ADD  CONSTRAINT [DF_TenantRepositories_LastRefereshed]  DEFAULT (getdate()) FOR [LastRefereshed]
+GO
+/****** Object:  StoredProcedure [dbo].[CheckTenant]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -245,7 +249,7 @@ ELSE
 	WHERE Id= @Id
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetAllRepoCollection4TenantOrg]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  StoredProcedure [dbo].[GetAllRepoCollection4TenantOrg]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -269,7 +273,34 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetOrg]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  StoredProcedure [dbo].[GetDevs]    Script Date: 6/25/2019 1:08:05 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+Create PROCEDURE [dbo].[GetDevs]
+	(
+	-- Add the parameters for the stored procedure here
+	@TenantId INT,
+	@org VARCHAR(50)
+	
+)
+AS
+BEGIN
+
+	SELECT *
+	FROM [dbo].[TenantOrg]
+	WHERE TenantId = @TenantId and Org = @Org
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetOrg]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -294,29 +325,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetPR4Repo]    Script Date: 6/1/2019 5:21:46 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-
-CREATE PROCEDURE [dbo].[GetPR4Repo]
-	(
-	@org VARCHAR(200) ,
-	@repo VARCHAR(200)
-)
-AS
-BEGIN
-
-	SELECT top 500
-		*
-	FROM [dbo].[PullRequestDetails]
-	WHERE org = @org AND Repo = @repo
-
-END
-GO
-/****** Object:  StoredProcedure [dbo].[GetPullRequestforId]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  StoredProcedure [dbo].[GetPR4Id]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -348,7 +357,29 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetRepoCollectionByName]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  StoredProcedure [dbo].[GetPR4Repo]    Script Date: 6/25/2019 1:08:05 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE PROCEDURE [dbo].[GetPR4Repo]
+	(
+	@org VARCHAR(200) ,
+	@repo VARCHAR(200)
+)
+AS
+BEGIN
+
+	SELECT top 500
+		*
+	FROM [dbo].[PullRequestDetails]
+	WHERE org = @org AND Repo = @repo
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetRepoCollectionByName]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -371,29 +402,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetRepos]    Script Date: 6/1/2019 5:21:46 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-
-CREATE PROCEDURE [dbo].[GetRepos]
-	(
-	-- Add the parameters for the stored procedure here
-	@TenantId VARCHAR(50),
-	@Org VARCHAR(200)
-
-)
-AS
-BEGIN
-	SELECT *
-	FROM TenantRepos
-	WHERE TenantId = @TenantId AND Org = @Org
-
-END
-GO
-/****** Object:  StoredProcedure [dbo].[GetRepositoryPR]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  StoredProcedure [dbo].[GetRepoPR]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -429,7 +438,29 @@ BEGIN
 	ORDER BY sortonthis DESC
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetTenant]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  StoredProcedure [dbo].[GetRepos]    Script Date: 6/25/2019 1:08:05 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE PROCEDURE [dbo].[GetRepos]
+	(
+	-- Add the parameters for the stored procedure here
+	@TenantId VARCHAR(50),
+	@Org VARCHAR(200)
+
+)
+AS
+BEGIN
+	SELECT *
+	FROM TenantRepos
+	WHERE TenantId = @TenantId AND Org = @Org
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetTenant]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -450,7 +481,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetTopRespositories4XDays]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  StoredProcedure [dbo].[GetTopRepos4XDays]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -483,7 +514,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[LongestPullRequest]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  StoredProcedure [dbo].[LongestPR]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -515,7 +546,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[PullRequest4Devs]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  StoredProcedure [dbo].[PR4Devs]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -621,7 +652,37 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[PullRequestCountForLastXDays]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  StoredProcedure [dbo].[PR4LastXDays]    Script Date: 6/25/2019 1:08:05 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[PR4LastXDays]
+	(
+	-- Add the parameters for the stored procedure here
+	@Day int = 1,
+	@Org VARCHAR(200)
+)
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON
+	declare @ctr int
+	SELECT *
+	FROM [vwOpenClosedPR]
+	WHERE 
+			LastUpdated BETWEEN  CAST( CAST(GETDATE() - @Day as char(12)) AS DateTime) AND  CAST( CAST (GETDATE() as char(12)) as DateTime)
+		AND Org = @Org
+	return @ctr
+END
+GO
+/****** Object:  StoredProcedure [dbo].[PRCount4LastXDays]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -654,37 +715,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[PullRequestForLastXDays]    Script Date: 6/1/2019 5:21:46 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:      Rafat Sarosh
--- Create Date: 1/5/2019
--- Description:  
--- =============================================
-CREATE PROCEDURE [dbo].[PR4LastXDays]
-	(
-	-- Add the parameters for the stored procedure here
-	@Day int = 1,
-	@Org VARCHAR(200)
-)
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON
-	declare @ctr int
-	SELECT *
-	FROM [vwOpenClosedPR]
-	WHERE 
-			LastUpdated BETWEEN  CAST( CAST(GETDATE() - @Day as char(12)) AS DateTime) AND  CAST( CAST (GETDATE() as char(12)) as DateTime)
-		AND Org = @Org
-	return @ctr
-END
-GO
-/****** Object:  StoredProcedure [dbo].[SaveDev]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  StoredProcedure [dbo].[SaveDev]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -729,7 +760,48 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SavePR4Repo]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  StoredProcedure [dbo].[SaveOrg]    Script Date: 6/25/2019 1:08:05 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[SaveOrg]
+	(
+	-- Add the parameters for the stored procedure here
+	@TenantId INT,
+	@Org VARCHAR(200), 
+	@DisplayName VARCHAR(200) 
+)
+AS
+BEGIN
+
+	IF NOT EXISTS ( SELECT *
+		FROM [dbo].[TenantOrg]
+			WHERE TenantId = @TenantId AND Org = @org)   
+
+		BEGIN
+		Insert into TenantOrg  
+			(TenantId,Org,DisplayName)
+		Values
+			(@TenantId, @Org, @DisplayName);
+		END
+	ELSE
+		BEGIN
+			UPDATE TenantOrg SET DisplayName = @DisplayName WHERE TenantId = @TenantId AND Org = @org 
+		END
+
+
+
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SavePR4Repo]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -742,6 +814,7 @@ CREATE PROCEDURE [dbo].[SavePR4Repo]
 	@Repo VARCHAR(200),
 	@Url VARCHAR(2000),
 	@State VARCHAR(50),
+	@Action VARCHAR(50),
 	@Title VARCHAR(2000),
 	@Created_At VARCHAR(20),
 	@body VARCHAR(2000),
@@ -765,6 +838,7 @@ BEGIN
 						Repo = @Repo,
 						[url] = @Url,
 						[State] = @State,
+						[Action] = @Action,
 						Title = @Title,
 						Body = @Body,
 						[Login] = @Login,
@@ -781,6 +855,7 @@ BEGIN
 			Repo,
 			[Url] ,
 			[State],
+			[Action],
 			Title ,
 			Created_At ,
 			body ,
@@ -795,6 +870,7 @@ BEGIN
 				@Repo,
 				@Url ,
 				@State,
+				@Action,
 				@Title ,
 				CAST(@Created_At as DATETIME) ,
 				@body ,
@@ -806,93 +882,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SetOrg]    Script Date: 6/1/2019 5:21:46 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:      Rafat Sarosh
--- Create Date: 1/5/2019
--- Description:  
--- =============================================
-CREATE PROCEDURE [dbo].[SaveOrg]
-	(
-	-- Add the parameters for the stored procedure here
-	@TenantId INT,
-	@Org VARCHAR(200)
-)
-AS
-BEGIN
-
-	IF NOT EXISTS ( SELECT *
-	FROM [dbo].[TenantOrg]
-	WHERE TenantId = @TenantId AND Org = @org)   
-		BEGIN
-		Insert into TenantOrg
-			(TenantId,Org)
-		Values
-			(@TenantId, @Org);
-	END
-
-
-
-
-
-END
-GO
-/****** Object:  StoredProcedure [dbo].[SetRepoCollection]    Script Date: 6/1/2019 5:21:46 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:      Rafat Sarosh
--- Create Date: 1/5/2019
--- Description:  
--- =============================================
-CREATE PROCEDURE [dbo].[SetRepoCollection]
-	(
-	@TenantId VARCHAR (50),
-	@Org VARCHAR (200),
-	@Repos VARCHAR (200),
-	@CollectionName VARCHAR (200)
-)
-AS
-DECLARE @Repo VARCHAR (200)
-
-CREATE TABLE #T1
-(
-	val VARCHAR(200),
-)
-INSERT INTO #t1
-SELECT VALUE
-FROM STRING_SPLIT (@Repos, ',')
-
-DECLARE RepoCur CURSOR READ_ONLY
-      FOR
-      SELECT val
-FROM #T1
-
-OPEN RepoCur
-
-FETCH NEXT FROM RepoCur INTO @Repo
-
-WHILE @@FETCH_STATUS = 0
-	BEGIN
-		IF NOT EXISTS ( SELECT *
-		FROM RepoCollections
-		WHERE TenantId = @TenantId AND ORG = @Org AND CollectionName = @CollectionName AND Repo = @Repo)
-				BEGIN
-			INSERT INTO RepoCollections
-				([TenantId],[Org],[Repo],[CollectionName])
-			VALUES
-				(@TenantId, @Org, @Repo, @CollectionName)
-	END
-	FETCH NEXT FROM RepoCur INTO @Repo
-END
-GO
-/****** Object:  StoredProcedure [dbo].[SetRepos]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  StoredProcedure [dbo].[SaveRepos]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -962,7 +952,37 @@ BEGIN
 	*/
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SetTenant]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  StoredProcedure [dbo].[SaveSTATUS]    Script Date: 6/25/2019 1:08:05 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[SaveSTATUS]
+	(
+	-- Add the parameters for the stored procedure here
+	@TenantId INT,
+	@Status CHAR(50),
+	@Message VARCHAR(2000)
+)
+AS
+BEGIN
+
+	IF EXISTS ( SELECT * FROM [dbo].Status 	WHERE TenantId = @TenantId AND Status = @Status )   
+		BEGIN
+			UPDATE Status 
+				 set [Message] = @Message, LastUpdated = GETDATE()  WHERE TenantId = @TenantId AND Status = @Status
+		END
+	 ELSE  
+		BEGIN
+			INSERT INTO Status
+				(TenantId,[Status], [Message], lastUpdated)
+			Values
+				(@TenantId, @Status, @Message,  GETDATE());
+	END
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SaveTenant]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1006,7 +1026,58 @@ BEGIN
 		(@Id, @email, @UserName, @DisplayName, @ProfileUrl, @Photo, @AuthToken, @RefreshToken, GETDATE());
 END
 GO
-/****** Object:  StoredProcedure [dbo].[TopDevForLastXDays]    Script Date: 6/1/2019 5:21:46 AM ******/
+/****** Object:  StoredProcedure [dbo].[SetRepoCollection]    Script Date: 6/25/2019 1:08:05 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[SetRepoCollection]
+	(
+	@TenantId VARCHAR (50),
+	@Org VARCHAR (200),
+	@Repos VARCHAR (200),
+	@CollectionName VARCHAR (200)
+)
+AS
+DECLARE @Repo VARCHAR (200)
+
+CREATE TABLE #T1
+(
+	val VARCHAR(200),
+)
+INSERT INTO #t1
+SELECT VALUE
+FROM STRING_SPLIT (@Repos, ',')
+
+DECLARE RepoCur CURSOR READ_ONLY
+      FOR
+      SELECT val
+FROM #T1
+
+OPEN RepoCur
+
+FETCH NEXT FROM RepoCur INTO @Repo
+
+WHILE @@FETCH_STATUS = 0
+	BEGIN
+		IF NOT EXISTS ( SELECT *
+		FROM RepoCollections
+		WHERE TenantId = @TenantId AND ORG = @Org AND CollectionName = @CollectionName AND Repo = @Repo)
+				BEGIN
+			INSERT INTO RepoCollections
+				([TenantId],[Org],[Repo],[CollectionName])
+			VALUES
+				(@TenantId, @Org, @Repo, @CollectionName)
+	END
+	FETCH NEXT FROM RepoCur INTO @Repo
+END
+GO
+/****** Object:  StoredProcedure [dbo].[TopDevForLastXDays]    Script Date: 6/25/2019 1:08:05 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1039,34 +1110,5 @@ BEGIN
 
 END
 GO
-
-/****** Object:  StoredProcedure [dbo].[GetOrg]    Script Date: 6/1/2019 9:28:23 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:      Rafat Sarosh
--- Create Date: 1/5/2019
--- Description:  
--- =============================================
-Create PROCEDURE [dbo].[GetDevs]
-	(
-	-- Add the parameters for the stored procedure here
-	@TenantId INT,
-	@org VARCHAR(50)
-	
-)
-AS
-BEGIN
-
-	SELECT *
-	FROM [dbo].[TenantOrg]
-	WHERE TenantId = @TenantId and Org = @Org
-
-
-END
-
-
-ALTER DATABASE [git] SET  READ_WRITE 
+ALTER DATABASE [Gator] SET  READ_WRITE 
 GO
