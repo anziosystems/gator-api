@@ -56,6 +56,23 @@ router.get('/GetOrg', validateToken, (req: any, res: any) => {
   });
 });
 
+/* 
+returns {
+  [
+    {state: 'closed',
+     Date = "May 1 2019",
+     Ctr = 34
+  } ...]
+}
+
+*/
+router.get('/GetGraphData4XDays', validateToken, (req: any, res: any) => {
+  sqlRepositoy.GetGraphData4XDays(req.query.org,  req.query.day, req.query.bustTheCache).then(result => {
+    return res.json(result);
+  });
+});
+
+
 router.get('/GetHookStatus', validateToken, (req: any, res: any) => {
 
   const tenantId = getTenant(req, res);

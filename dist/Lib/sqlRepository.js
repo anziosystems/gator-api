@@ -133,6 +133,28 @@ class SQLRepository {
             return recordSet.recordset;
         });
     }
+    // Date, Ctr, State (open, closed) will be returned
+    GetGraphData4XDays(org, day, bustTheCache = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let cacheKey = 'GetGraphData4XDays-' + org + day;
+            if (bustTheCache) {
+                this.myCache.del(cacheKey);
+            }
+            let val = this.myCache.get(cacheKey);
+            if (val) {
+                return val;
+            }
+            yield this.createPool();
+            const request = yield this.pool.request();
+            request.input('day', sql.Int, day);
+            request.input('org', sql.VarChar(this.ORG_LEN), org);
+            const recordSet = yield request.execute('GetGraphData4XDays');
+            if (recordSet) {
+                this.myCache.set(cacheKey, recordSet.recordset);
+            }
+            return recordSet.recordset;
+        });
+    }
     saveStatus(tenantId, status, message = '') {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();

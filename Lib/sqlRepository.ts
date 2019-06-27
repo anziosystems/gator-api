@@ -154,6 +154,31 @@ class SQLRepository {
     return recordSet.recordset;
   }
 
+ // Date, Ctr, State (open, closed) will be returned
+
+ async GetGraphData4XDays( org: string, day: number, bustTheCache: Boolean = false ) {
+  let cacheKey = 'GetGraphData4XDays-' +  org + day;
+
+  if (bustTheCache) {
+    this.myCache.del(cacheKey);
+  }
+
+  let val = this.myCache.get(cacheKey);
+
+  if (val) {
+    return val;
+  }
+
+  await this.createPool();
+  const request = await this.pool.request();
+  request.input('day', sql.Int, day);
+  request.input('org', sql.VarChar(this.ORG_LEN), org);
+  const recordSet = await request.execute('GetGraphData4XDays');
+  if (recordSet) {
+    this.myCache.set(cacheKey, recordSet.recordset);
+  }
+  return recordSet.recordset;
+}
 
   async saveStatus(tenantId: string, status: string, message: string = '') {
     await this.createPool();

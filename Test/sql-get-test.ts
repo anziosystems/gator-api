@@ -121,6 +121,22 @@ describe('LongestPullRequest', () => {
   });
 });
 
+describe('GetGraphData4XDays', () => {
+  it.only('should return recordset', async () => {
+    let sqlRepositoy = new SQLRepository(null);
+    let org = 'LabShare';
+    let day = 30;
+    await sqlRepositoy.GetGraphData4XDays(org, day, true).then((result:any)  => {
+      expect(result[0].Ctr).to.greaterThan(0);
+      //result[0].state = 'closed'
+      //result[0].Date = "May 1 2019"
+      
+    });
+  }); 
+});
+
+
+
 describe('GetTopRespositories4XDays', () => {
   it('should return recordset', async () => {
     let sqlRepositoy = new SQLRepository(null);
