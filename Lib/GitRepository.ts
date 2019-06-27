@@ -249,7 +249,7 @@ class GitRepository {
           if (response.statusCode === 422) {
             this.sqlRepository.saveStatus(tenantId,'SET-HOOK-FAIL-' +  org.substr(0,20), `response status: ${response.statusCode}` );
             console.log('==> Warning: Hook already existing: ' + response.statusCode );
-            return 1;
+            return 422;
           }
           return 0;
         }
@@ -257,6 +257,7 @@ class GitRepository {
     } catch (ex) {
       this.sqlRepository.saveStatus(tenantId,'SET-HOOK-FAIL-' + org.substr(0,20), ex );
       console.log(`==> Could not install webhook for ${org} Status: ${ex.statusCode}`);
+      return 0;
     }
   }
 
