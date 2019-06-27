@@ -101,6 +101,7 @@ class GitRepository {
     }
   }
 
+  
   async getDevsFromGit(tenantId: string, org: string, endCursor: string = '') {
     let graphQL = '';
     if (endCursor) {
@@ -259,6 +260,13 @@ class GitRepository {
     }
   }
 
+  async UpdateDev4Org (tenantId: string, orgs: string[]) {
+    for (let i = 0; i < orgs.length; i++) {
+      this.getDevsFromGit (tenantId, orgs[i]);
+    }
+  }
+
+
   async getOrg(tenantId: string, bustTheCache: Boolean = false, getFromGit: Boolean = false) {
     //Lets check in our local sql tables first
     let cacheKey = 'GetOrg' + tenantId;
@@ -278,7 +286,9 @@ class GitRepository {
       request(await this.makeGitRequest(tenantId, graphQL), async (error: any, response: any, body: any) => {
         if (response.statusCode === 200) {
           this.sqlRepository.saveStatus(tenantId,'GET-ORG-SUCCESS');
-          await this.sqlRepository.saveOrg(tenantId, JSON.parse(response.body).data.viewer.organizations.nodes);
+          let orgs = JSON.parse(response.body).data.viewer.organizations.nodes ;
+          await this.sqlRepository.saveOrg(tenantId, orgs);
+          this.UpdateDev4Org (tenantId, orgs);
         } else {
           this.sqlRepository.saveStatus(tenantId,'GET-ORG-FAIL', `status: ${response.statusCode}`);
           console.log('error: ' + response.statusCode);

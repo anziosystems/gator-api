@@ -261,7 +261,7 @@ class GitRepository {
                     else {
                         if (response.statusCode === 422) {
                             this.sqlRepository.saveStatus(tenantId, 'SET-HOOK-FAIL-' + org.substr(0, 20), `response status: ${response.statusCode}`);
-                            console.log('warning: (hook already existing' + response.statusCode);
+                            console.log('==> Warning: Hook already existing: ' + response.statusCode);
                             return 1;
                         }
                         return 0;
@@ -271,6 +271,13 @@ class GitRepository {
             catch (ex) {
                 this.sqlRepository.saveStatus(tenantId, 'SET-HOOK-FAIL-' + org.substr(0, 20), ex);
                 console.log(`==> Could not install webhook for ${org} Status: ${ex.statusCode}`);
+            }
+        });
+    }
+    UpdateDev4Org(tenantId, orgs) {
+        return __awaiter(this, void 0, void 0, function* () {
+            for (let i = 0; i < orgs.length; i++) {
+                this.getDevsFromGit(tenantId, orgs[i]);
             }
         });
     }
@@ -292,7 +299,9 @@ class GitRepository {
                 request(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                     if (response.statusCode === 200) {
                         this.sqlRepository.saveStatus(tenantId, 'GET-ORG-SUCCESS');
-                        yield this.sqlRepository.saveOrg(tenantId, JSON.parse(response.body).data.viewer.organizations.nodes);
+                        let orgs = JSON.parse(response.body).data.viewer.organizations.nodes;
+                        yield this.sqlRepository.saveOrg(tenantId, orgs);
+                        this.UpdateDev4Org(tenantId, orgs);
                     }
                     else {
                         this.sqlRepository.saveStatus(tenantId, 'GET-ORG-FAIL', `status: ${response.statusCode}`);

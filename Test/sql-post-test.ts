@@ -38,6 +38,18 @@ describe('SaveStatus', () => {
   });
 });
 
+describe('SaveActiveTenant', () => {
+  it('should return rowsAffected', async () => {
+    let sqlRepositoy = new SQLRepository(null);
+    let tenantId: number = 1040817;
+    await sqlRepositoy.setActiveTenant(tenantId).then(result => {
+      expect(result).to.greaterThan(0);
+    });
+  });
+});
+
+
+
 describe('FillPullRequest', () => {
   it('should return rowsAffected', async () => {
     let gitRepository = new GitRepository();

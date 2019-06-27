@@ -226,6 +226,18 @@ class SQLRepository {
     return recordSet.recordset;
   }
 
+  //No one calls this yet, the SP is called directly from another SP GetTenant. Leaving for future use.
+  async setActiveTenant(id: number) {
+    await this.createPool();
+    const request = await this.pool.request();
+    request.input('TenantId', sql.Int, id);
+    let recordSet = await request.execute('SaveActiveTenant');
+    if (recordSet) {
+      return recordSet.rowsAffected.length;
+    } else 
+    return 0;
+  }
+
   //Token will return UserName, DisplayName, ProfileURL, AuthToken, LastUpdated and Photo (URL)
 
   async getTenant(id: number) {

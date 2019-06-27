@@ -198,6 +198,20 @@ class SQLRepository {
             return recordSet.recordset;
         });
     }
+    //No one calls this yet, the SP is called directly from another SP GetTenant. Leaving for future use.
+    setActiveTenant(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.createPool();
+            const request = yield this.pool.request();
+            request.input('TenantId', sql.Int, id);
+            let recordSet = yield request.execute('SaveActiveTenant');
+            if (recordSet) {
+                return recordSet.rowsAffected.length;
+            }
+            else
+                return 0;
+        });
+    }
     //Token will return UserName, DisplayName, ProfileURL, AuthToken, LastUpdated and Photo (URL)
     getTenant(id) {
         return __awaiter(this, void 0, void 0, function* () {
