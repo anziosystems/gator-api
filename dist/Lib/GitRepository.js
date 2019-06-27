@@ -30,16 +30,16 @@ class GitRepository {
                             let a = JSON.parse(body);
                             if (a.length > 0) {
                                 this.sqlRepository.saveStatus(tenantId, 'CHECK-HOOK-SUCCESS-' + org.substr(0, 20), ' ');
-                                resolve();
+                                resolve(true);
                             }
                             else {
                                 this.sqlRepository.saveStatus(tenantId, 'CHECK-HOOK-FAIL-' + org.substr(0, 20), ' ');
-                                reject();
+                                reject(false);
                             }
                         }
                         else {
                             this.sqlRepository.saveStatus(tenantId, 'CHECK-HOOK-FAIL-' + org.substr(0, 20), ' ');
-                            reject();
+                            reject(false);
                         }
                     });
                 });
@@ -235,9 +235,17 @@ class GitRepository {
             }
         });
     }
+    /*
+    returns:
+    
+      404 - Cannot install the hook
+      422 - Already hook present
+      201 - Hook installed successfully
+    */
     setupWebHook(tenantId, org) {
         return __awaiter(this, void 0, void 0, function* () {
             //Lets go to git
+            let result;
             const graphQL = `{
       "name": "web",
       "active": true,
@@ -256,21 +264,22 @@ class GitRepository {
                     if (response.statusCode === 201) {
                         this.sqlRepository.saveStatus(tenantId, 'SET-HOOK-SUCCESS-' + org.substr(0, 20), ' ');
                         console.log('Successfully hook is setup');
-                        return 1;
                     }
                     else {
                         if (response.statusCode === 422) {
                             this.sqlRepository.saveStatus(tenantId, 'SET-HOOK-FAIL-' + org.substr(0, 20), `response status: ${response.statusCode}`);
                             console.log('==> Warning: Hook already existing: ' + response.statusCode);
-                            return 1;
                         }
-                        return 0;
                     }
+                    result = response.statusCode;
+                    return result;
+                    //Another excption happen after this from git call. hence this wrap of try - catch
+                    //see up there are two awaits. and git exception is about hook already present
                 });
             }
             catch (ex) {
-                this.sqlRepository.saveStatus(tenantId, 'SET-HOOK-FAIL-' + org.substr(0, 20), ex);
-                console.log(`==> Could not install webhook for ${org} Status: ${ex.statusCode}`);
+                console.log('==> setupWebHook' + ex);
+                return result;
             }
         });
     }

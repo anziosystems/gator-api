@@ -203,7 +203,8 @@ router.get('/GetRepoCollectionByName', validateToken, (req, res) => {
 });
 router.get('/SetupWebHook', validateToken, (req, res) => {
     gitRepository.setupWebHook(getTenant(req, res), req.query.org).then((result) => {
-        return res.json(result);
+        console.log("==>Setupwebhook returning " + result);
+        return res.json({ val: result });
     });
 });
 module.exports = router;

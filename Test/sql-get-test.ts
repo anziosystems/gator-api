@@ -83,13 +83,29 @@ describe('getDevs4Org', () => {
 
 //SetupWebHook
 describe('SetupWebHook', () => {
-  it.skip('should return a number', async () => {
+  it('should return a 404 - can not install the hook', async () => {
     let gitRepository = new GitRepository();
-    let org = 'anziosystems';
+    let org = 'ncats';
     let tenantId = '1040817';
     await gitRepository.setupWebHook(tenantId, org).then((result:any) => {
       console.log(result);
-      expect(result).to.eq(1);
+      expect(result).to.eq(404); //means cannot install web hook
+    }, error => {
+      console.log ('==>Test Error' + error) ;
+    });
+  });
+});
+
+describe('SetupWebHook', () => {
+  it('should return a 422 for already installed hook', async () => {
+    let gitRepository = new GitRepository();
+    let org = 'LabShare';
+    let tenantId = '1040817';
+    await gitRepository.setupWebHook(tenantId, org).then((result:any) => {
+      console.log(result);
+      expect(result).to.eq(422); //means  web hook already installed
+    }, error => {
+      console.log ('==>Test Error' + error) ;
     });
   });
 });
