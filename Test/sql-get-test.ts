@@ -122,7 +122,7 @@ describe('LongestPullRequest', () => {
 });
 
 describe('GetGraphData4XDays', () => {
-  it.only('should return recordset', async () => {
+  it('should return recordset', async () => {
     let sqlRepositoy = new SQLRepository(null);
     let org = 'LabShare';
     let day = 30;

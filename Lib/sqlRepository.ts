@@ -48,7 +48,7 @@ class SQLRepository {
   pool: any;
   myCache: any;
   sqlConfigSetting: any = {};
-  CACHE_DURATION_SEC: number = 600;
+  CACHE_DURATION_SEC: number = 6000; //50 min
   MESSAGE_LEN: number = 2000;
   TENANT_LEN: number = 50;
   ORG_LEN: number = 200;
@@ -128,8 +128,11 @@ class SQLRepository {
       request.input('day', sql.Int, day);
       request.input('PageSize', sql.Int, pageSize);
       const recordSet = await request.execute('GetRepoPR');
-      this.myCache.set(cacheKey, recordSet.recordset);
-      return recordSet.recordset;
+      if (recordSet) {
+        this.myCache.set(cacheKey, recordSet.recordset);
+        return recordSet.recordset;
+      } else 
+      return false ;
     } catch (ex) {
       console.log(`==> getRepoPR {ex}`);
       return false;
@@ -137,12 +140,21 @@ class SQLRepository {
   }
 
   async getAllRepoCollection4TenantOrg(tenantId: string, org: string, bustTheCache: Boolean = false) {
+    let cacheKey = 'getAllRepoCollection4TenantOrg' + org + tenantId;
+    let val = this.myCache.get(cacheKey);
+    if (val) {
+      return val;
+    }
     await this.createPool();
     const request = await this.pool.request();
     request.input('TenantId', sql.Int, Number(tenantId));
     request.input('Org', sql.VarChar(this.ORG_LEN), org);
     const recordSet = await request.execute('[GetAllRepoCollection4TenantOrg]');
-    return recordSet.recordset;
+    if (recordSet) {
+      this.myCache.set(cacheKey, recordSet.recordset);
+      return recordSet.recordset;
+    } else 
+      return false ;
   }
 
   async getDevs(tenantId: string, org: string ) {
@@ -316,6 +328,12 @@ class SQLRepository {
   }
 
   async getTopDev4LastXDays(org: string, day: number = 1) {
+    let cacheKey = 'getTopDev4LastXDays' + org + day;
+    let val = this.myCache.get(cacheKey);
+    if (val) {
+      return val;
+    }
+
     await this.createPool();
     const request = await this.pool.request();
     if (!org) {
@@ -324,7 +342,12 @@ class SQLRepository {
     request.input('Org', sql.VarChar(this.ORG_LEN), org);
     request.input('Day', sql.Int, day);
     const recordSet = await request.execute('TopDevForLastXDays');
-    return recordSet.recordset;
+    if (recordSet.recordset) {
+      this.myCache.set(cacheKey, recordSet.recordset);
+      return recordSet.recordset;
+    } else {
+      return;
+    }
   }
 
   async getPR4Id(org: string, id: number = 1) {
@@ -411,6 +434,11 @@ class SQLRepository {
   }
 
   async getTopRepo4XDays(org: string, day: number = 1) {
+    let cacheKey = 'getTopRepo4XDays' + org + day.toString();
+    let val = this.myCache.get(cacheKey);
+    if (val) {
+      return val;
+    }
     await this.createPool();
     const request = await this.pool.request();
     if (!org) {
@@ -419,10 +447,18 @@ class SQLRepository {
     request.input('Org', sql.VarChar(this.ORG_LEN), org);
     request.input('Day', sql.Int, day);
     const recordSet = await request.execute('GetTopRepos4XDays');
+    if (recordSet) {
+      this.myCache.set(cacheKey, recordSet.recordset);
+    }
     return recordSet.recordset;
   }
 
   async getPR4LastXDays(org: string, day: number = 1) {
+    let cacheKey = 'getPR4LastXDays' + org + day.toString();
+    let val = this.myCache.get(cacheKey);
+    if (val) {
+      return val;
+    }
     await this.createPool();
     const request = await this.pool.request();
     if (!org) {
@@ -431,6 +467,9 @@ class SQLRepository {
     request.input('Org', sql.VarChar(this.ORG_LEN), org);
     request.input('Day', sql.Int, day);
     const recordSet = await request.execute('PR4LastXDays');
+    if (recordSet) {
+      this.myCache.set(cacheKey, recordSet.recordset);
+    }
     return recordSet.recordset;
   }
 

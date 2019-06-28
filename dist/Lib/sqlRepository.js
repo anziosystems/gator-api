@@ -26,7 +26,7 @@ exports.Tenant = Tenant;
 class SQLRepository {
     constructor(obj) {
         this.sqlConfigSetting = {};
-        this.CACHE_DURATION_SEC = 600;
+        this.CACHE_DURATION_SEC = 6000; //50 min
         this.MESSAGE_LEN = 2000;
         this.TENANT_LEN = 50;
         this.ORG_LEN = 200;
@@ -104,8 +104,12 @@ class SQLRepository {
                 request.input('day', sql.Int, day);
                 request.input('PageSize', sql.Int, pageSize);
                 const recordSet = yield request.execute('GetRepoPR');
-                this.myCache.set(cacheKey, recordSet.recordset);
-                return recordSet.recordset;
+                if (recordSet) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else
+                    return false;
             }
             catch (ex) {
                 console.log(`==> getRepoPR {ex}`);
@@ -115,12 +119,22 @@ class SQLRepository {
     }
     getAllRepoCollection4TenantOrg(tenantId, org, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
+            let cacheKey = 'getAllRepoCollection4TenantOrg' + org + tenantId;
+            let val = this.myCache.get(cacheKey);
+            if (val) {
+                return val;
+            }
             yield this.createPool();
             const request = yield this.pool.request();
             request.input('TenantId', sql.Int, Number(tenantId));
             request.input('Org', sql.VarChar(this.ORG_LEN), org);
             const recordSet = yield request.execute('[GetAllRepoCollection4TenantOrg]');
-            return recordSet.recordset;
+            if (recordSet) {
+                this.myCache.set(cacheKey, recordSet.recordset);
+                return recordSet.recordset;
+            }
+            else
+                return false;
         });
     }
     getDevs(tenantId, org) {
@@ -293,6 +307,11 @@ class SQLRepository {
     }
     getTopDev4LastXDays(org, day = 1) {
         return __awaiter(this, void 0, void 0, function* () {
+            let cacheKey = 'getTopDev4LastXDays' + org + day;
+            let val = this.myCache.get(cacheKey);
+            if (val) {
+                return val;
+            }
             yield this.createPool();
             const request = yield this.pool.request();
             if (!org) {
@@ -301,7 +320,13 @@ class SQLRepository {
             request.input('Org', sql.VarChar(this.ORG_LEN), org);
             request.input('Day', sql.Int, day);
             const recordSet = yield request.execute('TopDevForLastXDays');
-            return recordSet.recordset;
+            if (recordSet.recordset) {
+                this.myCache.set(cacheKey, recordSet.recordset);
+                return recordSet.recordset;
+            }
+            else {
+                return;
+            }
         });
     }
     getPR4Id(org, id = 1) {
@@ -392,6 +417,11 @@ class SQLRepository {
     }
     getTopRepo4XDays(org, day = 1) {
         return __awaiter(this, void 0, void 0, function* () {
+            let cacheKey = 'getTopRepo4XDays' + org + day.toString();
+            let val = this.myCache.get(cacheKey);
+            if (val) {
+                return val;
+            }
             yield this.createPool();
             const request = yield this.pool.request();
             if (!org) {
@@ -400,11 +430,19 @@ class SQLRepository {
             request.input('Org', sql.VarChar(this.ORG_LEN), org);
             request.input('Day', sql.Int, day);
             const recordSet = yield request.execute('GetTopRepos4XDays');
+            if (recordSet) {
+                this.myCache.set(cacheKey, recordSet.recordset);
+            }
             return recordSet.recordset;
         });
     }
     getPR4LastXDays(org, day = 1) {
         return __awaiter(this, void 0, void 0, function* () {
+            let cacheKey = 'getPR4LastXDays' + org + day.toString();
+            let val = this.myCache.get(cacheKey);
+            if (val) {
+                return val;
+            }
             yield this.createPool();
             const request = yield this.pool.request();
             if (!org) {
@@ -413,6 +451,9 @@ class SQLRepository {
             request.input('Org', sql.VarChar(this.ORG_LEN), org);
             request.input('Day', sql.Int, day);
             const recordSet = yield request.execute('PR4LastXDays');
+            if (recordSet) {
+                this.myCache.set(cacheKey, recordSet.recordset);
+            }
             return recordSet.recordset;
         });
     }
