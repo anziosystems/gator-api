@@ -1,11 +1,22 @@
 //https://www.youtube.com/watch?v=or1_A4sJ-oY
 const router = require('express').Router();
 
+/*
+Jira calls must have following in the header
+
+req.headers['jiraOrg'];  //AccessibleResources Id
+req.headers['JiraToken'];  //This is JiraTenant Id
+
+*/
+
 import {SQLRepository} from './Lib/sqlRepository';
-import {GitRepository} from './Lib/gitRepository';
+import {GitRepository} from './Lib/GitRepository';
+import {JiraRepository} from './Lib/JiraRepository';
 
 let sqlRepositoy = new SQLRepository(null);
 let gitRepository = new GitRepository();
+let jiraRepository = new JiraRepository();
+
 const jwt = require('jsonwebtoken');
 const verifyOptions = {
   algorithm: ['RS256'],
@@ -13,6 +24,7 @@ const verifyOptions = {
 
 async function isTokenValid(tenantId: number): Promise<boolean> {
   try {
+    //Return  false if there is no tenant, true if tenant exist
     return await sqlRepositoy.checkToken(tenantId).then(r => {
       if (r) {
         return true;
@@ -25,8 +37,23 @@ async function isTokenValid(tenantId: number): Promise<boolean> {
   }
 }
 
+async function isJiraTokenValid(tenantId: number): Promise<boolean> {
+  try {
+    //Return  false if there is no tenant, true if tenant exist
+    return await sqlRepositoy.checkJiraToken(tenantId).then(r => {
+      if (r) {
+        return true;
+      } else {
+        return false;
+      }
+    });
+  } catch (ex) {
+    return false;
+  }
+}
+
 function validateToken(req: any, res: any, next: any) {
-  const tenantId = getTenant(req, res);
+  const tenantId = getTenant(req, res); //GetTenantId from req
   isTokenValid(tenantId).then(val => {
     if (!val) {
       return res.json({val: false, code: 404, message: 'Auth Failed'});
@@ -36,25 +63,103 @@ function validateToken(req: any, res: any, next: any) {
   });
 }
 
+function validateJiraToken(req: any, res: any, next: any) {
+  const tenantId = getJiraTenant(req, res); //GetTenantId from req
+  isJiraTokenValid(tenantId).then(val => {
+    if (!val) {
+      return res.json({val: false, code: 404, message: 'Jira Auth Failed'});
+    } else {
+      next();
+    }
+  });
+}
+
 function getTenant(req: any, res: any) {
   try {
     const token = req.headers['authorization']; //it is tenantId in header
+    //
     const result = jwt.verify(token, process.env.Session_Key, verifyOptions);
     if (result) return result;
     else {
       return;
     }
   } catch (ex) {
-    console.log(`==> ${ex}`);
+    console.log(`==> getTenant ${ex}`);
     return;
   }
 }
+
+function getJiraTenant(req: any, res: any) {
+  try {
+    const token = req.headers['JiraToken']; //it is tenantId in header
+    //
+    const result = jwt.verify(token, process.env.Session_Key, verifyOptions);
+    if (result) return result;
+    else {
+      return;
+    }
+  } catch (ex) {
+    console.log(`==> getJiraTenant ${ex}`);
+    return;
+  }
+}
+
+async function getJiraOrg(req: any, res: any): Promise<any> {
+  const jiraOrg = req.headers['jiraOrg']; //it is tenantId in header
+  if (!jiraOrg) {
+    //Oops!lets  get it from the DB
+    jiraRepository.getJiraOrg(getJiraTenant(req, res), req.query.bustTheCache).then(result => {
+      return result; //guid string of the AccessResource Id
+    });
+  } else {
+    return jiraOrg;
+  }
+}
+
+//header must have JiraTenant and JiraOrg
+router.get('/GetJiraUsers', validateJiraToken, (req: any, res: any) => {
+  getJiraOrg(req, res).then(jiraOrg => {
+    jiraRepository.GetJiraUsers(getJiraTenant(req, res),jiraOrg, req.query.bustTheCache).then(result => {
+      return res.json(result);
+    });
+  });
+});
+
+
+//header must have JiraTenant  
+router.get('/GetJiraOrgs', validateJiraToken, (req: any, res: any) => {
+  jiraRepository.getJiraOrgs(getJiraTenant(req, res), req.query.bustTheCache).then(result => {
+    return result; //guid string of the AccessResource Id
+  });
+  
+});
+
+//header must have JiraTenant  
+router.get('/GetJiraIssues', validateJiraToken, (req: any, res: any) => {
+  getJiraOrg(req, res).then(jiraOrg => {
+    jiraRepository
+      .getJiraIssues(
+        getJiraTenant(req, res), //tenant
+        jiraOrg, //org
+        '557058:f39310b9-d30a-41a3-8011-6a6ae5eeed07', //userId
+        '"In Progress" OR status="To Do"', //status
+        'summary,status, assignee,created, updated', //fields
+      )
+      .then(result => {
+        return res.json(result);
+      })
+    });
+  
+});
 
 router.get('/GetOrg', validateToken, (req: any, res: any) => {
   gitRepository.getOrg(getTenant(req, res), req.query.bustTheCache, req.query.getFromGit).then(result => {
     return res.json(result);
   });
 });
+
+
+
 
 /* 
 returns {
@@ -67,14 +172,12 @@ returns {
 
 */
 router.get('/GetGraphData4XDays', validateToken, (req: any, res: any) => {
-  sqlRepositoy.GetGraphData4XDays(req.query.org,  req.query.day, req.query.bustTheCache).then(result => {
+  sqlRepositoy.GetGraphData4XDays(req.query.org, req.query.day, req.query.bustTheCache).then(result => {
     return res.json(result);
   });
 });
 
-
 router.get('/GetHookStatus', validateToken, (req: any, res: any) => {
-
   const tenantId = getTenant(req, res);
   gitRepository
     .GetHookStatus(tenantId, req.query.org)
@@ -113,7 +216,7 @@ router.get('/GetHookStatus', validateToken, (req: any, res: any) => {
     .catch(ex => {
       if (ex) {
         console.log(`==> GetHookStatus ${ex}`);
-      } 
+      }
       return res.json({val: false});
     });
 });
@@ -205,7 +308,6 @@ router.get('/GetPRfromGit', validateToken, (req: any, res: any) => {
   });
 });
 
-
 router.get('/GetAllRepoCollection4TenantOrg', validateToken, (req: any, res: any) => {
   sqlRepositoy.getAllRepoCollection4TenantOrg(getTenant(req, res), req.query.org, req.query.bustTheCache).then(result => {
     return res.json(result);
@@ -220,8 +322,8 @@ router.get('/GetRepoCollectionByName', validateToken, (req: any, res: any) => {
 });
 
 router.get('/SetupWebHook', validateToken, (req: any, res: any) => {
-  gitRepository.setupWebHook(getTenant(req, res), req.query.org).then((result:any)  => {
-    console.log ("==>Setupwebhook returning " + result);
+  gitRepository.setupWebHook(getTenant(req, res), req.query.org).then((result: any) => {
+    console.log('==>Setupwebhook returning ' + result);
     return res.json({val: result});
   });
 });

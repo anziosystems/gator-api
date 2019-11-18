@@ -122,7 +122,7 @@ class GitRepository {
                     if (response.statusCode === 200) {
                         let result = JSON.parse(body);
                         if (!result.data) {
-                            console.log('No Devs found for org:' + org);
+                            console.log(`getDevsFromGit: No Devs found for org: ${JSON.stringify(org)}`);
                         }
                         else {
                             yield this.sqlRepository.saveDevs(tenantId, org, result.data.organization.membersWithRole.nodes);
@@ -135,7 +135,8 @@ class GitRepository {
                         }
                     }
                     else {
-                        console.log('getDevsFromGit: org - ' + org + ' - ' + body);
+                        console.log(`
+             org - ${org} - ${body}`);
                     }
                 }));
                 //git call has put the org in SQL, now lets get it from (cache).
@@ -329,4 +330,4 @@ class GitRepository {
     }
 }
 exports.GitRepository = GitRepository;
-//# sourceMappingURL=gitRepository.js.map
+//# sourceMappingURL=GitRepository.js.map

@@ -4,7 +4,7 @@ const app = express();
 const authRoutes = require('./auth-routes');
 const serviceRoutes = require('./service-routes');
 const cookieSession = require('cookie-session');
-const passport = require('Passport');
+const passport = require('passport');
 const session = require('express-session');
 app.set('view engine', 'ejs');
 app.use(cors());
@@ -50,10 +50,13 @@ passport.deserializeUser(function(id: any, done: any) {
     console.log(`==> Inside DeserializeUser - id: ${id}`);
     let sqlRepositoy = new SQLRepository(null);
     sqlRepositoy.getTenant(id).then(result => {
-      console.log('==> inside deserialize - user.id: ' + result[0].Id);
-      //do something with Tenant details
-      //https://github.com/jaredhanson/passport/issues/6
-      done(null, false); //don't care for done. Else pass value in place of false.  // invalidates the existing login session.
+      if (result) {
+        console.log('==> inside deserialize - user.id: ' + result[0].Id);
+        //do something with Tenant details
+        //https://github.com/jaredhanson/passport/issues/6
+        done(null, false); //don't care for done. Else pass value in place of false.  // invalidates the existing login session.
+      }
+      done(null, false); //dont care - really - but necessary
     });
   } catch (ex) {
     console.log(`==> deserializeUser ${ex}`);

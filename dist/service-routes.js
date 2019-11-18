@@ -10,10 +10,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 //https://www.youtube.com/watch?v=or1_A4sJ-oY
 const router = require('express').Router();
+/*
+Jira calls must have following in the header
+
+req.headers['jiraOrg'];  //AccessibleResources Id
+req.headers['JiraToken'];  //This is JiraTenant Id
+
+*/
 const sqlRepository_1 = require("./Lib/sqlRepository");
-const gitRepository_1 = require("./Lib/gitRepository");
+const GitRepository_1 = require("./Lib/GitRepository");
+const JiraRepository_1 = require("./Lib/JiraRepository");
 let sqlRepositoy = new sqlRepository_1.SQLRepository(null);
-let gitRepository = new gitRepository_1.GitRepository();
+let gitRepository = new GitRepository_1.GitRepository();
+let jiraRepository = new JiraRepository_1.JiraRepository();
 const jwt = require('jsonwebtoken');
 const verifyOptions = {
     algorithm: ['RS256'],
@@ -21,6 +30,7 @@ const verifyOptions = {
 function isTokenValid(tenantId) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            //Return  false if there is no tenant, true if tenant exist
             return yield sqlRepositoy.checkToken(tenantId).then(r => {
                 if (r) {
                     return true;
@@ -35,8 +45,26 @@ function isTokenValid(tenantId) {
         }
     });
 }
+function isJiraTokenValid(tenantId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            //Return  false if there is no tenant, true if tenant exist
+            return yield sqlRepositoy.checkJiraToken(tenantId).then(r => {
+                if (r) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            });
+        }
+        catch (ex) {
+            return false;
+        }
+    });
+}
 function validateToken(req, res, next) {
-    const tenantId = getTenant(req, res);
+    const tenantId = getTenant(req, res); //GetTenantId from req
     isTokenValid(tenantId).then(val => {
         if (!val) {
             return res.json({ val: false, code: 404, message: 'Auth Failed' });
@@ -46,9 +74,21 @@ function validateToken(req, res, next) {
         }
     });
 }
+function validateJiraToken(req, res, next) {
+    const tenantId = getJiraTenant(req, res); //GetTenantId from req
+    isJiraTokenValid(tenantId).then(val => {
+        if (!val) {
+            return res.json({ val: false, code: 404, message: 'Jira Auth Failed' });
+        }
+        else {
+            next();
+        }
+    });
+}
 function getTenant(req, res) {
     try {
         const token = req.headers['authorization']; //it is tenantId in header
+        //
         const result = jwt.verify(token, process.env.Session_Key, verifyOptions);
         if (result)
             return result;
@@ -57,10 +97,68 @@ function getTenant(req, res) {
         }
     }
     catch (ex) {
-        console.log(`==> ${ex}`);
+        console.log(`==> getTenant ${ex}`);
         return;
     }
 }
+function getJiraTenant(req, res) {
+    try {
+        const token = req.headers['JiraToken']; //it is tenantId in header
+        //
+        const result = jwt.verify(token, process.env.Session_Key, verifyOptions);
+        if (result)
+            return result;
+        else {
+            return;
+        }
+    }
+    catch (ex) {
+        console.log(`==> getJiraTenant ${ex}`);
+        return;
+    }
+}
+function getJiraOrg(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const jiraOrg = req.headers['jiraOrg']; //it is tenantId in header
+        if (!jiraOrg) {
+            //Oops!lets  get it from the DB
+            jiraRepository.getJiraOrg(getJiraTenant(req, res), req.query.bustTheCache).then(result => {
+                return result; //guid string of the AccessResource Id
+            });
+        }
+        else {
+            return jiraOrg;
+        }
+    });
+}
+//header must have JiraTenant and JiraOrg
+router.get('/GetJiraUsers', validateJiraToken, (req, res) => {
+    getJiraOrg(req, res).then(jiraOrg => {
+        jiraRepository.GetJiraUsers(getJiraTenant(req, res), jiraOrg, req.query.bustTheCache).then(result => {
+            return res.json(result);
+        });
+    });
+});
+//header must have JiraTenant  
+router.get('/GetJiraOrgs', validateJiraToken, (req, res) => {
+    jiraRepository.getJiraOrgs(getJiraTenant(req, res), req.query.bustTheCache).then(result => {
+        return result; //guid string of the AccessResource Id
+    });
+});
+//header must have JiraTenant  
+router.get('/GetJiraIssues', validateJiraToken, (req, res) => {
+    getJiraOrg(req, res).then(jiraOrg => {
+        jiraRepository
+            .getJiraIssues(getJiraTenant(req, res), //tenant
+        jiraOrg, //org
+        '557058:f39310b9-d30a-41a3-8011-6a6ae5eeed07', //userId
+        '"In Progress" OR status="To Do"', //status
+        'summary,status, assignee,created, updated')
+            .then(result => {
+            return res.json(result);
+        });
+    });
+});
 router.get('/GetOrg', validateToken, (req, res) => {
     gitRepository.getOrg(getTenant(req, res), req.query.bustTheCache, req.query.getFromGit).then(result => {
         return res.json(result);
@@ -218,7 +316,7 @@ router.get('/GetRepoCollectionByName', validateToken, (req, res) => {
 });
 router.get('/SetupWebHook', validateToken, (req, res) => {
     gitRepository.setupWebHook(getTenant(req, res), req.query.org).then((result) => {
-        console.log("==>Setupwebhook returning " + result);
+        console.log('==>Setupwebhook returning ' + result);
         return res.json({ val: result });
     });
 });

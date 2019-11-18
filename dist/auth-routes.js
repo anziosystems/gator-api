@@ -12,6 +12,9 @@ router.get('/login', (req, res) => { });
 router.get('/github', passport.authenticate('github'), (req, res) => {
     //This function will never be called.
 });
+router.get('/atlassian', passport.authenticate('atlassian'), (req, res) => {
+    //This function will never be called.
+});
 router.get('/logout', (req, res) => {
     res.send('logging.out');
 });
@@ -23,6 +26,11 @@ router.get('/logout', (req, res) => {
 router.get('/github/redirect', passport.authenticate('github'), (req, res) => {
     const token = jwt.sign(req.user, process.env.Session_Key);
     res.redirect(callbackURL + '?token=' + token);
+});
+//in the setting of application call back is defined as /auth/atlassian/redirect
+router.get('/atlassian/redirect', passport.authenticate('atlassian'), (req, res) => {
+    const token = jwt.sign(req.user, process.env.Session_Key);
+    res.redirect(callbackURL + '?JiraToken=' + token);
 });
 module.exports = router;
 //# sourceMappingURL=auth-routes.js.map

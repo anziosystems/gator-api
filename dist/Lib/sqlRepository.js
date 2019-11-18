@@ -11,15 +11,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 let sql = require('mssql');
 const _ = require("lodash");
 const util_1 = require("util");
+//import {RedisStorage, LabShareCache} from "@labshare/services-cache";
 const NodeCache = require('node-cache');
 const dotenv = require('dotenv');
 dotenv.config();
-let CryptoJS = require("crypto-js");
+let CryptoJS = require('crypto-js');
 class PullRequest {
 }
 class Tenant {
 }
 exports.Tenant = Tenant;
+class JiraTenant {
+}
+exports.JiraTenant = JiraTenant;
 /*
   TenantId is GitId for the logged in user
 */
@@ -48,6 +52,11 @@ class SQLRepository {
         }
         if (!this.myCache) {
             this.myCache = new NodeCache({ stdTTL: this.CACHE_DURATION_SEC, checkperiod: 120 });
+            // this.myCache  = new LabShareCache(new RedisStorage(
+            //   {
+            //        "host": "gator-cache.redis.cache.windows.net",
+            //        "port": 6379
+            //   }));
         }
         this.createPool();
     }
@@ -85,6 +94,28 @@ class SQLRepository {
             }
             catch (ex) {
                 console.log(`==> CheckToken {ex}`);
+                return false;
+            }
+        });
+    }
+    //return 0 if not a valid tenant or the token more than 7 days old
+    checkJiraToken(tenantId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let cacheKey = 'CheckJiraToken' + tenantId;
+                let val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Id', sql.Int, tenantId);
+                const recordSet = yield request.execute('CheckJiraTenant');
+                this.myCache.set(cacheKey, recordSet.recordset[0].Result === 1);
+                return recordSet.recordset[0].Result === 1;
+            }
+            catch (ex) {
+                console.log(`==> CheckJiraToken {ex}`);
                 return false;
             }
         });
@@ -234,6 +265,35 @@ class SQLRepository {
             return recordSet.recordset;
         });
     }
+    getJiraOrg(tenantId, bustTheCache = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let orgs = yield this.getJiraOrgs(tenantId, bustTheCache);
+            let val = orgs[0].id; //default returning the first one
+            return val;
+        });
+    }
+    getJiraOrgs(tenantId, bustTheCache = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let cacheKey = 'GetJiraOrgs' + tenantId;
+            let orgs;
+            if (bustTheCache) {
+                this.myCache.del(cacheKey);
+            }
+            let val = this.myCache.get(cacheKey);
+            if (val) {
+                return val;
+            }
+            yield this.createPool();
+            const request = yield this.pool.request();
+            request.input('TenantId', sql.Int, Number(tenantId));
+            const recordSet = yield request.execute('GetJiraOrg');
+            if (recordSet.recordset) {
+                orgs = JSON.parse(recordSet.recordset[0].AccessibleResources);
+                this.myCache.set(cacheKey, orgs);
+            }
+            return orgs;
+        });
+    }
     //No one calls this yet, the SP is called directly from another SP GetTenant. Leaving for future use.
     setActiveTenant(id) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -266,7 +326,27 @@ class SQLRepository {
                 return recordSet.recordset;
             }
             else
-                return;
+                return 0;
+        });
+    }
+    getJiraTenant(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let cacheKey = 'getJiraTenant-' + id;
+            let val = this.myCache.get(cacheKey);
+            if (val) {
+                return val;
+            }
+            yield this.createPool();
+            const request = yield this.pool.request();
+            request.input('Id', sql.Int, id);
+            let recordSet = yield request.execute('GetJiraTenant');
+            if (recordSet.recordset.length > 0) {
+                this.myCache.set(cacheKey, recordSet.recordset);
+                console.log(`==> getJiraTenant is successfull for id:${id} `);
+                return recordSet.recordset;
+            }
+            else
+                return 0;
         });
     }
     //GetPR4Repo
@@ -287,7 +367,7 @@ class SQLRepository {
                 return recordSet.recordset;
             }
             else {
-                return;
+                return 0;
             }
         });
     }
@@ -301,6 +381,20 @@ class SQLRepository {
             const recordSet = yield this.getTenant(id);
             if (recordSet)
                 return this.decrypt(recordSet[0].Auth_Token, id.toString());
+            else
+                return;
+        });
+    }
+    getJiraToken(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let cacheKey = 'GetJiraTenant -' + id; //cacheKey is GetTenant because i am reading there cache value. This is different from norm
+            let val = this.myCache.get(cacheKey);
+            if (val) {
+                return this.decrypt(val.recordset[0].Auth_Token, id.toString());
+            }
+            const recordSet = yield this.getJiraTenant(id);
+            if (recordSet)
+                return recordSet[0].Auth_Token;
             else
                 return;
         });
@@ -366,8 +460,10 @@ class SQLRepository {
     getPR4Dev(org, day = 1, login, action, pageSize) {
         return __awaiter(this, void 0, void 0, function* () {
             let cacheKey = 'PullRequest4Dev' + org + day.toString() + login;
+            console.log(`getPR4Dev: org:{0} day: {1} login: {2} action: {3} pageSize: {4}`, org, day, login, action, pageSize);
             let val = this.myCache.get(cacheKey);
             if (val) {
+                console.log('getPR4Dev cache hit');
                 return val;
             }
             yield this.createPool();
@@ -393,6 +489,7 @@ class SQLRepository {
             request.input('Day', sql.Int, day);
             request.input('pageSize', sql.Int, pageSize);
             const recordSet = yield request.execute('PR4Devs');
+            console.log(`getPR4Dev records found: {0}`, recordSet.recordset.length);
             if (recordSet.recordset.length > 0) {
                 this.myCache.set(cacheKey, recordSet.recordset);
             }
@@ -503,6 +600,39 @@ class SQLRepository {
             }
         });
     }
+    saveJiraTenant(tenant) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                // console.log('==> inside saveTenant');
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!tenant.Photo) {
+                    tenant.Photo = '';
+                }
+                if (!tenant.DisplayName) {
+                    tenant.DisplayName = '';
+                }
+                //Token is kept decrypted in DB
+                let token = tenant.AuthToken; //No Encryption for Jira
+                request.input('Id', sql.Int, tenant.Id);
+                request.input('email', sql.VarChar(200), tenant.Email);
+                request.input('UserName', sql.VarChar(200), tenant.UserName);
+                request.input('DisplayName', sql.VarChar(200), tenant.DisplayName);
+                request.input('ProfileUrl', sql.Char(500), tenant.ProfileUrl);
+                request.input('AuthToken', sql.VARCHAR(4000), token);
+                request.input('RefreshToken', sql.VARCHAR(4000), tenant.RefreshToken);
+                request.input('Photo', sql.Char(500), tenant.Photo);
+                request.input('AccessibleResources', sql.Char(8000), JSON.stringify(tenant.AccessibleResources));
+                const recordSet = yield request.execute('SaveJiraTenant');
+                console.log('==> saveJiraTenant done successfully');
+                return recordSet.rowsAffected[0];
+            }
+            catch (ex) {
+                console.log(`==> ${ex}`);
+                return ex;
+            }
+        });
+    }
     saveTenant(tenant) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -541,6 +671,7 @@ class SQLRepository {
     decrypt(token, secret) {
         let bytes = CryptoJS.AES.decrypt(token, secret);
         let plaintext = bytes.toString(CryptoJS.enc.Utf8);
+        console.log('Decrypt is success!');
         return plaintext;
     }
     /*
@@ -649,6 +780,37 @@ class SQLRepository {
             }
         });
     }
+    saveJiraDevs(tenantId, org, devs) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (devs == undefined)
+                    return;
+                if (devs.length === 0) {
+                    console.log('No devs to be saved!');
+                    return;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                for (let i = 0; i < devs.length; i++) {
+                    let dev = devs[i];
+                    let createdAt = String(dev.createdAt).substr(0, 10);
+                    //console.log(`==> SaveDev = org: ${org} dev - Name: ${dev.name} \t| Email: ${dev.email} \t| login: ${dev.login} \t| ${dev.avatarUrl}`);
+                    request.input('TenantId', sql.Int, Number(tenantId));
+                    request.input('Org', sql.VarChar(this.ORG_LEN), org); //
+                    request.input('accountId', sql.VarChar(100), dev.accountId); //rsarosh@hotmail.com
+                    request.input('displayName', sql.VarChar(200), dev.displayName); //Rafat Sarosh
+                    request.input('avatarUrls', sql.Text, JSON.stringify(dev.avatarUrls)); //rsarosh
+                    request.input('self', sql.VarChar(500), dev.self);
+                    const recordSet = yield request.execute('SaveJiraDev');
+                    //return recordSet.rowsAffected[0];
+                }
+                console.log(`saved ${devs.length} Jira Dev`);
+            }
+            catch (ex) {
+                return ex;
+            }
+        });
+    }
     saveDevs(tenantId, org, devs) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -671,8 +833,10 @@ class SQLRepository {
                     request.input('login', sql.VarChar(this.LOGIN_LEN), dev.login); //rsarosh
                     request.input('avatarUrl', sql.VarChar(1200), dev.avatarUrl);
                     const recordSet = yield request.execute('SaveDev');
-                    return recordSet.rowsAffected[0];
+                    //return recordSet.rowsAffected[0];
                 }
+                console.log(`saved ${devs.length} Git Dev`);
+                return devs.length;
             }
             catch (ex) {
                 return ex;

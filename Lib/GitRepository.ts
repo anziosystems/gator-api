@@ -117,7 +117,7 @@ class GitRepository {
           if (response.statusCode === 200) {
             let result = JSON.parse(body);
             if (!result.data) {
-              console.log('No Devs found for org:' + org);
+              console.log(`getDevsFromGit: No Devs found for org: ${JSON.stringify(org)}`);
             } else {
               await this.sqlRepository.saveDevs(tenantId, org, result.data.organization.membersWithRole.nodes);
               if (result.data.organization.membersWithRole.pageInfo) {
@@ -128,7 +128,8 @@ class GitRepository {
               }
             }
           } else {
-            console.log('getDevsFromGit: org - ' + org + ' - ' + body);
+            console.log(`
+             org - ${org} - ${body}`);
           }
         },
       );

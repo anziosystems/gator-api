@@ -2,11 +2,58 @@
 // tslint:disable:no-invalid-this
 import {expect} from 'chai';
 import {Context as MochaContext} from 'mocha';
-import {doesNotReject} from 'assert';
+import {doesNotReject, AssertionError} from 'assert';
 import {Observable, of, Subject} from 'rxjs';
 import * as jsonBadData from './data/Sample.data.json';
 import {SQLRepository, Tenant} from '../Lib/sqlRepository';
 import {GitRepository} from '../Lib/GitRepository';
+import {JiraRepository} from '../Lib/JiraRepository';
+import {isNullOrUndefined} from 'util';
+
+describe('getJiraUsers', () => {
+  it('should return rowsAffected', async () => {
+    let jiraRepository = new JiraRepository();
+    await jiraRepository.GetJiraUsers('557058').then((result: any) => {
+      expect(result).to.greaterThan(0);
+    });
+  });
+});
+
+describe('getJiraOrgs', () => {
+  it('should return rowsAffected', async () => {
+    let sqlRepository = new SQLRepository(null);
+    await sqlRepository.getJiraOrgs('557058').then((result: any) => {
+      expect(result.length).to.greaterThan(0);
+    });
+  });
+});
+
+describe.only('getJiraIssues', () => {
+  it('should return rowsAffected', async () => {
+    let jiraRepository = new JiraRepository();
+    jiraRepository
+      .getJiraIssues(
+        '557058', //tenant
+        '0e493c98-6102-463a-bc17-4980be22651b', //org
+        '557058:f39310b9-d30a-41a3-8011-6a6ae5eeed07', //userId
+        '"In Progress" OR status="To Do"', //status
+        'summary,status, assignee,created, updated', //fields
+      )
+      .then(result => {
+        expect(result.length).to.greaterThan(0);
+      });
+  });
+});
+
+describe('getJiraOrg', () => {
+  it('should return an object', async () => {
+    let sqlRepository = new SQLRepository(null);
+    await sqlRepository.getJiraOrg('557058').then((result: any) => {
+      expect(isNullOrUndefined(result)).equals(false);
+      expect(result).equals('0e493c98-6102-463a-bc17-4980be22651b');
+    });
+  });
+});
 
 describe('TopDevForLastXDays', () => {
   it('should return rowsAffected', async () => {
@@ -40,7 +87,7 @@ describe('GetRepos', () => {
 describe('getDevs4Org', () => {
   it('should return rowsAffected', async () => {
     let gitRepository = new GitRepository();
-    await gitRepository.getDevsFromGit('1040817', 'LabShare').then((result:any)  => {
+    await gitRepository.getDevsFromGit('1040817', 'LabShare').then((result: any) => {
       expect(result.toTable.length).to.greaterThan(0);
     });
   });
@@ -87,12 +134,15 @@ describe('SetupWebHook', () => {
     let gitRepository = new GitRepository();
     let org = 'ncats';
     let tenantId = '1040817';
-    await gitRepository.setupWebHook(tenantId, org).then((result:any) => {
-      console.log(result);
-      expect(result).to.eq(404); //means cannot install web hook
-    }, error => {
-      console.log ('==>Test Error' + error) ;
-    });
+    await gitRepository.setupWebHook(tenantId, org).then(
+      (result: any) => {
+        console.log(result);
+        expect(result).to.eq(404); //means cannot install web hook
+      },
+      error => {
+        console.log('==>Test Error' + error);
+      },
+    );
   });
 });
 
@@ -101,12 +151,15 @@ describe('SetupWebHook', () => {
     let gitRepository = new GitRepository();
     let org = 'LabShare';
     let tenantId = '1040817';
-    await gitRepository.setupWebHook(tenantId, org).then((result:any) => {
-      console.log(result);
-      expect(result).to.eq(422); //means  web hook already installed
-    }, error => {
-      console.log ('==>Test Error' + error) ;
-    });
+    await gitRepository.setupWebHook(tenantId, org).then(
+      (result: any) => {
+        console.log(result);
+        expect(result).to.eq(422); //means  web hook already installed
+      },
+      error => {
+        console.log('==>Test Error' + error);
+      },
+    );
   });
 });
 
@@ -115,7 +168,7 @@ describe('LongestPullRequest', () => {
     let sqlRepositoy = new SQLRepository(null);
     let tenant = '1040817';
     let day = 1;
-    await sqlRepositoy.getLongestPR(tenant, day).then((result:any)  => {
+    await sqlRepositoy.getLongestPR(tenant, day).then((result: any) => {
       expect(result.toTable.length).to.greaterThan(0);
     });
   });
@@ -126,23 +179,20 @@ describe('GetGraphData4XDays', () => {
     let sqlRepositoy = new SQLRepository(null);
     let org = 'LabShare';
     let day = 30;
-    await sqlRepositoy.GetGraphData4XDays(org, day, true).then((result:any)  => {
+    await sqlRepositoy.GetGraphData4XDays(org, day, true).then((result: any) => {
       expect(result[0].Ctr).to.greaterThan(0);
       //result[0].state = 'closed'
       //result[0].Date = "May 1 2019"
-      
     });
-  }); 
+  });
 });
-
-
 
 describe('GetTopRespositories4XDays', () => {
   it('should return recordset', async () => {
     let sqlRepositoy = new SQLRepository(null);
     let tenant = '1040817';
     let day = 1;
-    await sqlRepositoy.getTopRepo4XDays(tenant, day).then((result:any)  => {
+    await sqlRepositoy.getTopRepo4XDays(tenant, day).then((result: any) => {
       expect(result.toTable.length).to.greaterThan(0);
     });
   });
@@ -155,7 +205,7 @@ describe('PullRequest4Dev', () => {
     let day = 7;
     let login = 'artemnih';
     let state = 'closed';
-    await sqlRepositoy.getPR4Dev(tenant, day, login, state, 10).then((result:any)  => {
+    await sqlRepositoy.getPR4Dev(tenant, day, login, state, 10).then((result: any) => {
       expect(result.toTable.length).to.greaterThan(0);
       console.log(result[0]);
     });
@@ -168,7 +218,7 @@ describe('PullRequestCountForLastXDays', () => {
     let tenant = '1040817';
     let day = 30;
 
-    await sqlRepositoy.getPRCount4LastXDays(tenant, day).then((result:any)  => {
+    await sqlRepositoy.getPRCount4LastXDays(tenant, day).then((result: any) => {
       expect(result.toTable.length).to.greaterThan(0);
     });
   });
@@ -180,7 +230,7 @@ describe('GetPullRequestForId', () => {
     let tenant = '1040817';
     let id = 113;
 
-    await sqlRepositoy.getPR4Id(tenant, id).then((result:any)  => {
+    await sqlRepositoy.getPR4Id(tenant, id).then((result: any) => {
       expect(result.toTable.length).to.greaterThan(0);
     });
   });
@@ -189,13 +239,12 @@ describe('GetPullRequestForId', () => {
 describe('TestEncryp', () => {
   it('Both String should be same', () => {
     let sqlRepositoy = new SQLRepository(null);
-    let s = '1234567890'
-    let key = "1234567890"
-    console.log("==>" + s)
-    let encrypt = sqlRepositoy.encrypt(s, key)
-    let s2 = sqlRepositoy.decrypt(encrypt, key) 
-    console.log("==>" + s2)
-    expect (s).to.equals(s2);
+    let s = '1234567890';
+    let key = '1234567890';
+    console.log('==>' + s);
+    let encrypt = sqlRepositoy.encrypt(s, key);
+    let s2 = sqlRepositoy.decrypt(encrypt, key);
+    console.log('==>' + s2);
+    expect(s).to.equals(s2);
   });
 });
- 
