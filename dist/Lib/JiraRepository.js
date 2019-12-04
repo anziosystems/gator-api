@@ -94,7 +94,7 @@ class JiraRepository {
     makeJiraRequest(jiraTenantId, gUri, body = '', method = 'GET') {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const token = 'Bearer ' + (yield this.sqlRepository.getJiraToken(Number(jiraTenantId)));
+                const token = 'Bearer ' + (yield this.sqlRepository.getJiraToken(jiraTenantId));
                 console.log(`==> JiraToken: Got the token`);
                 let header = {
                     method: method,

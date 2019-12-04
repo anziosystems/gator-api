@@ -19,13 +19,13 @@ passport.use(new AtlassianStrategy({
   // optionally save profile data to db
   let tenant = new JiraTenant();
   tenant.AuthToken = accessToken;
-  console.log(`==> Jira Toeken:  ${accessToken}  Name: ${profile.displayName}`);
+  // console.log(`==> Jira Toeken:  ${accessToken}  Name: ${profile.displayName}`);
   if (!refreshToken) refreshToken = '';
 
   tenant.RefreshToken = refreshToken;
   tenant.UserName = profile.displayName;
   tenant.DisplayName = profile.displayName;
-  tenant.Id = profile.id;
+  tenant.Id = profile.id.trim();
   tenant.Photo = profile.photo;
   tenant.Email = profile.email;
   tenant.AccessibleResources = profile.accessibleResources;
@@ -57,10 +57,10 @@ passport.use(new AtlassianStrategy({
    sqlRepositoy.saveJiraTenant(tenant).then(result => {
      if (result.message) {
        //if error then pass the error message
-       return done(result, profile.id);
+       return done(result, String(profile.id).trim());
      }
-     console.log(`==> passport.use calling done with null, id:  ${profile.id}  Name: ${profile.displayName}`);
-     return done(null, String(profile.id));
+  //   console.log(`==> passport.use calling done with null, id:  ${profile.id}  Name: ${profile.displayName}`);
+     return done(null, String(profile.id).trim());
    });
 }
 ));
@@ -74,8 +74,8 @@ passport.use(
     },
     (accessToken: any, refreshToken: any, profile: any, done: any) => {
       //Callback with the accessToken
-      console.log('==> accessToken: ' + accessToken);
-      console.log('==> refreshToken:' + refreshToken);
+      // console.log('==> accessToken: ' + accessToken);
+      // console.log('==> refreshToken:' + refreshToken);
 
       let tenant = new Tenant();
       tenant.AuthToken = accessToken;
@@ -111,7 +111,7 @@ passport.use(
           //if error then pass the error message
           return done(result, profile.id);
         }
-        console.log(`==> passport.use calling done with null, id: ${profile.id}`);
+     //   console.log(`==> passport.use calling done with null, id: ${profile.id}`);
         return done(null, String(profile.id));
       });
     },

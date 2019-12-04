@@ -41,7 +41,7 @@ class Tenant {
 }
 
 class JiraTenant {
-  Id: number;
+  Id: string;
   Email: string;
   UserName: string;
   DisplayName: string;
@@ -116,7 +116,8 @@ class SQLRepository {
   //return 0 if not a valid tenant or the token more than 7 days old
   async checkToken(tenantId: number) {
     try {
-      let cacheKey = 'CheckToken' + tenantId;
+      let cacheKey = 'CheckToken: ' + tenantId;
+      //console.log (cacheKey);
       let val = this.myCache.get(cacheKey);
       if (val) {
         return val;
@@ -125,30 +126,39 @@ class SQLRepository {
       const request = await this.pool.request();
       request.input('Id', sql.Int, tenantId);
       const recordSet = await request.execute('CheckTenant');
-      this.myCache.set(cacheKey, recordSet.recordset[0].Result === 1);
-      return recordSet.recordset[0].Result === 1;
+      if (recordSet){
+        this.myCache.set(cacheKey, recordSet.recordset[0].Result === 1);
+        return recordSet.recordset[0].Result === 1;
+      }
+      else 
+        return false ;
     } catch (ex) {
-      console.log(`==> CheckToken {ex}`);
+      console.log(`==> CheckToken ${ex}`);
       return false;
     }
   }
 
   //return 0 if not a valid tenant or the token more than 7 days old
-  async checkJiraToken(tenantId: number) {
+  async checkJiraToken(tenantId: string) {
     try {
-      let cacheKey = 'CheckJiraToken' + tenantId;
+      tenantId = tenantId.trim();
+      let cacheKey = 'CheckJiraToken: ' + tenantId;
+     // console.log (cacheKey);
       let val = this.myCache.get(cacheKey);
       if (val) {
         return val;
       }
       await this.createPool();
       const request = await this.pool.request();
-      request.input('Id', sql.Int, tenantId);
+      request.input('Id', sql.Char, tenantId);
       const recordSet = await request.execute('CheckJiraTenant');
-      this.myCache.set(cacheKey, recordSet.recordset[0].Result === 1);
-      return recordSet.recordset[0].Result === 1;
+      if (recordSet) {
+        this.myCache.set(cacheKey, recordSet.recordset[0].Result === 1);
+        return recordSet.recordset[0].Result === 1;
+      } else 
+        return false;
     } catch (ex) {
-      console.log(`==> CheckJiraToken {ex}`);
+      console.log(`==> CheckJiraToken ${ex}`);
       return false;
     }
   }
@@ -307,7 +317,8 @@ class SQLRepository {
   }
 
   async getJiraOrgs(tenantId: string, bustTheCache: Boolean = false) {
-    let cacheKey = 'GetJiraOrgs' + tenantId;
+    let cacheKey = 'GetJiraOrgs:' + tenantId;
+   // console.log (cacheKey);
     let orgs: any;
     if (bustTheCache) {
       this.myCache.del(cacheKey);
@@ -321,12 +332,15 @@ class SQLRepository {
 
     await this.createPool();
     const request = await this.pool.request();
-    request.input('TenantId', sql.Int, Number(tenantId));
+    request.input('TenantId', sql.Char, tenantId);
     const recordSet = await request.execute('GetJiraOrg');
 
     if (recordSet.recordset) {
       orgs = JSON.parse(recordSet.recordset[0].AccessibleResources);
       this.myCache.set(cacheKey, orgs);
+//      console.log (cacheKey + ' Found orgs!!!');
+    } else {
+      console.log (cacheKey + ' NOT Found orgs!!!');
     }
     return orgs;
   }
@@ -356,12 +370,12 @@ class SQLRepository {
     let recordSet = await request.execute('GetTenant');
     if (recordSet.recordset.length > 0) {
       this.myCache.set(cacheKey, recordSet.recordset);
-      console.log(`==> getTenant is successfull for id:${id} `);
+      // console.log(`==> getTenant is successfull for id:${id} `);
       return recordSet.recordset;
     } else return 0;
   }
 
-  async getJiraTenant(id: number) {
+  async getJiraTenant(id: string) {
     let cacheKey = 'getJiraTenant-' + id;
     let val = this.myCache.get(cacheKey);
     if (val) {
@@ -369,11 +383,11 @@ class SQLRepository {
     }
     await this.createPool();
     const request = await this.pool.request();
-    request.input('Id', sql.Int, id);
+    request.input('Id', sql.Char, id);
     let recordSet = await request.execute('GetJiraTenant');
     if (recordSet.recordset.length > 0) {
       this.myCache.set(cacheKey, recordSet.recordset);
-      console.log(`==> getJiraTenant is successfull for id:${id} `);
+     // console.log(`==> getJiraTenant is successfull for id:${id} `);
       return recordSet.recordset;
     } else return 0;
   }
@@ -411,16 +425,12 @@ class SQLRepository {
     else return;
   }
 
-  async getJiraToken(id: number) {
-    let cacheKey = 'GetJiraTenant -' + id; //cacheKey is GetTenant because i am reading there cache value. This is different from norm
-    let val = this.myCache.get(cacheKey);
-    if (val) {
-      return this.decrypt(val.recordset[0].Auth_Token, id.toString());
-    }
+  async getJiraToken(id: string) {
     const recordSet = await this.getJiraTenant(id);
-
-    if (recordSet) return recordSet[0].Auth_Token;
-    else return;
+    if (recordSet) 
+      return recordSet[0].Auth_Token;
+    else 
+      return;
   }
 
   async getTopDev4LastXDays(org: string, day: number = 1) {
@@ -481,7 +491,7 @@ class SQLRepository {
 
   async getPR4Dev(org: string, day: number = 1, login: string, action: string, pageSize: number) {
     let cacheKey = 'PullRequest4Dev' + org + day.toString() + login;
-    console.log(`getPR4Dev: org:{0} day: {1} login: {2} action: {3} pageSize: {4}`, org, day, login, action, pageSize);
+    console.log(`getPR4Dev: org:${org} day: ${day} login: ${login} action: ${action} pageSize: ${pageSize}`);
     let val = this.myCache.get(cacheKey);
     if (val) {
       console.log('getPR4Dev cache hit');
@@ -632,7 +642,7 @@ class SQLRepository {
       }
       //Token is kept decrypted in DB
       let token = tenant.AuthToken; //No Encryption for Jira
-      request.input('Id', sql.Int, tenant.Id);
+      request.input('Id', sql.Char, tenant.Id);
       request.input('email', sql.VarChar(200), tenant.Email);
       request.input('UserName', sql.VarChar(200), tenant.UserName);
       request.input('DisplayName', sql.VarChar(200), tenant.DisplayName);
@@ -688,7 +698,6 @@ class SQLRepository {
   decrypt(token: string, secret: string) {
     let bytes = CryptoJS.AES.decrypt(token, secret);
     let plaintext = bytes.toString(CryptoJS.enc.Utf8);
-    console.log('Decrypt is success!');
     return plaintext;
   }
 
@@ -810,7 +819,7 @@ class SQLRepository {
         let dev: any = devs[i];
         let createdAt = String(dev.createdAt).substr(0, 10);
         //console.log(`==> SaveDev = org: ${org} dev - Name: ${dev.name} \t| Email: ${dev.email} \t| login: ${dev.login} \t| ${dev.avatarUrl}`);
-        request.input('TenantId', sql.Int, Number(tenantId));
+        request.input('TenantId', sql.Char, tenantId);
         request.input('Org', sql.VarChar(this.ORG_LEN), org); //
         request.input('accountId', sql.VarChar(100), dev.accountId); //rsarosh@hotmail.com
         request.input('displayName', sql.VarChar(200), dev.displayName); //Rafat Sarosh

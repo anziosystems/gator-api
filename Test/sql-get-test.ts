@@ -10,50 +10,6 @@ import {GitRepository} from '../Lib/GitRepository';
 import {JiraRepository} from '../Lib/JiraRepository';
 import {isNullOrUndefined} from 'util';
 
-describe('getJiraUsers', () => {
-  it('should return rowsAffected', async () => {
-    let jiraRepository = new JiraRepository();
-    await jiraRepository.GetJiraUsers('557058').then((result: any) => {
-      expect(result).to.greaterThan(0);
-    });
-  });
-});
-
-describe('getJiraOrgs', () => {
-  it('should return rowsAffected', async () => {
-    let sqlRepository = new SQLRepository(null);
-    await sqlRepository.getJiraOrgs('557058').then((result: any) => {
-      expect(result.length).to.greaterThan(0);
-    });
-  });
-});
-
-describe.only('getJiraIssues', () => {
-  it('should return rowsAffected', async () => {
-    let jiraRepository = new JiraRepository();
-    jiraRepository
-      .getJiraIssues(
-        '557058', //tenant
-        '0e493c98-6102-463a-bc17-4980be22651b', //org
-        '557058:f39310b9-d30a-41a3-8011-6a6ae5eeed07', //userId
-        '"In Progress" OR status="To Do"', //status
-        'summary,status, assignee,created, updated', //fields
-      )
-      .then(result => {
-        expect(result.length).to.greaterThan(0);
-      });
-  });
-});
-
-describe('getJiraOrg', () => {
-  it('should return an object', async () => {
-    let sqlRepository = new SQLRepository(null);
-    await sqlRepository.getJiraOrg('557058').then((result: any) => {
-      expect(isNullOrUndefined(result)).equals(false);
-      expect(result).equals('0e493c98-6102-463a-bc17-4980be22651b');
-    });
-  });
-});
 
 describe('TopDevForLastXDays', () => {
   it('should return rowsAffected', async () => {

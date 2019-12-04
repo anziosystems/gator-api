@@ -15,7 +15,6 @@ Jira calls must have following in the header
 
 req.headers['jiraOrg'];  //AccessibleResources Id
 req.headers['JiraToken'];  //This is JiraTenant Id
-
 */
 const sqlRepository_1 = require("./Lib/sqlRepository");
 const GitRepository_1 = require("./Lib/GitRepository");
@@ -76,6 +75,7 @@ function validateToken(req, res, next) {
 }
 function validateJiraToken(req, res, next) {
     const tenantId = getJiraTenant(req, res); //GetTenantId from req
+    // console.log(`==> validateJiraToken: ${tenantId}`);
     isJiraTokenValid(tenantId).then(val => {
         if (!val) {
             return res.json({ val: false, code: 404, message: 'Jira Auth Failed' });
@@ -101,13 +101,16 @@ function getTenant(req, res) {
         return;
     }
 }
+//token has the tenantId - It always come in authorization header as a token
 function getJiraTenant(req, res) {
     try {
-        const token = req.headers['JiraToken']; //it is tenantId in header
-        //
+        const token = req.headers['authorization'].trim(); //it is tenantId in header
+        // console.log(` ==> GetJiraTenant raw token from the call ${token}`);
         const result = jwt.verify(token, process.env.Session_Key, verifyOptions);
-        if (result)
+        if (result) {
+            // console.log(` ==> GetJiraTenant - unencrypted token ${result}`);
             return result;
+        }
         else {
             return;
         }
@@ -123,7 +126,8 @@ function getJiraOrg(req, res) {
         if (!jiraOrg) {
             //Oops!lets  get it from the DB
             jiraRepository.getJiraOrg(getJiraTenant(req, res), req.query.bustTheCache).then(result => {
-                return result; //guid string of the AccessResource Id
+                console.log(`getJiraOrg : result`);
+                return res.json(result); //guid string of the AccessResource Id
             });
         }
         else {
@@ -139,13 +143,19 @@ router.get('/GetJiraUsers', validateJiraToken, (req, res) => {
         });
     });
 });
-//header must have JiraTenant  
+//header must have JiraTenant
 router.get('/GetJiraOrgs', validateJiraToken, (req, res) => {
     jiraRepository.getJiraOrgs(getJiraTenant(req, res), req.query.bustTheCache).then(result => {
-        return result; //guid string of the AccessResource Id
+        /*
+          result
+          Array(3) [Object, Object, Object]
+          result[0]
+          Object {id: "0e493c98-6102-463a-bc17-4980be22651b", url: "https://labshare.atlassian.net", name: "labshare", scopes: Array(4), avatarUrl: "https://site-admin-avatar-cdn.prod.public.atl-paas…"}
+        */
+        return res.json(result); //guid string of the AccessResource Id
     });
 });
-//header must have JiraTenant  
+//header must have JiraTenant
 router.get('/GetJiraIssues', validateJiraToken, (req, res) => {
     getJiraOrg(req, res).then(jiraOrg => {
         jiraRepository

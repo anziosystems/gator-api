@@ -35,8 +35,10 @@ router.get('/github/redirect', passport.authenticate('github'), (req: any, res: 
 
 //in the setting of application call back is defined as /auth/atlassian/redirect
 router.get('/atlassian/redirect', passport.authenticate('atlassian'), (req: any, res: any) => {
+ // console.log (`router/atlassian user: ${req.user} `)
   const token = jwt.sign(req.user, process.env.Session_Key);
-  res.redirect(callbackURL + '?JiraToken=' + token);
+  let JiraCallbackURL = process.env.CALL_BACK_JIRA_URL;
+  res.redirect(JiraCallbackURL + '?JiraToken=' + token);
 });
 
 module.exports = router;

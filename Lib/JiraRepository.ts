@@ -81,7 +81,7 @@ class JiraRepository {
   //Get the token for the tenant and attaches to the call.
   async makeJiraRequest(jiraTenantId: string, gUri: string, body: string = '', method: string = 'GET') {
     try {
-      const token = 'Bearer ' + (await this.sqlRepository.getJiraToken(Number(jiraTenantId)));
+      const token = 'Bearer ' + (await this.sqlRepository.getJiraToken(jiraTenantId));
       console.log(`==> JiraToken: Got the token`);
       let header = {
         method: method,

@@ -18,13 +18,13 @@ passport.use(new AtlassianStrategy({
     // optionally save profile data to db
     let tenant = new sqlRepository_1.JiraTenant();
     tenant.AuthToken = accessToken;
-    console.log(`==> Jira Toeken:  ${accessToken}  Name: ${profile.displayName}`);
+    // console.log(`==> Jira Toeken:  ${accessToken}  Name: ${profile.displayName}`);
     if (!refreshToken)
         refreshToken = '';
     tenant.RefreshToken = refreshToken;
     tenant.UserName = profile.displayName;
     tenant.DisplayName = profile.displayName;
-    tenant.Id = profile.id;
+    tenant.Id = profile.id.trim();
     tenant.Photo = profile.photo;
     tenant.Email = profile.email;
     tenant.AccessibleResources = profile.accessibleResources;
@@ -55,10 +55,10 @@ passport.use(new AtlassianStrategy({
     sqlRepositoy.saveJiraTenant(tenant).then(result => {
         if (result.message) {
             //if error then pass the error message
-            return done(result, profile.id);
+            return done(result, String(profile.id).trim());
         }
-        console.log(`==> passport.use calling done with null, id:  ${profile.id}  Name: ${profile.displayName}`);
-        return done(null, String(profile.id));
+        //   console.log(`==> passport.use calling done with null, id:  ${profile.id}  Name: ${profile.displayName}`);
+        return done(null, String(profile.id).trim());
     });
 }));
 passport.use(new GitHubStrategy({
@@ -67,8 +67,8 @@ passport.use(new GitHubStrategy({
     scope: 'repo user admin:org read:org admin:org_hook admin:repo_hook read:repo_hook write:repo_hook',
 }, (accessToken, refreshToken, profile, done) => {
     //Callback with the accessToken
-    console.log('==> accessToken: ' + accessToken);
-    console.log('==> refreshToken:' + refreshToken);
+    // console.log('==> accessToken: ' + accessToken);
+    // console.log('==> refreshToken:' + refreshToken);
     let tenant = new sqlRepository_1.Tenant();
     tenant.AuthToken = accessToken;
     if (!refreshToken)
@@ -100,7 +100,7 @@ passport.use(new GitHubStrategy({
             //if error then pass the error message
             return done(result, profile.id);
         }
-        console.log(`==> passport.use calling done with null, id: ${profile.id}`);
+        //   console.log(`==> passport.use calling done with null, id: ${profile.id}`);
         return done(null, String(profile.id));
     });
 }));
