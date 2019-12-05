@@ -120,8 +120,6 @@ function getJiraTenant(req: any, res: any) {
 //   }
 // }
 
-
-
 //header must have JiraTenant
 router.get('/GetJiraOrgs', validateJiraToken, (req: any, res: any) => {
   jiraRepository.getJiraOrgs(getJiraTenant(req, res), req.query.bustTheCache).then(result => {
@@ -137,26 +135,31 @@ router.get('/GetJiraOrgs', validateJiraToken, (req: any, res: any) => {
 
 //
 router.get('/GetJiraUsers', validateJiraToken, (req: any, res: any) => {
-   jiraRepository.getJiraUsers(getJiraTenant(req, res),  req.query.org, req.query.bustTheCache).then(result => {
-    return res.json(JSON.parse(result)); //guid string of the AccessResource Id
+  jiraRepository.getJiraUsers(getJiraTenant(req, res), req.query.org, req.query.bustTheCache).then(result => {
+    /*
+    JSON.parse(result)
+    Array(29) [Object, Object, Object, Object, Object, Object, Object, Object, …]
+    JSON.parse(result)[0]
+    Object {self: "https://api.atlassian.com/ex/jira/786d2410-0054-41…", accountId: "5d53f3cbc6b9320d9ea5bdc2", accountType: "app", avatarUrls: Object, displayName: "Jira Outlook", …}
+     */
+      return res.json(JSON.parse(result)); //guid string of the AccessResource Id
+  
   });
-})
+});
 
 //header must have JiraTenant
 router.get('/GetJiraIssues', validateJiraToken, (req: any, res: any) => {
-  
-    jiraRepository
-      .getJiraIssues(
-        getJiraTenant(req, res), //tenant
-        req.query.org, //org
-        req.query.userid, //'557058:f39310b9-d30a-41a3-8011-6a6ae5eeed07', //userId
-        '"In Progress" OR status="To Do"', //status
-        'summary,status, assignee,created, updated', //fields
-      )
-      .then(result => {
-        return res.json(result);
-      });
- 
+  jiraRepository
+    .getJiraIssues(
+      getJiraTenant(req, res), //tenant
+      req.query.org, //org
+      req.query.userid, //'557058:f39310b9-d30a-41a3-8011-6a6ae5eeed07', //userId
+      '"In Progress" OR status="To Do"', //status
+      'summary,status, assignee,created, updated', //fields
+    )
+    .then(result => {
+      return res.json(result);
+    });
 });
 
 router.get('/GetOrg', validateToken, (req: any, res: any) => {

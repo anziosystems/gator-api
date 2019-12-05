@@ -147,6 +147,12 @@ router.get('/GetJiraOrgs', validateJiraToken, (req, res) => {
 //
 router.get('/GetJiraUsers', validateJiraToken, (req, res) => {
     jiraRepository.getJiraUsers(getJiraTenant(req, res), req.query.org, req.query.bustTheCache).then(result => {
+        /*
+        JSON.parse(result)
+        Array(29) [Object, Object, Object, Object, Object, Object, Object, Object, …]
+        JSON.parse(result)[0]
+        Object {self: "https://api.atlassian.com/ex/jira/786d2410-0054-41…", accountId: "5d53f3cbc6b9320d9ea5bdc2", accountType: "app", avatarUrls: Object, displayName: "Jira Outlook", …}
+         */
         return res.json(JSON.parse(result)); //guid string of the AccessResource Id
     });
 });

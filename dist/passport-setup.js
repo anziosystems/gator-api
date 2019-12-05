@@ -13,7 +13,7 @@ passport.use(new AtlassianStrategy({
     scope: 'offline_access read:jira-user read:jira-work manage:jira-configuration write:jira-work',
     audience: 'api.atlassian.com',
     state: 'qwe3424242342sdfasdfads',
-    response_type: 'code'
+    response_type: 'code',
 }, (accessToken, refreshToken, profile, done) => {
     // optionally save profile data to db
     let tenant = new sqlRepository_1.JiraTenant();
@@ -24,31 +24,31 @@ passport.use(new AtlassianStrategy({
     tenant.RefreshToken = refreshToken;
     tenant.UserName = profile.displayName;
     tenant.DisplayName = profile.displayName;
-    tenant.Id = profile.id.trim();
+    tenant.Id = String(profile.id).trim();
     tenant.Photo = profile.photo;
     tenant.Email = profile.email;
     tenant.AccessibleResources = profile.accessibleResources;
     // console.log (`==> ${JSON.stringify(profile.accessibleResources)}`);
     /*
-    console.log (`==> accessibleResources id: ${profile.accessibleResources[0].id} url: ${profile.accessibleResources[0].url} name: ${profile.accessibleResources[0].name}`);
-    0:Object {id: "0e493c98-6102-463a-bc17-4980be22651b", url: "https://labshare.atlassian.net", name: "labshare", …}
-    1:Object {id: "93f3c8f7-3351-4c4e-9eb5-65bc7912eddf", url: "https://ncats-nih.atlassian.net", name: "ncats-nih", …}
-    profile.accessibleResources[0]
-  
-      [
-        {"id":"0e493c98-6102-463a-bc17-4980be22651b",
-        "url":"https://labshare.atlassian.net",
-        "name":"labshare",
-        "scopes":["manage:jira-configuration","write:jira-work","read:jira-work","read:jira-user"],
-        "avatarUrl":"https://site-admin-avatar-cdn.prod.public.atl-paas.net/avatars/240/koala.png"},
-        
-        {"id":"93f3c8f7-3351-4c4e-9eb5-65bc7912eddf",
-        "url":"https://ncats-nih.atlassian.net",
-        "name":"ncats-nih",
-        "scopes":["manage:jira-configuration","write:jira-work","read:jira-work","read:jira-user"],
-        "avatarUrl":"https://site-admin-avatar-cdn.prod.public.atl-paas.net/avatars/240/rocket.png"}
-      ]
-    */
+console.log (`==> accessibleResources id: ${profile.accessibleResources[0].id} url: ${profile.accessibleResources[0].url} name: ${profile.accessibleResources[0].name}`);
+0:Object {id: "0e493c98-6102-463a-bc17-4980be22651b", url: "https://labshare.atlassian.net", name: "labshare", …}
+1:Object {id: "93f3c8f7-3351-4c4e-9eb5-65bc7912eddf", url: "https://ncats-nih.atlassian.net", name: "ncats-nih", …}
+profile.accessibleResources[0]
+
+  [
+    {"id":"0e493c98-6102-463a-bc17-4980be22651b",
+    "url":"https://labshare.atlassian.net",
+    "name":"labshare",
+    "scopes":["manage:jira-configuration","write:jira-work","read:jira-work","read:jira-user"],
+    "avatarUrl":"https://site-admin-avatar-cdn.prod.public.atl-paas.net/avatars/240/koala.png"},
+    
+    {"id":"93f3c8f7-3351-4c4e-9eb5-65bc7912eddf",
+    "url":"https://ncats-nih.atlassian.net",
+    "name":"ncats-nih",
+    "scopes":["manage:jira-configuration","write:jira-work","read:jira-work","read:jira-user"],
+    "avatarUrl":"https://site-admin-avatar-cdn.prod.public.atl-paas.net/avatars/240/rocket.png"}
+  ]
+*/
     //tenant.accessableResources
     //Token is kept decrypted in DB - Catch it here for Postman
     let sqlRepositoy = new sqlRepository_1.SQLRepository(null);
@@ -101,7 +101,7 @@ passport.use(new GitHubStrategy({
             return done(result, profile.id);
         }
         //   console.log(`==> passport.use calling done with null, id: ${profile.id}`);
-        return done(null, String(profile.id));
+        return done(null, String(profile.id.trim()));
     });
 }));
 //# sourceMappingURL=passport-setup.js.map
