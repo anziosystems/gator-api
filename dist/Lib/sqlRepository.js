@@ -310,6 +310,31 @@ class SQLRepository {
             return orgs;
         });
     }
+    getJiraUsers(tenantId, org, bustTheCache = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let cacheKey = `getJiraUsers: tenantId: ${tenantId}  org: ${org}`;
+            console.log(cacheKey);
+            if (bustTheCache) {
+                this.myCache.del(cacheKey);
+            }
+            let val = this.myCache.get(cacheKey);
+            if (val) {
+                return val;
+            }
+            yield this.createPool();
+            const request = yield this.pool.request();
+            request.input('TenantId', sql.Char, tenantId);
+            request.input('Org', sql.Char, org);
+            const recordSet = yield request.execute('GetJiraUsers');
+            if (recordSet.recordset.length > 0) {
+                this.myCache.set(cacheKey, recordSet.recordset);
+                console.log(`Found: ${recordSet.recordset.length} records for org: ${org} `);
+                return recordSet.recordset;
+            }
+            else
+                return null;
+        });
+    }
     //No one calls this yet, the SP is called directly from another SP GetTenant. Leaving for future use.
     setActiveTenant(id) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -790,7 +815,7 @@ class SQLRepository {
             }
         });
     }
-    saveJiraDevs(tenantId, org, devs) {
+    saveJiraUsers(tenantId, org, devs) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 if (devs == undefined)
@@ -811,10 +836,10 @@ class SQLRepository {
                     request.input('displayName', sql.VarChar(200), dev.displayName); //Rafat Sarosh
                     request.input('avatarUrls', sql.Text, JSON.stringify(dev.avatarUrls)); //rsarosh
                     request.input('self', sql.VarChar(500), dev.self);
-                    const recordSet = yield request.execute('SaveJiraDev');
+                    const recordSet = yield request.execute('SaveJiraUsers');
                     //return recordSet.rowsAffected[0];
                 }
-                console.log(`saved ${devs.length} Jira Dev`);
+                console.log(`saved ${devs.length} Jira Dev for org: ${org}`);
             }
             catch (ex) {
                 return ex;

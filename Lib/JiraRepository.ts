@@ -3,6 +3,8 @@ import {isNullOrUndefined} from 'util';
 const NodeCache = require('node-cache');
 const request = require('request-promise');
 import {SQLRepository} from './sqlRepository';
+import {timingSafeEqual} from 'crypto';
+import {async} from 'rxjs/internal/scheduler/async';
 
 class JiraRepository {
   httpOptions: any;
@@ -22,22 +24,28 @@ class JiraRepository {
     return await this.sqlRepository.getJiraOrgs(jiraTenantId);
   }
 
-  async GetJiraUsers(jiraTenantId: string, org: string = '0e493c98-6102-463a-bc17-4980be22651b', bustTheCache: boolean = false) {
+  async getJiraUsers(jiraTenantId: string, org: string, bustTheCache: boolean = false) {
+    console.log(`getJiraUsers: TenantId: ${jiraTenantId} Org: ${org}`);
+    if (!bustTheCache) {
+      //if bust the cache then goto Jira else get it from SQL
+      return await this.sqlRepository.getJiraUsers(jiraTenantId, org);
+    }
     // const org = '0e493c98-6102-463a-bc17-4980be22651b'; //await this.sqlRepository.getJiraResourceId (Number(jiraTenantId));
     const uri = org + '/rest/api/3/users/search?maxResults=500';
 
     try {
-      request(await this.makeJiraRequest(jiraTenantId, uri), async (error: any, response: any, body: any) => {
+     return await request(await this.makeJiraRequest(jiraTenantId, uri), async (error: any, response: any, body: any) => {
         if (response.statusCode === 200) {
           let result = JSON.parse(body);
           if (!result) {
-            console.log(`GetJiraUsers: No Devs found for tenant:${jiraTenantId} ResourceId: ${org}`);
+            console.log(`GetJiraUsers: No Users found for tenant:${jiraTenantId} org: ${org}`);
           } else {
-            return await this.sqlRepository.saveJiraDevs(jiraTenantId, org, result);
+            await this.sqlRepository.saveJiraUsers(jiraTenantId, org, result);
+            return await this.sqlRepository.getJiraUsers(jiraTenantId, org);
             //No paging for now - Getting all 500 developers
           }
         } else {
-          console.log(`GetJiraUsers - status code: ${response.statusCode} tenant:${jiraTenantId} ResourceId: ${org}`);
+          console.log(`GetJiraUsers - status code: ${response.statusCode} tenant:${jiraTenantId} org: ${org}`);
         }
       });
       //git call has put the org in SQL, now lets get it from (cache).
@@ -55,7 +63,7 @@ class JiraRepository {
     // const org = '0e493c98-6102-463a-bc17-4980be22651b'; //await this.sqlRepository.getJiraResourceId (Number(jiraTenantId));
     const uri = `${org}/rest/api/3/search?jql=assignee =${userId} AND ( status = ${status})&fields=${fields}`;
     try {
-      return await request(await this.makeJiraRequest(jiraTenantId, uri),  (error: any, response: any, body: any) => {
+      return await request(await this.makeJiraRequest(jiraTenantId, uri), (error: any, response: any, body: any) => {
         if (response.statusCode === 200) {
           let result = JSON.parse(body);
           if (!result) {
@@ -82,7 +90,7 @@ class JiraRepository {
   async makeJiraRequest(jiraTenantId: string, gUri: string, body: string = '', method: string = 'GET') {
     try {
       const token = 'Bearer ' + (await this.sqlRepository.getJiraToken(jiraTenantId));
-      console.log(`==> JiraToken: Got the token`);
+      // console.log(`==> JiraToken: ${token} `);
       let header = {
         method: method,
         uri: 'https://api.atlassian.com/ex/jira/' + gUri,

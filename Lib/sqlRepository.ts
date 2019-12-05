@@ -126,12 +126,10 @@ class SQLRepository {
       const request = await this.pool.request();
       request.input('Id', sql.Int, tenantId);
       const recordSet = await request.execute('CheckTenant');
-      if (recordSet){
+      if (recordSet) {
         this.myCache.set(cacheKey, recordSet.recordset[0].Result === 1);
         return recordSet.recordset[0].Result === 1;
-      }
-      else 
-        return false ;
+      } else return false;
     } catch (ex) {
       console.log(`==> CheckToken ${ex}`);
       return false;
@@ -143,7 +141,7 @@ class SQLRepository {
     try {
       tenantId = tenantId.trim();
       let cacheKey = 'CheckJiraToken: ' + tenantId;
-     // console.log (cacheKey);
+      // console.log (cacheKey);
       let val = this.myCache.get(cacheKey);
       if (val) {
         return val;
@@ -155,8 +153,7 @@ class SQLRepository {
       if (recordSet) {
         this.myCache.set(cacheKey, recordSet.recordset[0].Result === 1);
         return recordSet.recordset[0].Result === 1;
-      } else 
-        return false;
+      } else return false;
     } catch (ex) {
       console.log(`==> CheckJiraToken ${ex}`);
       return false;
@@ -318,7 +315,7 @@ class SQLRepository {
 
   async getJiraOrgs(tenantId: string, bustTheCache: Boolean = false) {
     let cacheKey = 'GetJiraOrgs:' + tenantId;
-   // console.log (cacheKey);
+    // console.log (cacheKey);
     let orgs: any;
     if (bustTheCache) {
       this.myCache.del(cacheKey);
@@ -338,11 +335,38 @@ class SQLRepository {
     if (recordSet.recordset) {
       orgs = JSON.parse(recordSet.recordset[0].AccessibleResources);
       this.myCache.set(cacheKey, orgs);
-//      console.log (cacheKey + ' Found orgs!!!');
+      //      console.log (cacheKey + ' Found orgs!!!');
     } else {
-      console.log (cacheKey + ' NOT Found orgs!!!');
+      console.log(cacheKey + ' NOT Found orgs!!!');
     }
     return orgs;
+  }
+
+  async getJiraUsers(tenantId: string, org: string,  bustTheCache: Boolean = false) {
+    let cacheKey = `getJiraUsers: tenantId: ${tenantId}  org: ${org}`;
+    console.log (cacheKey);
+    if (bustTheCache) {
+      this.myCache.del(cacheKey);
+    }
+
+    let val = this.myCache.get(cacheKey);
+
+    if (val) {
+      return val;
+    }
+
+    await this.createPool();
+    const request = await this.pool.request();
+    request.input('TenantId', sql.Char, tenantId);
+    request.input('Org', sql.Char, org);
+    const recordSet = await request.execute('GetJiraUsers');
+    if (recordSet.recordset.length > 0) {
+      this.myCache.set(cacheKey, recordSet.recordset);
+      console.log (`Found: ${ recordSet.recordset.length} records for org: ${org} `);
+      return recordSet.recordset;
+
+    } else return null;
+
   }
 
   //No one calls this yet, the SP is called directly from another SP GetTenant. Leaving for future use.
@@ -387,7 +411,7 @@ class SQLRepository {
     let recordSet = await request.execute('GetJiraTenant');
     if (recordSet.recordset.length > 0) {
       this.myCache.set(cacheKey, recordSet.recordset);
-     // console.log(`==> getJiraTenant is successfull for id:${id} `);
+      // console.log(`==> getJiraTenant is successfull for id:${id} `);
       return recordSet.recordset;
     } else return 0;
   }
@@ -427,10 +451,8 @@ class SQLRepository {
 
   async getJiraToken(id: string) {
     const recordSet = await this.getJiraTenant(id);
-    if (recordSet) 
-      return recordSet[0].Auth_Token;
-    else 
-      return;
+    if (recordSet) return recordSet[0].Auth_Token;
+    else return;
   }
 
   async getTopDev4LastXDays(org: string, day: number = 1) {
@@ -804,14 +826,14 @@ class SQLRepository {
     }
   }
 
-  async saveJiraDevs(tenantId: string, org: string, devs: string[]) {
+  async saveJiraUsers(tenantId: string, org: string, devs: string[]) {
+    
     try {
       if (devs == undefined) return;
       if (devs.length === 0) {
         console.log('No devs to be saved!');
         return;
       }
-
       await this.createPool();
       const request = await this.pool.request();
 
@@ -825,10 +847,10 @@ class SQLRepository {
         request.input('displayName', sql.VarChar(200), dev.displayName); //Rafat Sarosh
         request.input('avatarUrls', sql.Text, JSON.stringify(dev.avatarUrls)); //rsarosh
         request.input('self', sql.VarChar(500), dev.self);
-        const recordSet = await request.execute('SaveJiraDev');
+        const recordSet = await request.execute('SaveJiraUsers');
         //return recordSet.rowsAffected[0];
       }
-      console.log(`saved ${devs.length} Jira Dev`);
+      console.log(`saved ${devs.length} Jira Dev for org: ${org}`);
     } catch (ex) {
       return ex;
     }

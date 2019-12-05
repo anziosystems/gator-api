@@ -11,17 +11,18 @@ import {JiraRepository} from '../Lib/JiraRepository';
 import {isNullOrUndefined} from 'util';
 
 const jiraTenant = '557058:5ece7650-2568-429a-9548-36d4c141ed83          ';
+const jiraOrg = '786d2410-0054-411f-90ed-392c8cc1aad1'; //'0e493c98-6102-463a-bc17-4980be22651b';
 
-describe('getJiraUsers', () => {
+describe.only('getJiraUsers', () => {
   it('should return rowsAffected', async () => {
     let jiraRepository = new JiraRepository();
-    await jiraRepository.GetJiraUsers(jiraTenant).then((result: any) => {
-      expect(result).to.greaterThan(0);
+    await jiraRepository.getJiraUsers(jiraTenant, jiraOrg, true).then((result: any) => {
+      expect(JSON.parse(result).length).to.greaterThan(0);
     });
   });
 });
 
-describe.only('getJiraOrgs', () => {
+describe('getJiraOrgs', () => {
   it('should return rowsAffected', async () => {
     let sqlRepository = new SQLRepository(null);
     await sqlRepository.getJiraOrgs(jiraTenant).then((result: any) => {

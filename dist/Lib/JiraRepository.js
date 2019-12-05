@@ -27,24 +27,30 @@ class JiraRepository {
             return yield this.sqlRepository.getJiraOrgs(jiraTenantId);
         });
     }
-    GetJiraUsers(jiraTenantId, org = '0e493c98-6102-463a-bc17-4980be22651b', bustTheCache = false) {
+    getJiraUsers(jiraTenantId, org, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log(`getJiraUsers: TenantId: ${jiraTenantId} Org: ${org}`);
+            if (!bustTheCache) {
+                //if bust the cache then goto Jira else get it from SQL
+                return yield this.sqlRepository.getJiraUsers(jiraTenantId, org);
+            }
             // const org = '0e493c98-6102-463a-bc17-4980be22651b'; //await this.sqlRepository.getJiraResourceId (Number(jiraTenantId));
             const uri = org + '/rest/api/3/users/search?maxResults=500';
             try {
-                request(yield this.makeJiraRequest(jiraTenantId, uri), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
+                return yield request(yield this.makeJiraRequest(jiraTenantId, uri), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                     if (response.statusCode === 200) {
                         let result = JSON.parse(body);
                         if (!result) {
-                            console.log(`GetJiraUsers: No Devs found for tenant:${jiraTenantId} ResourceId: ${org}`);
+                            console.log(`GetJiraUsers: No Users found for tenant:${jiraTenantId} org: ${org}`);
                         }
                         else {
-                            return yield this.sqlRepository.saveJiraDevs(jiraTenantId, org, result);
+                            yield this.sqlRepository.saveJiraUsers(jiraTenantId, org, result);
+                            return yield this.sqlRepository.getJiraUsers(jiraTenantId, org);
                             //No paging for now - Getting all 500 developers
                         }
                     }
                     else {
-                        console.log(`GetJiraUsers - status code: ${response.statusCode} tenant:${jiraTenantId} ResourceId: ${org}`);
+                        console.log(`GetJiraUsers - status code: ${response.statusCode} tenant:${jiraTenantId} org: ${org}`);
                     }
                 }));
                 //git call has put the org in SQL, now lets get it from (cache).
@@ -95,7 +101,7 @@ class JiraRepository {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const token = 'Bearer ' + (yield this.sqlRepository.getJiraToken(jiraTenantId));
-                console.log(`==> JiraToken: Got the token`);
+                // console.log(`==> JiraToken: ${token} `);
                 let header = {
                     method: method,
                     uri: 'https://api.atlassian.com/ex/jira/' + gUri,

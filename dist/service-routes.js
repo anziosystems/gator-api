@@ -120,29 +120,18 @@ function getJiraTenant(req, res) {
         return;
     }
 }
-function getJiraOrg(req, res) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const jiraOrg = req.headers['jiraOrg']; //it is tenantId in header
-        if (!jiraOrg) {
-            //Oops!lets  get it from the DB
-            jiraRepository.getJiraOrg(getJiraTenant(req, res), req.query.bustTheCache).then(result => {
-                console.log(`getJiraOrg : result`);
-                return res.json(result); //guid string of the AccessResource Id
-            });
-        }
-        else {
-            return jiraOrg;
-        }
-    });
-}
-//header must have JiraTenant and JiraOrg
-router.get('/GetJiraUsers', validateJiraToken, (req, res) => {
-    getJiraOrg(req, res).then(jiraOrg => {
-        jiraRepository.GetJiraUsers(getJiraTenant(req, res), jiraOrg, req.query.bustTheCache).then(result => {
-            return res.json(result);
-        });
-    });
-});
+// async function getJiraOrg(req: any, res: any): Promise<any> {
+//   const jiraOrg = req.headers['jiraOrg']; //it is tenantId in header
+//   if (!jiraOrg) {
+//     //Oops!lets  get it from the DB
+//     jiraRepository.getJiraOrg(getJiraTenant(req, res), req.query.bustTheCache).then(result => {
+//       console.log(`getJiraOrg : result`);
+//       return res.json(result); //guid string of the AccessResource Id
+//     });
+//   } else {
+//     return jiraOrg;
+//   }
+// }
 //header must have JiraTenant
 router.get('/GetJiraOrgs', validateJiraToken, (req, res) => {
     jiraRepository.getJiraOrgs(getJiraTenant(req, res), req.query.bustTheCache).then(result => {
@@ -155,18 +144,22 @@ router.get('/GetJiraOrgs', validateJiraToken, (req, res) => {
         return res.json(result); //guid string of the AccessResource Id
     });
 });
+//
+router.get('/GetJiraUsers', validateJiraToken, (req, res) => {
+    jiraRepository.getJiraUsers(getJiraTenant(req, res), req.query.org, req.query.bustTheCache).then(result => {
+        return res.json(JSON.parse(result)); //guid string of the AccessResource Id
+    });
+});
 //header must have JiraTenant
 router.get('/GetJiraIssues', validateJiraToken, (req, res) => {
-    getJiraOrg(req, res).then(jiraOrg => {
-        jiraRepository
-            .getJiraIssues(getJiraTenant(req, res), //tenant
-        jiraOrg, //org
-        '557058:f39310b9-d30a-41a3-8011-6a6ae5eeed07', //userId
-        '"In Progress" OR status="To Do"', //status
-        'summary,status, assignee,created, updated')
-            .then(result => {
-            return res.json(result);
-        });
+    jiraRepository
+        .getJiraIssues(getJiraTenant(req, res), //tenant
+    req.query.org, //org
+    req.query.userid, //'557058:f39310b9-d30a-41a3-8011-6a6ae5eeed07', //userId
+    '"In Progress" OR status="To Do"', //status
+    'summary,status, assignee,created, updated')
+        .then(result => {
+        return res.json(result);
     });
 });
 router.get('/GetOrg', validateToken, (req, res) => {

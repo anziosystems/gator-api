@@ -107,27 +107,20 @@ function getJiraTenant(req: any, res: any) {
   }
 }
 
-async function getJiraOrg(req: any, res: any): Promise<any> {
-  const jiraOrg = req.headers['jiraOrg']; //it is tenantId in header
-  if (!jiraOrg) {
-    //Oops!lets  get it from the DB
-    jiraRepository.getJiraOrg(getJiraTenant(req, res), req.query.bustTheCache).then(result => {
-      console.log(`getJiraOrg : result`);
-      return res.json(result); //guid string of the AccessResource Id
-    });
-  } else {
-    return jiraOrg;
-  }
-}
+// async function getJiraOrg(req: any, res: any): Promise<any> {
+//   const jiraOrg = req.headers['jiraOrg']; //it is tenantId in header
+//   if (!jiraOrg) {
+//     //Oops!lets  get it from the DB
+//     jiraRepository.getJiraOrg(getJiraTenant(req, res), req.query.bustTheCache).then(result => {
+//       console.log(`getJiraOrg : result`);
+//       return res.json(result); //guid string of the AccessResource Id
+//     });
+//   } else {
+//     return jiraOrg;
+//   }
+// }
 
-//header must have JiraTenant and JiraOrg
-router.get('/GetJiraUsers', validateJiraToken, (req: any, res: any) => {
-  getJiraOrg(req, res).then(jiraOrg => {
-    jiraRepository.GetJiraUsers(getJiraTenant(req, res), jiraOrg, req.query.bustTheCache).then(result => {
-      return res.json(result);
-    });
-  });
-});
+
 
 //header must have JiraTenant
 router.get('/GetJiraOrgs', validateJiraToken, (req: any, res: any) => {
@@ -142,21 +135,28 @@ router.get('/GetJiraOrgs', validateJiraToken, (req: any, res: any) => {
   });
 });
 
+//
+router.get('/GetJiraUsers', validateJiraToken, (req: any, res: any) => {
+   jiraRepository.getJiraUsers(getJiraTenant(req, res),  req.query.org, req.query.bustTheCache).then(result => {
+    return res.json(JSON.parse(result)); //guid string of the AccessResource Id
+  });
+})
+
 //header must have JiraTenant
 router.get('/GetJiraIssues', validateJiraToken, (req: any, res: any) => {
-  getJiraOrg(req, res).then(jiraOrg => {
+  
     jiraRepository
       .getJiraIssues(
         getJiraTenant(req, res), //tenant
-        jiraOrg, //org
-        '557058:f39310b9-d30a-41a3-8011-6a6ae5eeed07', //userId
+        req.query.org, //org
+        req.query.userid, //'557058:f39310b9-d30a-41a3-8011-6a6ae5eeed07', //userId
         '"In Progress" OR status="To Do"', //status
         'summary,status, assignee,created, updated', //fields
       )
       .then(result => {
         return res.json(result);
       });
-  });
+ 
 });
 
 router.get('/GetOrg', validateToken, (req: any, res: any) => {
