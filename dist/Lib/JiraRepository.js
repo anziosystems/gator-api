@@ -59,6 +59,9 @@ class JiraRepository {
             }
             catch (ex) {
                 console.log(` ==> GetJiraUsers: ${ex}`);
+                if (JSON.parse(ex.error).code === 401) {
+                    this.sqlRepository.dropJiraTokenFromCache(jiraTenantId);
+                }
                 return ex.error; //a proper json {code: 401, message: "Unauthorized"}
             }
         });
@@ -96,6 +99,9 @@ class JiraRepository {
             }
             catch (ex) {
                 console.log(` ==> GetJiraIssues: ${ex}`);
+                if (JSON.parse(ex.error).code === 401) {
+                    this.sqlRepository.dropJiraTokenFromCache(jiraTenantId);
+                }
             }
         });
     }

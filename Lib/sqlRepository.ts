@@ -136,6 +136,18 @@ class SQLRepository {
     }
   }
 
+  dropTokenFromCache(tenantId: string) {
+    let cacheKey = 'CheckToken: ' + tenantId;
+    console.log('dropTokenFromCache: ' + cacheKey);
+    this.myCache.del(cacheKey);
+  }
+
+  dropJiraTokenFromCache(tenantId: string) {
+    let cacheKey = 'CheckJiraToken: ' + tenantId;
+    console.log('dropJiraTokenFromCache: ' + cacheKey);
+    this.myCache.del(cacheKey);
+  }
+
   //return 0 if not a valid tenant or the token more than 7 days old
   async checkJiraToken(tenantId: string) {
     try {
@@ -144,7 +156,10 @@ class SQLRepository {
       // console.log (cacheKey);
       let val = this.myCache.get(cacheKey);
       if (val) {
+        console.log('jira Token from cache');
         return val;
+      } else {
+        console.log('jira Token from DB');
       }
       await this.createPool();
       const request = await this.pool.request();
@@ -324,6 +339,7 @@ class SQLRepository {
     let val = this.myCache.get(cacheKey);
 
     if (val) {
+      console.log('getJiraOrgs hitting the cache');
       return val;
     }
 
@@ -342,9 +358,9 @@ class SQLRepository {
     return orgs;
   }
 
-  async getJiraUsers(tenantId: string, org: string,  bustTheCache: Boolean = false) {
+  async getJiraUsers(tenantId: string, org: string, bustTheCache: Boolean = false) {
     let cacheKey = `getJiraUsers: tenantId: ${tenantId}  org: ${org}`;
-    console.log (cacheKey);
+    console.log(cacheKey);
     if (bustTheCache) {
       this.myCache.del(cacheKey);
     }
@@ -352,6 +368,7 @@ class SQLRepository {
     let val = this.myCache.get(cacheKey);
 
     if (val) {
+      console.log('getJiraUsers hitting the cache');
       return val;
     }
 
@@ -362,11 +379,9 @@ class SQLRepository {
     const recordSet = await request.execute('GetJiraUsers');
     if (recordSet.recordset.length > 0) {
       this.myCache.set(cacheKey, recordSet.recordset);
-      console.log (`Found: ${ recordSet.recordset.length} records for org: ${org} `);
+      console.log(`Found: ${recordSet.recordset.length} records for org: ${org} `);
       return recordSet.recordset;
-
     } else return null;
-
   }
 
   //No one calls this yet, the SP is called directly from another SP GetTenant. Leaving for future use.
@@ -403,6 +418,7 @@ class SQLRepository {
     let cacheKey = 'getJiraTenant-' + id;
     let val = this.myCache.get(cacheKey);
     if (val) {
+      console.log('getJiraTenant hitting the cache');
       return val;
     }
     await this.createPool();
@@ -827,7 +843,6 @@ class SQLRepository {
   }
 
   async saveJiraUsers(tenantId: string, org: string, devs: string[]) {
-    
     try {
       if (devs == undefined) return;
       if (devs.length === 0) {

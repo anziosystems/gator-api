@@ -103,6 +103,16 @@ class SQLRepository {
             }
         });
     }
+    dropTokenFromCache(tenantId) {
+        let cacheKey = 'CheckToken: ' + tenantId;
+        console.log('dropTokenFromCache: ' + cacheKey);
+        this.myCache.del(cacheKey);
+    }
+    dropJiraTokenFromCache(tenantId) {
+        let cacheKey = 'CheckJiraToken: ' + tenantId;
+        console.log('dropJiraTokenFromCache: ' + cacheKey);
+        this.myCache.del(cacheKey);
+    }
     //return 0 if not a valid tenant or the token more than 7 days old
     checkJiraToken(tenantId) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -112,7 +122,11 @@ class SQLRepository {
                 // console.log (cacheKey);
                 let val = this.myCache.get(cacheKey);
                 if (val) {
+                    console.log('jira Token from cache');
                     return val;
+                }
+                else {
+                    console.log('jira Token from DB');
                 }
                 yield this.createPool();
                 const request = yield this.pool.request();
@@ -293,6 +307,7 @@ class SQLRepository {
             }
             let val = this.myCache.get(cacheKey);
             if (val) {
+                console.log('getJiraOrgs hitting the cache');
                 return val;
             }
             yield this.createPool();
@@ -319,6 +334,7 @@ class SQLRepository {
             }
             let val = this.myCache.get(cacheKey);
             if (val) {
+                console.log('getJiraUsers hitting the cache');
                 return val;
             }
             yield this.createPool();
@@ -375,6 +391,7 @@ class SQLRepository {
             let cacheKey = 'getJiraTenant-' + id;
             let val = this.myCache.get(cacheKey);
             if (val) {
+                console.log('getJiraTenant hitting the cache');
                 return val;
             }
             yield this.createPool();
