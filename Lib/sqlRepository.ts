@@ -140,11 +140,15 @@ class SQLRepository {
     let cacheKey = 'CheckToken: ' + tenantId;
     console.log('dropTokenFromCache: ' + cacheKey);
     this.myCache.del(cacheKey);
+    cacheKey = 'GetTenant-' + tenantId;
+    this.myCache.del(cacheKey);
   }
 
   dropJiraTokenFromCache(tenantId: string) {
     let cacheKey = 'CheckJiraToken: ' + tenantId;
+    this.myCache.del(cacheKey);
     console.log('dropJiraTokenFromCache: ' + cacheKey);
+    cacheKey = 'getJiraTenant-' + tenantId;
     this.myCache.del(cacheKey);
   }
 
@@ -333,6 +337,7 @@ class SQLRepository {
     // console.log (cacheKey);
     let orgs: any;
     if (bustTheCache) {
+      console.log (' ==>GetJiraOrg: hitting the cache.');
       this.myCache.del(cacheKey);
     }
 

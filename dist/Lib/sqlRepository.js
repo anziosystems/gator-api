@@ -107,10 +107,14 @@ class SQLRepository {
         let cacheKey = 'CheckToken: ' + tenantId;
         console.log('dropTokenFromCache: ' + cacheKey);
         this.myCache.del(cacheKey);
+        cacheKey = 'GetTenant-' + tenantId;
+        this.myCache.del(cacheKey);
     }
     dropJiraTokenFromCache(tenantId) {
         let cacheKey = 'CheckJiraToken: ' + tenantId;
+        this.myCache.del(cacheKey);
         console.log('dropJiraTokenFromCache: ' + cacheKey);
+        cacheKey = 'getJiraTenant-' + tenantId;
         this.myCache.del(cacheKey);
     }
     //return 0 if not a valid tenant or the token more than 7 days old
@@ -303,6 +307,7 @@ class SQLRepository {
             // console.log (cacheKey);
             let orgs;
             if (bustTheCache) {
+                console.log(' ==>GetJiraOrg: hitting the cache.');
                 this.myCache.del(cacheKey);
             }
             let val = this.myCache.get(cacheKey);
