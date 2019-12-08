@@ -180,9 +180,11 @@ class SQLRepository {
     getAllRepoCollection4TenantOrg(tenantId, org, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
             let cacheKey = 'getAllRepoCollection4TenantOrg' + org + tenantId;
-            let val = this.myCache.get(cacheKey);
-            if (val) {
-                return val;
+            if (!bustTheCache) {
+                let val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
             }
             yield this.createPool();
             const request = yield this.pool.request();

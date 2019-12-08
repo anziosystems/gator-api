@@ -9,9 +9,15 @@ import {async} from 'rxjs/internal/scheduler/async';
 class JiraRepository {
   httpOptions: any;
   url: string;
+  myCache: any;
   sqlRepository: SQLRepository;
+  CACHE_DURATION_SEC: number = 6000; //50 min
+
   constructor() {
     this.sqlRepository = new SQLRepository(null);
+    if (!this.myCache) {
+      this.myCache = new NodeCache({stdTTL: this.CACHE_DURATION_SEC, checkperiod: 120});
+    }
   }
 
   //returns the first org id
@@ -26,9 +32,11 @@ class JiraRepository {
 
   async getJiraUsers(jiraTenantId: string, org: string, bustTheCache: boolean = false) {
     console.log(`getJiraUsers: TenantId: ${jiraTenantId} Org: ${org}`);
+
     if (!bustTheCache) {
       //if bust the cache then goto Jira else get it from SQL
-      return await this.sqlRepository.getJiraUsers(jiraTenantId, org, bustTheCache);
+      const val = await this.sqlRepository.getJiraUsers(jiraTenantId, org, bustTheCache);
+      if (val) return val;
     }
     // const org = '0e493c98-6102-463a-bc17-4980be22651b'; //await this.sqlRepository.getJiraResourceId (Number(jiraTenantId));
     const uri = org + '/rest/api/3/users/search?maxResults=500';
@@ -38,14 +46,14 @@ class JiraRepository {
         if (response.statusCode === 200) {
           let result = JSON.parse(body);
           if (!result) {
-           // console.log(`GetJiraUsers: No Users found for tenant:${jiraTenantId} org: ${org}`);
+            // console.log(`GetJiraUsers: No Users found for tenant:${jiraTenantId} org: ${org}`);
           } else {
             await this.sqlRepository.saveJiraUsers(jiraTenantId, org, result);
             return await this.sqlRepository.getJiraUsers(jiraTenantId, org);
             //No paging for now - Getting all 500 developers
           }
         } else {
-         // console.log(`GetJiraUsers - status code: ${response.statusCode} tenant:${jiraTenantId} org: ${org}`);
+          // console.log(`GetJiraUsers - status code: ${response.statusCode} tenant:${jiraTenantId} org: ${org}`);
           return `"code: ${response.statusCode}, "message": "Unauthorize"`; //return 401
         }
       });
@@ -53,8 +61,8 @@ class JiraRepository {
       // return await this.sqlRepository.getDevs(tenantId, org);
     } catch (ex) {
       console.log(` ==> GetJiraUsers: ${ex}`);
-      if( JSON.parse (ex.error).code === 401) {
-        this.sqlRepository.dropJiraTokenFromCache (jiraTenantId);
+      if (JSON.parse(ex.error).code === 401) {
+        this.sqlRepository.dropJiraTokenFromCache(jiraTenantId);
       }
       return ex.error; //a proper json {code: 401, message: "Unauthorized"}
     }
@@ -65,9 +73,18 @@ class JiraRepository {
     
   */
   async getJiraIssues(jiraTenantId: string, org: string = '0e493c98-6102-463a-bc17-4980be22651b', userId: string, status: string = '"In Progress" OR status="To Do"', fields: string = 'summary, status', bustTheCache: boolean = false): Promise<any> {
+    const cacheKey = `getJiraIssues:${jiraTenantId}-${org}-${userId}`;
+
+    if (!bustTheCache) {
+      let val = this.myCache.get(cacheKey);
+      if (val) { 
+        console.log ("Issues from cache");
+        return val;
+      }
+    }
     // const org = '0e493c98-6102-463a-bc17-4980be22651b'; //await this.sqlRepository.getJiraResourceId (Number(jiraTenantId));
     const uri = `${org}/rest/api/3/search?jql=assignee =${userId} AND ( status = ${status})&fields=${fields}`;
-    console.log (`getJiraIssues: URL= ${uri}`);
+    console.log(`getJiraIssues: URL= ${uri}`);
     try {
       return await request(await this.makeJiraRequest(jiraTenantId, uri), async (error: any, response: any, body: any) => {
         if (response.statusCode === 200) {
@@ -77,6 +94,7 @@ class JiraRepository {
             return result;
           } else {
             console.log(` ==> getJiraIssues: ${result.issues.length} issues found!`);
+            if (result.issues.length > 0) this.myCache.set(cacheKey, result.issues);
             return result.issues;
             // return await this.sqlRepository.saveJiraIssues(jiraTenantId, org, result);
             //No paging for now - Getting all 500 developers
@@ -89,8 +107,8 @@ class JiraRepository {
       // return await this.sqlRepository.getDevs(tenantId, org);
     } catch (ex) {
       console.log(` ==> GetJiraIssues: ${ex}`);
-      if( JSON.parse (ex.error).code === 401) {
-        this.sqlRepository.dropJiraTokenFromCache (jiraTenantId);
+      if (JSON.parse(ex.error).code === 401) {
+        this.sqlRepository.dropJiraTokenFromCache(jiraTenantId);
       }
     }
   }
@@ -99,7 +117,7 @@ class JiraRepository {
   async makeJiraRequest(jiraTenantId: string, gUri: string, body: string = '', method: string = 'GET') {
     try {
       const token = 'Bearer ' + (await this.sqlRepository.getJiraToken(jiraTenantId));
-    //  console.log(`==> JiraToken: ${token} `);
+      //  console.log(`==> JiraToken: ${token} `);
       let header = {
         method: method,
         uri: 'https://api.atlassian.com/ex/jira/' + gUri,

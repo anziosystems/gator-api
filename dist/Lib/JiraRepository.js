@@ -13,7 +13,11 @@ const request = require('request-promise');
 const sqlRepository_1 = require("./sqlRepository");
 class JiraRepository {
     constructor() {
+        this.CACHE_DURATION_SEC = 6000; //50 min
         this.sqlRepository = new sqlRepository_1.SQLRepository(null);
+        if (!this.myCache) {
+            this.myCache = new NodeCache({ stdTTL: this.CACHE_DURATION_SEC, checkperiod: 120 });
+        }
     }
     //returns the first org id
     getJiraOrg(jiraTenantId, bustTheCache = false) {
@@ -32,7 +36,9 @@ class JiraRepository {
             console.log(`getJiraUsers: TenantId: ${jiraTenantId} Org: ${org}`);
             if (!bustTheCache) {
                 //if bust the cache then goto Jira else get it from SQL
-                return yield this.sqlRepository.getJiraUsers(jiraTenantId, org, bustTheCache);
+                const val = yield this.sqlRepository.getJiraUsers(jiraTenantId, org, bustTheCache);
+                if (val)
+                    return val;
             }
             // const org = '0e493c98-6102-463a-bc17-4980be22651b'; //await this.sqlRepository.getJiraResourceId (Number(jiraTenantId));
             const uri = org + '/rest/api/3/users/search?maxResults=500';
@@ -72,6 +78,14 @@ class JiraRepository {
     */
     getJiraIssues(jiraTenantId, org = '0e493c98-6102-463a-bc17-4980be22651b', userId, status = '"In Progress" OR status="To Do"', fields = 'summary, status', bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = `getJiraIssues:${jiraTenantId}-${org}-${userId}`;
+            if (!bustTheCache) {
+                let val = this.myCache.get(cacheKey);
+                if (val) {
+                    console.log("Issues from cache");
+                    return val;
+                }
+            }
             // const org = '0e493c98-6102-463a-bc17-4980be22651b'; //await this.sqlRepository.getJiraResourceId (Number(jiraTenantId));
             const uri = `${org}/rest/api/3/search?jql=assignee =${userId} AND ( status = ${status})&fields=${fields}`;
             console.log(`getJiraIssues: URL= ${uri}`);
@@ -85,6 +99,8 @@ class JiraRepository {
                         }
                         else {
                             console.log(` ==> getJiraIssues: ${result.issues.length} issues found!`);
+                            if (result.issues.length > 0)
+                                this.myCache.set(cacheKey, result.issues);
                             return result.issues;
                             // return await this.sqlRepository.saveJiraIssues(jiraTenantId, org, result);
                             //No paging for now - Getting all 500 developers

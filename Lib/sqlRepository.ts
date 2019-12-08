@@ -205,9 +205,11 @@ class SQLRepository {
 
   async getAllRepoCollection4TenantOrg(tenantId: string, org: string, bustTheCache: Boolean = false) {
     let cacheKey = 'getAllRepoCollection4TenantOrg' + org + tenantId;
-    let val = this.myCache.get(cacheKey);
-    if (val) {
-      return val;
+    if (!bustTheCache) {
+      let val = this.myCache.get(cacheKey);
+      if (val) {
+        return val;
+      }
     }
     await this.createPool();
     const request = await this.pool.request();
@@ -337,7 +339,7 @@ class SQLRepository {
     // console.log (cacheKey);
     let orgs: any;
     if (bustTheCache) {
-      console.log (' ==>GetJiraOrg: hitting the cache.');
+      console.log(' ==>GetJiraOrg: hitting the cache.');
       this.myCache.del(cacheKey);
     }
 
@@ -366,6 +368,7 @@ class SQLRepository {
   async getJiraUsers(tenantId: string, org: string, bustTheCache: Boolean = false) {
     let cacheKey = `getJiraUsers: tenantId: ${tenantId}  org: ${org}`;
     console.log(cacheKey);
+    
     if (bustTheCache) {
       this.myCache.del(cacheKey);
     }

@@ -134,7 +134,7 @@ function getJiraTenant(req, res) {
 // }
 //header must have JiraTenant
 router.get('/GetJiraOrgs', validateJiraToken, (req, res) => {
-    jiraRepository.getJiraOrgs(getJiraTenant(req, res), req.query.bustTheCache).then(result => {
+    jiraRepository.getJiraOrgs(getJiraTenant(req, res), Boolean(req.query.bustTheCache)).then(result => {
         /*
           result
           Array(3) [Object, Object, Object]
@@ -146,7 +146,7 @@ router.get('/GetJiraOrgs', validateJiraToken, (req, res) => {
 });
 //
 router.get('/GetJiraUsers', validateJiraToken, (req, res) => {
-    jiraRepository.getJiraUsers(getJiraTenant(req, res), req.query.org, req.query.bustTheCache).then(result => {
+    jiraRepository.getJiraUsers(getJiraTenant(req, res), req.query.org, Boolean(req.query.bustTheCache)).then(result => {
         /*
         JSON.parse(result)
         Array(29) [Object, Object, Object, Object, Object, Object, Object, Object, …]
@@ -163,13 +163,14 @@ router.get('/GetJiraIssues', validateJiraToken, (req, res) => {
     req.query.org, //org
     req.query.userid, //'557058:f39310b9-d30a-41a3-8011-6a6ae5eeed07', //userId
     '"In Progress" OR status="To Do"', //status
-    'summary,status, assignee,created, updated')
+    'summary,status, assignee,created, updated', //fields
+    Boolean(req.query.bustTheCache))
         .then(result => {
         return res.json(result);
     });
 });
 router.get('/GetOrg', validateToken, (req, res) => {
-    gitRepository.getOrg(getTenant(req, res), req.query.bustTheCache, req.query.getFromGit).then(result => {
+    gitRepository.getOrg(getTenant(req, res), Boolean(req.query.bustTheCache), req.query.getFromGit).then(result => {
         return res.json(result);
     });
 });
@@ -184,7 +185,7 @@ returns {
 
 */
 router.get('/GetGraphData4XDays', validateToken, (req, res) => {
-    sqlRepositoy.GetGraphData4XDays(req.query.org, req.query.day, req.query.bustTheCache).then(result => {
+    sqlRepositoy.GetGraphData4XDays(req.query.org, req.query.day, Boolean(req.query.bustTheCache)).then(result => {
         return res.json(result);
     });
 });
@@ -297,7 +298,7 @@ router.get('/PullRequest4Dev', validateToken, (req, res) => {
 });
 //    /GetOrg?tenantId='rsarosh@hotmail.com'&Org='LabShare'&bustTheCache=false&getFromGit = true
 router.get('/GetRepos', validateToken, (req, res) => {
-    gitRepository.getRepos(getTenant(req, res), req.query.org, req.query.bustTheCache, req.query.getFromGit).then(result => {
+    gitRepository.getRepos(getTenant(req, res), req.query.org, Boolean(req.query.bustTheCache), req.query.getFromGit).then(result => {
         if (result) {
             return res.json(result);
         }
@@ -313,13 +314,13 @@ router.get('/GetPRfromGit', validateToken, (req, res) => {
     });
 });
 router.get('/GetAllRepoCollection4TenantOrg', validateToken, (req, res) => {
-    sqlRepositoy.getAllRepoCollection4TenantOrg(getTenant(req, res), req.query.org, req.query.bustTheCache).then(result => {
+    sqlRepositoy.getAllRepoCollection4TenantOrg(getTenant(req, res), req.query.org, Boolean(req.query.bustTheCache)).then(result => {
         return res.json(result);
     });
 });
 //collectionName
 router.get('/GetRepoCollectionByName', validateToken, (req, res) => {
-    sqlRepositoy.getAllRepoCollection4TenantOrg(req.query.collectionName, req.query.bustTheCache).then(result => {
+    sqlRepositoy.getAllRepoCollection4TenantOrg(req.query.collectionName, '', Boolean(req.query.bustTheCache)).then(result => {
         return res.json(result.recordset);
     });
 });
