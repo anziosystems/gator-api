@@ -9,7 +9,7 @@ const AtlassianStrategy = require('passport-atlassian-oauth2');
 passport.use(new AtlassianStrategy({
     clientID: process.env.ATLASSIAN_CLIENT_ID,
     clientSecret: process.env.ATLASSIAN_CLIENT_SECRET,
-    callbackURL: 'http://localhost:3000/auth/atlassian/redirect',
+    callbackURL: 'https://gator-ui.azurewebsites.net/auth/atlassian/redirect' , // 'http://localhost:3000/auth/atlassian/redirect',
     scope: 'offline_access read:jira-user read:jira-work manage:jira-configuration write:jira-work',
     audience: 'api.atlassian.com',
     state: 'qwe3424242342sdfasdfads',
