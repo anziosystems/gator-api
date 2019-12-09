@@ -10,7 +10,7 @@ passport.use(
     {
       clientID: process.env.ATLASSIAN_CLIENT_ID,
       clientSecret: process.env.ATLASSIAN_CLIENT_SECRET,
-      callbackURL: 'http://localhost:3000/auth/atlassian/redirect',
+      callbackURL: process.env.CALL_BACK_JIRA_URL, //'http://localhost:3000/auth/atlassian/redirect',
       scope: 'offline_access read:jira-user read:jira-work manage:jira-configuration write:jira-work',
       audience: 'api.atlassian.com',
       state: 'qwe3424242342sdfasdfads',
