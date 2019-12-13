@@ -9,7 +9,6 @@ const AtlassianStrategy = require('passport-atlassian-oauth2');
 passport.use(new AtlassianStrategy({
     clientID: process.env.ATLASSIAN_CLIENT_ID,
     clientSecret: process.env.ATLASSIAN_CLIENT_SECRET,
-
     callbackURL: process.env.CALL_BACK_JIRA_OATH_URL,
     scope: 'offline_access read:jira-user read:jira-work manage:jira-configuration write:jira-work',
     audience: 'api.atlassian.com',

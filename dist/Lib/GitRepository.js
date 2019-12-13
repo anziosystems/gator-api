@@ -111,21 +111,33 @@ class GitRepository {
     getDevsFromGit(tenantId, org, endCursor = '') {
         return __awaiter(this, void 0, void 0, function* () {
             let graphQL = '';
+            //url:"https://github.com/ncats" name: "National Center ..."
+            //we need to get this name in the url
+            const orgName = org.url.substr(org.url.lastIndexOf("/") + 1);
             if (endCursor) {
-                graphQL = `{\"query\":\"query {  organization(login: ` + org + `) {  name  membersWithRole(first: 100 , after: \\"` + endCursor + `\\") { nodes { name login  email avatarUrl  } pageInfo { endCursor  hasNextPage }}}}\",\"variables\":{}}`;
+                graphQL = `{\"query\":\"query {  organization(login:\\"${orgName}\\") {  name  membersWithRole(first: 100 , after: \\"` + endCursor + `\\") { nodes { name login  email avatarUrl  } pageInfo { endCursor  hasNextPage }}}}\",\"variables\":{}}`;
             }
             else {
-                graphQL = `{\"query\":\"query {  organization(login: ` + org + `) {  name  membersWithRole(first: 100) { nodes { name login  email  avatarUrl  } pageInfo { endCursor  hasNextPage }}}}\",\"variables\":{}}`;
+                graphQL = `{\"query\":\"query {  organization(login: \\"${orgName}\\") {  name  membersWithRole(first: 100) { nodes { name login  email  avatarUrl  } pageInfo { endCursor  hasNextPage }}}}\",\"variables\":{}}`;
             }
             try {
+                console.log(` ==> getDevsFromGit: ${graphQL}`);
                 request(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
+                    if (response.statusCode === 400) {
+                        console.log(`getDevsFromGit: No Devs found for org: ${orgName} - ${response.body}`);
+                        this.sqlRepository.saveStatus(tenantId, 'GET-DEV-FAIL', `${orgName} - ${response.body}`);
+                        return;
+                    }
                     if (response.statusCode === 200) {
                         let result = JSON.parse(body);
                         if (!result.data) {
-                            console.log(`getDevsFromGit: No Devs found for org: ${JSON.stringify(org)}`);
+                            console.log(`getDevsFromGit: No Devs found for org: ${orgName}`);
+                            this.sqlRepository.saveStatus(tenantId, 'GET-DEV-FAIL', `${orgName}`);
                         }
                         else {
-                            yield this.sqlRepository.saveDevs(tenantId, org, result.data.organization.membersWithRole.nodes);
+                            console.log(`getDevsFromGit: ${result.data.organization.membersWithRole.nodes.length} dev found for org: ${orgName}`);
+                            yield this.sqlRepository.saveDevs(tenantId, orgName, result.data.organization.membersWithRole.nodes);
+                            yield this.sqlRepository.saveStatus(tenantId, 'GET-DEV-SUCCESS', `${result.data.organization.membersWithRole.nodes.length} Devs updated for ${orgName}`);
                             if (result.data.organization.membersWithRole.pageInfo) {
                                 let pageInfo = result.data.organization.membersWithRole.pageInfo;
                                 if (pageInfo.hasNextPage) {
@@ -136,7 +148,7 @@ class GitRepository {
                     }
                     else {
                         console.log(`
-             org - ${org} - ${body}`);
+             org - ${orgName} - ${body}`);
                     }
                 }));
                 //git call has put the org in SQL, now lets get it from (cache).
@@ -287,7 +299,7 @@ class GitRepository {
     UpdateDev4Org(tenantId, orgs) {
         return __awaiter(this, void 0, void 0, function* () {
             for (let i = 0; i < orgs.length; i++) {
-                this.getDevsFromGit(tenantId, orgs[i]);
+                yield this.getDevsFromGit(tenantId, orgs[i]);
             }
         });
     }

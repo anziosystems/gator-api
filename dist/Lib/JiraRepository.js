@@ -51,6 +51,7 @@ class JiraRepository {
                         }
                         else {
                             yield this.sqlRepository.saveJiraUsers(jiraTenantId, org, result);
+                            this.sqlRepository.saveStatus(jiraTenantId, 'GET-JIRA-DEV-SUCCESS', ` Found ${result.length} devs for org: ${org}`);
                             return yield this.sqlRepository.getJiraUsers(jiraTenantId, org);
                             //No paging for now - Getting all 500 developers
                         }
