@@ -15,6 +15,9 @@ router.get('/github', passport.authenticate('github'), (req, res) => {
 router.get('/atlassian', passport.authenticate('atlassian'), (req, res) => {
     //This function will never be called.
 });
+router.get('/bitbucket', passport.authenticate('bitbucket'), (req, res) => {
+    //This function will never be called.
+});
 router.get('/logout', (req, res) => {
     res.send('logging.out');
 });
@@ -33,6 +36,13 @@ router.get('/atlassian/redirect', passport.authenticate('atlassian'), (req, res)
     const token = jwt.sign(req.user, process.env.Session_Key);
     let JiraCallbackURL = process.env.CALL_BACK_JIRA_URL;
     res.redirect(JiraCallbackURL + '?JiraToken=' + token);
+});
+//in the setting of application call back is defined as /auth/atlassian/redirect
+router.get('/bitbucket/redirect', passport.authenticate('bitbucket'), (req, res) => {
+    // console.log (`router/atlassian user: ${req.user} `)
+    const token = jwt.sign(req.user, process.env.Session_Key);
+    let cbURL = process.env.CALL_BACK_BITBUCKET_URL;
+    res.redirect(cbURL + '?BitBucketToken=' + token);
 });
 module.exports = router;
 //# sourceMappingURL=auth-routes.js.map

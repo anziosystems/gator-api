@@ -55,6 +55,8 @@
     "node-cache": "^4.2.0",
     "passport": "^0.4.0",
     "passport-atlassian-oauth2": "^1.0.1",
+    "passport-bitbucket": "^2.0.0",
+    "passport-bitbucket-oauth2": "^0.1.2",
     "passport-github": "^1.1.0",
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
