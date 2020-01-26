@@ -174,6 +174,11 @@ router.get('/GetOrg', validateToken, (req, res) => {
         return res.json(result);
     });
 });
+router.get('/getGitLoggedInUSerDetails', validateToken, (req, res) => {
+    sqlRepositoy.getGitLoggedInUSerDetails(getTenant(req, res), Boolean(req.query.bustTheCache)).then(result => {
+        return res.json(result);
+    });
+});
 /*
 returns {
   [

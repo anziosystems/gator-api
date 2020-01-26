@@ -34,6 +34,7 @@ router.get('/logout', (req: any, res: any) => {
 //which you can see in passport-setup.ts file
 router.get('/github/redirect', passport.authenticate('github'), (req: any, res: any) => {
   const token = jwt.sign(req.user, process.env.Session_Key);
+  
   res.redirect(callbackURL + '?token=' + token);
 });
 

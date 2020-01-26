@@ -136,6 +136,30 @@ class SQLRepository {
     }
   }
 
+  async getGitLoggedInUSerDetails(tenantId: number, bustTheCache: Boolean = false) {
+    try {
+      let cacheKey = 'getGitLoggedInUSerDetails: ' + tenantId;
+      if (!bustTheCache) {
+        let val = this.myCache.get(cacheKey);
+        if (val) {
+          return val;
+        }
+      }
+
+      await this.createPool();
+      const request = await this.pool.request();
+      request.input('TenantId', sql.Int, tenantId);
+      const recordSet = await request.execute('getGitLoggedInUSerDetails');
+      if (recordSet) {
+        this.myCache.set(cacheKey, recordSet.recordset[0]);
+        return recordSet.recordset[0];
+      } else return false;
+    } catch (ex) {
+      console.log(`==> CheckToken ${ex}`);
+      return false;
+    }
+  }
+
   dropTokenFromCache(tenantId: string) {
     let cacheKey = 'CheckToken: ' + tenantId;
     console.log('dropTokenFromCache: ' + cacheKey);
@@ -368,7 +392,7 @@ class SQLRepository {
   async getJiraUsers(tenantId: string, org: string, bustTheCache: Boolean = false) {
     let cacheKey = `getJiraUsers: tenantId: ${tenantId}  org: ${org}`;
     console.log(cacheKey);
-    
+
     if (bustTheCache) {
       this.myCache.del(cacheKey);
     }

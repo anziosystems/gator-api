@@ -103,6 +103,33 @@ class SQLRepository {
             }
         });
     }
+    getGitLoggedInUSerDetails(tenantId, bustTheCache = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let cacheKey = 'getGitLoggedInUSerDetails: ' + tenantId;
+                if (!bustTheCache) {
+                    let val = this.myCache.get(cacheKey);
+                    if (val) {
+                        return val;
+                    }
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('TenantId', sql.Int, tenantId);
+                const recordSet = yield request.execute('getGitLoggedInUSerDetails');
+                if (recordSet) {
+                    this.myCache.set(cacheKey, recordSet.recordset[0]);
+                    return recordSet.recordset[0];
+                }
+                else
+                    return false;
+            }
+            catch (ex) {
+                console.log(`==> CheckToken ${ex}`);
+                return false;
+            }
+        });
+    }
     dropTokenFromCache(tenantId) {
         let cacheKey = 'CheckToken: ' + tenantId;
         console.log('dropTokenFromCache: ' + cacheKey);

@@ -142,8 +142,7 @@ router.get('/GetJiraUsers', validateJiraToken, (req: any, res: any) => {
     JSON.parse(result)[0]
     Object {self: "https://api.atlassian.com/ex/jira/786d2410-0054-41…", accountId: "5d53f3cbc6b9320d9ea5bdc2", accountType: "app", avatarUrls: Object, displayName: "Jira Outlook", …}
      */
-      return res.json(JSON.parse(result)); //guid string of the AccessResource Id
-  
+    return res.json(JSON.parse(result)); //guid string of the AccessResource Id
   });
 });
 
@@ -156,7 +155,7 @@ router.get('/GetJiraIssues', validateJiraToken, (req: any, res: any) => {
       req.query.userid, //'557058:f39310b9-d30a-41a3-8011-6a6ae5eeed07', //userId
       '"In Progress" OR status="To Do"', //status
       'summary,status, assignee,created, updated', //fields
-      Boolean(req.query.bustTheCache)
+      Boolean(req.query.bustTheCache),
     )
     .then(result => {
       return res.json(result);
@@ -165,6 +164,12 @@ router.get('/GetJiraIssues', validateJiraToken, (req: any, res: any) => {
 
 router.get('/GetOrg', validateToken, (req: any, res: any) => {
   gitRepository.getOrg(getTenant(req, res), Boolean(req.query.bustTheCache), req.query.getFromGit).then(result => {
+    return res.json(result);
+  });
+});
+
+router.get('/getGitLoggedInUSerDetails', validateToken, (req: any, res: any) => {
+  sqlRepositoy.getGitLoggedInUSerDetails(getTenant(req, res), Boolean(req.query.bustTheCache)).then(result => {
     return res.json(result);
   });
 });
@@ -324,7 +329,7 @@ router.get('/GetAllRepoCollection4TenantOrg', validateToken, (req: any, res: any
 
 //collectionName
 router.get('/GetRepoCollectionByName', validateToken, (req: any, res: any) => {
-  sqlRepositoy.getAllRepoCollection4TenantOrg(req.query.collectionName, '',Boolean(req.query.bustTheCache)).then(result => {
+  sqlRepositoy.getAllRepoCollection4TenantOrg(req.query.collectionName, '', Boolean(req.query.bustTheCache)).then(result => {
     return res.json(result.recordset);
   });
 });
