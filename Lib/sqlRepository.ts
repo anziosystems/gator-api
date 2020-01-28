@@ -560,18 +560,22 @@ class SQLRepository {
   }
 
   async getPR4Dev(org: string, day: number = 1, login: string, action: string, pageSize: number) {
+    if (!org) {
+      console.log(`==> Exiting getPRDev org cannot be null`);
+      return;
+    }
+
+    //login can be null, it is a special case, in that case data come for all the devs - count
     let cacheKey = 'PullRequest4Dev' + org + day.toString() + login;
-    console.log(`getPR4Dev: org:${org} day: ${day} login: ${login} action: ${action} pageSize: ${pageSize}`);
+    //  console.log(`getPR4Dev: org:${org} day: ${day} login: ${login} action: ${action} pageSize: ${pageSize}`);
     let val = this.myCache.get(cacheKey);
     if (val) {
-      console.log('getPR4Dev cache hit');
       return val;
     }
+    console.log('** getPRDev Cache miss **');
     await this.createPool();
     const request = await this.pool.request();
-    if (!org) {
-      throw new Error('org cannot be null');
-    }
+
     if (pageSize === 0) pageSize = 10;
 
     request.input('Org', sql.VarChar(this.ORG_LEN), org);
@@ -581,6 +585,7 @@ class SQLRepository {
     } else {
       request.input('Login', sql.VarChar(this.LOGIN_LEN), login);
     }
+
     if (isNullOrUndefined(action) || action === '') {
       request.input('Action', sql.VarChar(this.ACTION_LEN), 'null');
     } else {
@@ -590,7 +595,7 @@ class SQLRepository {
     request.input('Day', sql.Int, day);
     request.input('pageSize', sql.Int, pageSize);
     const recordSet = await request.execute('PR4Devs');
-    console.log(`getPR4Dev records found: {0}`, recordSet.recordset.length);
+    // console.log(`getPR4Dev records found: ${recordSet.recordset.length}`);
     if (recordSet.recordset.length > 0) {
       this.myCache.set(cacheKey, recordSet.recordset);
     }
@@ -724,6 +729,76 @@ class SQLRepository {
       const recordSet = await request.execute('SaveJiraTenant');
       console.log('==> saveJiraTenant done successfully');
       return recordSet.rowsAffected[0];
+    } catch (ex) {
+      console.log(`==> ${ex}`);
+      return ex;
+    }
+  }
+
+  async saveMSR(srId: number, userId: string, org: string, statusDetails: string, reviewer: string, status: number, links: string, manager: string, managerComment: string, managerStatus: number) {
+    try {
+      const request = await this.pool.request();
+      request.input('SRId', sql.Int, srId);
+      request.input('UserId', sql.VarChar(100), userId);
+      request.input('Org', sql.VarChar(200), org);
+      request.input('StatusDetails', sql.VarChar(200), statusDetails);
+      request.input('Reviewer', sql.VarChar(500), reviewer);
+      request.input('Status', sql.Int, status);
+      request.input('Links', sql.VarChar(1000), links);
+
+      request.input('Manager', sql.VarChar(1000), manager);
+      request.input('ManagerComment', sql.VarChar(4000), managerComment);
+      request.input('ManagerStatus', sql.Int, managerStatus);
+
+      const recordSet = await request.execute('SaveMSR');
+      console.log('==> saveMSR done successfully');
+      return recordSet.rowsAffected[0];
+    } catch (ex) {
+      console.log(`==> ${ex}`);
+      return ex;
+    }
+  }
+
+  async getSR4Id(srId: number, bustTheCache: boolean) {
+    try {
+      let cacheKey = 'getMSR4Id' + srId;
+      if (!bustTheCache) {
+        let val = this.myCache.get(cacheKey);
+        if (val) {
+          return val;
+        }
+      }
+      const request = await this.pool.request();
+      request.input('Id', sql.Int, srId);
+
+      const recordSet = await request.execute('GetSR4Id');
+      if (recordSet) {
+        this.myCache.set(cacheKey, recordSet.recordset);
+      }
+      return recordSet.recordset;
+    } catch (ex) {
+      console.log(`==> ${ex}`);
+      return ex;
+    }
+  }
+
+  async getSR4User(userId: string, bustTheCache: boolean) {
+    try {
+      let cacheKey = 'getMSR4User' + userId;
+      if (!bustTheCache) {
+        let val = this.myCache.get(cacheKey);
+        if (val) {
+          return val;
+        }
+      }
+      const request = await this.pool.request();
+      request.input('UserId', sql.VarChar(100), userId);
+
+      const recordSet = await request.execute('GetSR4User');
+      if (recordSet) {
+        this.myCache.set(cacheKey, recordSet.recordset);
+      }
+      return recordSet.recordset;
     } catch (ex) {
       console.log(`==> ${ex}`);
       return ex;

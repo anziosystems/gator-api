@@ -299,7 +299,8 @@ class GitRepository {
     if (!getFromGit) {
       //Get from local store
       const result = await this.sqlRepository.getOrg(tenantId);
-      return result;
+      if (result)
+        return result;
     }
     //Lets go to git
     const graphQL = `{\"query\": \"query { viewer {name organizations(last: 100) { nodes { name url }} }}\",\"variables\":{}}`;

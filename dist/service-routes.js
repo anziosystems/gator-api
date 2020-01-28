@@ -134,7 +134,7 @@ function getJiraTenant(req, res) {
 // }
 //header must have JiraTenant
 router.get('/GetJiraOrgs', validateJiraToken, (req, res) => {
-    jiraRepository.getJiraOrgs(getJiraTenant(req, res), Boolean(req.query.bustTheCache)).then(result => {
+    jiraRepository.getJiraOrgs(getJiraTenant(req, res), Boolean(req.query.bustTheCache === 'true')).then(result => {
         /*
           result
           Array(3) [Object, Object, Object]
@@ -146,7 +146,7 @@ router.get('/GetJiraOrgs', validateJiraToken, (req, res) => {
 });
 //
 router.get('/GetJiraUsers', validateJiraToken, (req, res) => {
-    jiraRepository.getJiraUsers(getJiraTenant(req, res), req.query.org, Boolean(req.query.bustTheCache)).then(result => {
+    jiraRepository.getJiraUsers(getJiraTenant(req, res), req.query.org, Boolean(req.query.bustTheCache === 'true')).then(result => {
         /*
         JSON.parse(result)
         Array(29) [Object, Object, Object, Object, Object, Object, Object, Object, …]
@@ -164,18 +164,18 @@ router.get('/GetJiraIssues', validateJiraToken, (req, res) => {
     req.query.userid, //'557058:f39310b9-d30a-41a3-8011-6a6ae5eeed07', //userId
     '"In Progress" OR status="To Do"', //status
     'summary,status, assignee,created, updated', //fields
-    Boolean(req.query.bustTheCache))
+    Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         return res.json(result);
     });
 });
 router.get('/GetOrg', validateToken, (req, res) => {
-    gitRepository.getOrg(getTenant(req, res), Boolean(req.query.bustTheCache), req.query.getFromGit).then(result => {
+    gitRepository.getOrg(getTenant(req, res), Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true')).then(result => {
         return res.json(result);
     });
 });
 router.get('/getGitLoggedInUSerDetails', validateToken, (req, res) => {
-    sqlRepositoy.getGitLoggedInUSerDetails(getTenant(req, res), Boolean(req.query.bustTheCache)).then(result => {
+    sqlRepositoy.getGitLoggedInUSerDetails(getTenant(req, res), Boolean(req.query.bustTheCache === 'true')).then(result => {
         return res.json(result);
     });
 });
@@ -190,7 +190,7 @@ returns {
 
 */
 router.get('/GetGraphData4XDays', validateToken, (req, res) => {
-    sqlRepositoy.GetGraphData4XDays(req.query.org, req.query.day, Boolean(req.query.bustTheCache)).then(result => {
+    sqlRepositoy.GetGraphData4XDays(req.query.org, req.query.day, Boolean(req.query.bustTheCache === 'true')).then(result => {
         return res.json(result);
     });
 });
@@ -301,9 +301,28 @@ router.get('/PullRequest4Dev', validateToken, (req, res) => {
         return res.json(result);
     });
 });
+router.post('/saveMSR', validateToken, (req, res) => {
+    if (!req.query.day) {
+        req.query.day = '1';
+    }
+    let b = req.body;
+    sqlRepositoy.saveMSR(req.body.srId, req.body.userId, req.body.org, req.body.statusDetails, req.body.reviewer, req.body.status, req.body.links, req.body.manager, req.body.managerComment, req.body.managerStatus).then(result => {
+        return res.json(result);
+    });
+});
+router.get('/getSR4User', validateToken, (req, res) => {
+    sqlRepositoy.getSR4User(req.query.userid, Boolean(req.query.bustTheCache === 'true')).then(result => {
+        return res.json(result);
+    });
+});
+router.get('/GetSR4Id', validateToken, (req, res) => {
+    sqlRepositoy.getSR4Id(req.query.id, Boolean(req.query.bustTheCache === 'true')).then(result => {
+        return res.json(result);
+    });
+});
 //    /GetOrg?tenantId='rsarosh@hotmail.com'&Org='LabShare'&bustTheCache=false&getFromGit = true
 router.get('/GetRepos', validateToken, (req, res) => {
-    gitRepository.getRepos(getTenant(req, res), req.query.org, Boolean(req.query.bustTheCache), req.query.getFromGit).then(result => {
+    gitRepository.getRepos(getTenant(req, res), req.query.org, Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true')).then(result => {
         if (result) {
             return res.json(result);
         }
@@ -319,13 +338,13 @@ router.get('/GetPRfromGit', validateToken, (req, res) => {
     });
 });
 router.get('/GetAllRepoCollection4TenantOrg', validateToken, (req, res) => {
-    sqlRepositoy.getAllRepoCollection4TenantOrg(getTenant(req, res), req.query.org, Boolean(req.query.bustTheCache)).then(result => {
+    sqlRepositoy.getAllRepoCollection4TenantOrg(getTenant(req, res), req.query.org, Boolean(req.query.bustTheCache === 'true')).then(result => {
         return res.json(result);
     });
 });
 //collectionName
 router.get('/GetRepoCollectionByName', validateToken, (req, res) => {
-    sqlRepositoy.getAllRepoCollection4TenantOrg(req.query.collectionName, '', Boolean(req.query.bustTheCache)).then(result => {
+    sqlRepositoy.getAllRepoCollection4TenantOrg(req.query.collectionName, '', Boolean(req.query.bustTheCache === 'true')).then(result => {
         return res.json(result.recordset);
     });
 });

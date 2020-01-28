@@ -6,6 +6,8 @@ const serviceRoutes = require('./service-routes');
 const cookieSession = require('cookie-session');
 const passport = require('passport');
 const session = require('express-session');
+const bodyParser = require('body-parser');
+
 app.set('view engine', 'ejs');
 app.use(cors());
 const dotenv = require('dotenv');
@@ -66,9 +68,15 @@ passport.deserializeUser(function(id: any, done: any) {
 //initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(bodyParser.urlencoded({extended: false}));
+app.use(bodyParser.json());
 
 app.use('/auth', authRoutes);
 app.use('/service', serviceRoutes);
+
+// let jsonParser = bodyParser.json()
+// // create application/x-www-form-urlencoded parser
+// let urlencodedParser = bodyParser.urlencoded({ extended: false })
 
 app.get('/', (req: any, res: any) => {
   res.render('home');
