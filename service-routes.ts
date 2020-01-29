@@ -142,7 +142,9 @@ router.get('/GetJiraUsers', validateJiraToken, (req: any, res: any) => {
     JSON.parse(result)[0]
     Object {self: "https://api.atlassian.com/ex/jira/786d2410-0054-41…", accountId: "5d53f3cbc6b9320d9ea5bdc2", accountType: "app", avatarUrls: Object, displayName: "Jira Outlook", …}
      */
-    return res.json(JSON.parse(result)); //guid string of the AccessResource Id
+    //let r = JSON.parse (result); -No need to parse the result
+
+    return res.json(result); //guid string of the AccessResource Id
   });
 });
 

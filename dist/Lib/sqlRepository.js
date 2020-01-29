@@ -794,7 +794,6 @@ class SQLRepository {
             }
         });
     }
-    //[GetSR4User4Review]
     GetSR4User4Review(userId, status, bustTheCache) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
