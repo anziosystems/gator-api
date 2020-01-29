@@ -794,6 +794,32 @@ class SQLRepository {
             }
         });
     }
+    //[GetSR4User4Review]
+    GetSR4User4Review(userId, status, bustTheCache) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let cacheKey = 'GetSR4User4Review' + userId + status;
+                if (!bustTheCache) {
+                    let val = this.myCache.get(cacheKey);
+                    if (val) {
+                        return val;
+                    }
+                }
+                const request = yield this.pool.request();
+                request.input('UserId', sql.VarChar(100), userId);
+                request.input('Status', sql.Int, status);
+                const recordSet = yield request.execute('GetSR4User4Review');
+                if (recordSet) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                }
+                return recordSet.recordset;
+            }
+            catch (ex) {
+                console.log(`==> ${ex}`);
+                return ex;
+            }
+        });
+    }
     saveTenant(tenant) {
         return __awaiter(this, void 0, void 0, function* () {
             try {

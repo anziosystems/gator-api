@@ -315,6 +315,11 @@ router.get('/getSR4User', validateToken, (req, res) => {
         return res.json(result);
     });
 });
+router.get('/GetSR4User4Review', validateToken, (req, res) => {
+    sqlRepositoy.GetSR4User4Review(req.query.userid, req.query.status, Boolean(req.query.bustTheCache === 'true')).then(result => {
+        return res.json(result);
+    });
+});
 router.get('/GetSR4Id', validateToken, (req, res) => {
     sqlRepositoy.getSR4Id(req.query.id, Boolean(req.query.bustTheCache === 'true')).then(result => {
         return res.json(result);

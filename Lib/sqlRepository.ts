@@ -805,6 +805,29 @@ class SQLRepository {
     }
   }
 
+  async GetSR4User4Review(userId: string, status: number, bustTheCache: boolean) {
+    try {
+      let cacheKey = 'GetSR4User4Review' + userId + status;
+      if (!bustTheCache) {
+        let val = this.myCache.get(cacheKey);
+        if (val) {
+          return val;
+        }
+      }
+      const request = await this.pool.request();
+      request.input('UserId', sql.VarChar(100), userId);
+      request.input('Status', sql.Int, status);
+      const recordSet = await request.execute('GetSR4User4Review');
+      if (recordSet) {
+        this.myCache.set(cacheKey, recordSet.recordset);
+      }
+      return recordSet.recordset;
+    } catch (ex) {
+      console.log(`==> ${ex}`);
+      return ex;
+    }
+  }
+
   async saveTenant(tenant: Tenant) {
     try {
       // console.log('==> inside saveTenant');
