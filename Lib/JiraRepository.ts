@@ -49,7 +49,7 @@ class JiraRepository {
             // console.log(`GetJiraUsers: No Users found for tenant:${jiraTenantId} org: ${org}`);
           } else {
             await this.sqlRepository.saveJiraUsers(jiraTenantId, org, result);
-            this.sqlRepository.saveStatus(jiraTenantId,'GET-JIRA-DEV-SUCCESS', ` Found ${result.length} devs for org: ${org}`);
+            this.sqlRepository.saveStatus(jiraTenantId, 'GET-JIRA-DEV-SUCCESS', ` Found ${result.length} devs for org: ${org}`);
             return await this.sqlRepository.getJiraUsers(jiraTenantId, org);
             //No paging for now - Getting all 500 developers
           }
@@ -78,8 +78,8 @@ class JiraRepository {
 
     if (!bustTheCache) {
       let val = this.myCache.get(cacheKey);
-      if (val) { 
-        console.log ("Issues from cache");
+      if (val) {
+        console.log('Issues from cache');
         return val;
       }
     }
@@ -102,6 +102,9 @@ class JiraRepository {
           }
         } else {
           console.log(`GetJiraIssues - status code: ${response.statusCode} tenant:${jiraTenantId} OrgId: ${org}`);
+          //401 coming here
+          this.sqlRepository.dropJiraTokenFromCache(jiraTenantId);
+          return response.statusCode;
         }
       });
       //git call has put the org in SQL, now lets get it from (cache).

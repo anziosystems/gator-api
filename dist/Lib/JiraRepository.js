@@ -83,7 +83,7 @@ class JiraRepository {
             if (!bustTheCache) {
                 let val = this.myCache.get(cacheKey);
                 if (val) {
-                    console.log("Issues from cache");
+                    console.log('Issues from cache');
                     return val;
                 }
             }
@@ -109,6 +109,9 @@ class JiraRepository {
                     }
                     else {
                         console.log(`GetJiraIssues - status code: ${response.statusCode} tenant:${jiraTenantId} OrgId: ${org}`);
+                        //401 coming here
+                        this.sqlRepository.dropJiraTokenFromCache(jiraTenantId);
+                        return response.statusCode;
                     }
                 }));
                 //git call has put the org in SQL, now lets get it from (cache).
