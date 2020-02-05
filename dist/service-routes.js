@@ -170,11 +170,20 @@ router.get('/GetJiraIssues', validateJiraToken, (req, res) => {
         return res.json(result);
     });
 });
-router.get('/GetOrg', validateToken, (req, res) => {
-    gitRepository.getOrg(getTenant(req, res), Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true')).then(result => {
-        return res.json(result);
+router.get('/GetOrg', validateToken, (req, res) => __awaiter(this, void 0, void 0, function* () {
+    console.log(`calling getOrg bustTheCashe: ${req.query.bustTheCache} GetfromGit: ${req.query.getFromGit}`);
+    yield gitRepository.getOrg(getTenant(req, res), Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true')).then(result => {
+        try {
+            if (!result) {
+                console.log(`getOrg is null`);
+            }
+            return res.json(result);
+        }
+        catch (ex) {
+            console.log('GetOrg: ' + ex);
+        }
     });
-});
+}));
 router.get('/getGitLoggedInUSerDetails', validateToken, (req, res) => {
     sqlRepositoy.getGitLoggedInUSerDetails(getTenant(req, res), Boolean(req.query.bustTheCache === 'true')).then(result => {
         return res.json(result);

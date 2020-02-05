@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const util_1 = require("util");
 const NodeCache = require('node-cache');
 const sqlRepository_1 = require("./sqlRepository");
 // const req = require('request');
@@ -113,7 +114,7 @@ class GitRepository {
             let graphQL = '';
             //url:"https://github.com/ncats" name: "National Center ..."
             //we need to get this name in the url
-            const orgName = org.url.substr(org.url.lastIndexOf("/") + 1);
+            const orgName = org.url.substr(org.url.lastIndexOf('/') + 1);
             if (endCursor) {
                 graphQL = `{\"query\":\"query {  organization(login:\\"${orgName}\\") {  name  membersWithRole(first: 100 , after: \\"` + endCursor + `\\") { nodes { name login  email avatarUrl  } pageInfo { endCursor  hasNextPage }}}}\",\"variables\":{}}`;
             }
@@ -121,7 +122,7 @@ class GitRepository {
                 graphQL = `{\"query\":\"query {  organization(login: \\"${orgName}\\") {  name  membersWithRole(first: 100) { nodes { name login  email  avatarUrl  } pageInfo { endCursor  hasNextPage }}}}\",\"variables\":{}}`;
             }
             try {
-                console.log(` ==> getDevsFromGit: ${graphQL}`);
+                // console.log(` ==> getDevsFromGit: ${graphQL}`);
                 request(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                     if (response.statusCode === 400) {
                         console.log(`getDevsFromGit: No Devs found for org: ${orgName} - ${response.body}`);
@@ -135,7 +136,7 @@ class GitRepository {
                             this.sqlRepository.saveStatus(tenantId, 'GET-DEV-FAIL', `${orgName}`);
                         }
                         else {
-                            console.log(`getDevsFromGit: ${result.data.organization.membersWithRole.nodes.length} dev found for org: ${orgName}`);
+                            // console.log(`getDevsFromGit: ${result.data.organization.membersWithRole.nodes.length} dev found for org: ${orgName}`);
                             yield this.sqlRepository.saveDevs(tenantId, orgName, result.data.organization.membersWithRole.nodes);
                             yield this.sqlRepository.saveStatus(tenantId, 'GET-DEV-SUCCESS', `${result.data.organization.membersWithRole.nodes.length} Devs updated for ${orgName}`);
                             if (result.data.organization.membersWithRole.pageInfo) {
@@ -298,8 +299,8 @@ class GitRepository {
     }
     UpdateDev4Org(tenantId, orgs) {
         return __awaiter(this, void 0, void 0, function* () {
-            for (let i = 0; i < orgs.length; i++) {
-                yield this.getDevsFromGit(tenantId, orgs[i]);
+            for (const o of orgs) {
+                yield this.getDevsFromGit(tenantId, o);
             }
         });
     }
@@ -318,27 +319,33 @@ class GitRepository {
             }
             //Lets go to git
             const graphQL = `{\"query\": \"query { viewer {name organizations(last: 100) { nodes { name url }} }}\",\"variables\":{}}`;
-            try {
-                request(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
-                    if (response.statusCode === 200) {
-                        this.sqlRepository.saveStatus(tenantId, 'GET-ORG-SUCCESS');
-                        let orgs = JSON.parse(response.body).data.viewer.organizations.nodes;
-                        yield this.sqlRepository.saveOrg(tenantId, orgs);
-                        this.UpdateDev4Org(tenantId, orgs);
-                    }
-                    else {
-                        this.sqlRepository.saveStatus(tenantId, 'GET-ORG-FAIL', `status: ${response.statusCode}`);
-                        console.log('error: ' + response.statusCode);
-                        console.log(body);
-                    }
-                }));
-                //git call has put the org in SQL, now lets get it from (cache).
-                return yield this.sqlRepository.getOrg(tenantId, false);
-            }
-            catch (ex) {
-                this.sqlRepository.saveStatus(tenantId, 'GET-ORG-FAIL', ex);
-                console.log(ex);
-            }
+            /* Without this promise wrap this code will not work */
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                try {
+                    yield util_1.promisify(request)(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
+                        if (response.statusCode === 200) {
+                            this.sqlRepository.saveStatus(tenantId, 'GET-ORG-SUCCESS');
+                            let orgs = JSON.parse(response.body).data.viewer.organizations.nodes;
+                            yield this.sqlRepository.saveOrg(tenantId, orgs);
+                            yield this.UpdateDev4Org(tenantId, orgs);
+                            let result = yield this.sqlRepository.getOrg(tenantId);
+                            resolve(result);
+                        }
+                        else {
+                            this.sqlRepository.saveStatus(tenantId, 'GET-ORG-FAIL', `status: ${response.statusCode}`);
+                            console.log('error: ' + response.statusCode);
+                            console.log(body);
+                            reject(null);
+                        }
+                    }));
+                }
+                catch (ex) {
+                    this.sqlRepository.saveStatus(tenantId, 'GET-ORG-FAIL', ex);
+                    console.log(ex);
+                    reject(null);
+                }
+            }));
+            console.log('why');
         });
     }
 }

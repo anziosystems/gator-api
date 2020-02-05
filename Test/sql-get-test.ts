@@ -22,7 +22,7 @@ describe('TopDevForLastXDays', () => {
   });
 });
 
-describe('GetOrg', () => {
+describe.only('GetOrg', () => {
   it('should return rowsAffected', async () => {
     let gitRepository = new GitRepository();
     await gitRepository.getOrg('1040817', true, true).then(result => {

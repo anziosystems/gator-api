@@ -164,9 +164,19 @@ router.get('/GetJiraIssues', validateJiraToken, (req: any, res: any) => {
     });
 });
 
-router.get('/GetOrg', validateToken, (req: any, res: any) => {
-  gitRepository.getOrg(getTenant(req, res), Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true')).then(result => {
+router.get('/GetOrg', validateToken, async (req: any, res: any) => {
+  console.log (`calling getOrg bustTheCashe: ${req.query.bustTheCache} GetfromGit: ${req.query.getFromGit}`)
+  await gitRepository.getOrg(getTenant(req, res),
+   Boolean(req.query.bustTheCache === 'true'), 
+   Boolean(req.query.getFromGit === 'true')).then(result => {
+    try{
+    if(!result)  {
+      console.log (`getOrg is null`);
+    }
     return res.json(result);
+    } catch (ex) {
+      console.log ('GetOrg: ' + ex)
+    }
   });
 });
 

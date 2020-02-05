@@ -959,12 +959,18 @@ class SQLRepository {
     try {
       await this.createPool();
       const request = await this.pool.request();
-      for (let i = 0; i < orgs.length; i++) {
-        let org: any = orgs[i];
+      for (const o of orgs) {
+        let org: any = o;
         request.input('TenantId', sql.Int, Number(tenantId));
         request.input('Org', sql.VarChar(this.ORG_LEN), org.url.substr('https://github.com/'.length));
         request.input('DisplayName', sql.VarChar(this.ORG_LEN), org.name);
-        const recordSet = await request.execute('SaveOrg');
+        try {
+          const recordSet = await request.execute('SaveOrg');
+         
+        } catch (ex) {
+          console.log(ex);
+        }
+       
       }
       return orgs.length;
     } catch (ex) {
@@ -1025,7 +1031,7 @@ class SQLRepository {
         const recordSet = await request.execute('SaveDev');
         //return recordSet.rowsAffected[0];
       }
-      console.log(`saved ${devs.length} Git Dev`);
+      // console.log(`saved ${devs.length} Git Dev`);
       return devs.length;
     } catch (ex) {
       return ex;
