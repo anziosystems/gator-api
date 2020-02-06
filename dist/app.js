@@ -42,7 +42,8 @@ passport.serializeUser((user, done) => {
 passport.deserializeUser(function (id, done) {
     try {
         console.log(`==> Inside DeserializeUser - id: ${id}`);
-        let sqlRepositoy = new sqlRepository_1.SQLRepository(null);
+        const sqlRepositoy = new sqlRepository_1.SQLRepository(null);
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
         sqlRepositoy.getTenant(id).then(result => {
             if (result) {
                 console.log('==> inside deserialize - user.id: ' + result[0].Id);

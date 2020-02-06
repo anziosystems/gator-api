@@ -1,12 +1,12 @@
-let sql = require('mssql');
+const sql = require('mssql');
 import * as _ from 'lodash';
 import {isNullOrUndefined} from 'util';
-import {EMLINK} from 'constants';
+// import {EMLINK} from 'constants';
 //import {RedisStorage, LabShareCache} from "@labshare/services-cache";
 const NodeCache = require('node-cache');
 const dotenv = require('dotenv');
 dotenv.config();
-let CryptoJS = require('crypto-js');
+const CryptoJS = require('crypto-js');
 
 class PullRequest {
   Org: string;
@@ -61,21 +61,21 @@ class SQLRepository {
   pool: any;
   myCache: any;
   sqlConfigSetting: any = {};
-  CACHE_DURATION_SEC: number = 6000; //50 min
-  MESSAGE_LEN: number = 2000;
-  TENANT_LEN: number = 50;
-  ORG_LEN: number = 200;
-  STATUS_LEN: number = 50;
-  REPO_LEN: number = 200;
-  REPO_ID_LEN: number = 100;
-  URL_LEN: number = 2000;
-  STATE_LEN: number = 50;
-  ACTION_LEN: number = 50;
-  TITLE_LEN: number = 2000;
-  BODY_LEN: number = 2000;
-  LOGIN_LEN: number = 100;
-  AVATAR_URL_LEN: number = 2000;
-  USER_URL_LEN: number = 2000;
+  CACHE_DURATION_SEC = 6000; //50 min
+  MESSAGE_LEN = 2000;
+  TENANT_LEN = 50;
+  ORG_LEN = 200;
+  STATUS_LEN = 50;
+  REPO_LEN = 200;
+  REPO_ID_LEN = 100;
+  URL_LEN = 2000;
+  STATE_LEN = 50;
+  ACTION_LEN = 50;
+  TITLE_LEN = 2000;
+  BODY_LEN = 2000;
+  LOGIN_LEN = 100;
+  AVATAR_URL_LEN = 2000;
+  USER_URL_LEN = 2000;
 
   constructor(obj: any) {
     //for get calls there may not be any obj
@@ -94,7 +94,9 @@ class SQLRepository {
       //   }));
     }
 
-    this.createPool();
+    this.createPool().catch(ex => {
+      console.log(`create pool failed: ${ex}`);
+    });
   }
 
   async createPool() {
@@ -116,9 +118,9 @@ class SQLRepository {
   //return 0 if not a valid tenant or the token more than 7 days old
   async checkToken(tenantId: number) {
     try {
-      let cacheKey = 'CheckToken: ' + tenantId;
+      const cacheKey = 'CheckToken: ' + tenantId;
       //console.log (cacheKey);
-      let val = this.myCache.get(cacheKey);
+      const val = this.myCache.get(cacheKey);
       if (val) {
         return val;
       }
@@ -138,9 +140,9 @@ class SQLRepository {
 
   async getGitLoggedInUSerDetails(tenantId: number, bustTheCache: Boolean = false) {
     try {
-      let cacheKey = 'getGitLoggedInUSerDetails: ' + tenantId;
+      const cacheKey = 'getGitLoggedInUSerDetails: ' + tenantId;
       if (!bustTheCache) {
-        let val = this.myCache.get(cacheKey);
+        const val = this.myCache.get(cacheKey);
         if (val) {
           return val;
         }
@@ -180,9 +182,9 @@ class SQLRepository {
   async checkJiraToken(tenantId: string) {
     try {
       tenantId = tenantId.trim();
-      let cacheKey = 'CheckJiraToken: ' + tenantId;
+      const cacheKey = 'CheckJiraToken: ' + tenantId;
       // console.log (cacheKey);
-      let val = this.myCache.get(cacheKey);
+      const val = this.myCache.get(cacheKey);
       if (val) {
         console.log('jira Token from cache');
         return val;
@@ -205,8 +207,8 @@ class SQLRepository {
 
   async getRepoPR(org: string, repo: string, day: string, pageSize: string) {
     try {
-      let cacheKey = 'GetRepoPR' + org + repo + day;
-      let val = this.myCache.get(cacheKey);
+      const cacheKey = 'GetRepoPR' + org + repo + day;
+      const val = this.myCache.get(cacheKey);
       if (val) {
         return val;
       }
@@ -228,9 +230,9 @@ class SQLRepository {
   }
 
   async getAllRepoCollection4TenantOrg(tenantId: string, org: string, bustTheCache: Boolean = false) {
-    let cacheKey = 'getAllRepoCollection4TenantOrg' + org + tenantId;
+    const cacheKey = 'getAllRepoCollection4TenantOrg' + org + tenantId;
     if (!bustTheCache) {
-      let val = this.myCache.get(cacheKey);
+      const val = this.myCache.get(cacheKey);
       if (val) {
         return val;
       }
@@ -258,13 +260,13 @@ class SQLRepository {
   // Date, Ctr, State (open, closed) will be returned
 
   async GetGraphData4XDays(org: string, day: number, bustTheCache: Boolean = false) {
-    let cacheKey = 'GetGraphData4XDays-' + org + day;
+    const cacheKey = 'GetGraphData4XDays-' + org + day;
 
     if (bustTheCache) {
       this.myCache.del(cacheKey);
     }
 
-    let val = this.myCache.get(cacheKey);
+    const val = this.myCache.get(cacheKey);
 
     if (val) {
       return val;
@@ -281,7 +283,7 @@ class SQLRepository {
     return recordSet.recordset;
   }
 
-  async saveStatus(tenantId: string, status: string, message: string = '') {
+  async saveStatus(tenantId: string, status: string, message = '') {
     await this.createPool();
     const request = await this.pool.request();
 
@@ -305,13 +307,13 @@ class SQLRepository {
   }
 
   async getRepo(tenantId: string, org: string, bustTheCache: Boolean = false) {
-    let cacheKey = 'GetRepo' + tenantId + org;
+    const cacheKey = 'GetRepo' + tenantId + org;
 
     if (bustTheCache) {
       this.myCache.del(cacheKey);
     }
 
-    let val = this.myCache.get(cacheKey);
+    const val = this.myCache.get(cacheKey);
 
     if (val) {
       return val;
@@ -330,13 +332,13 @@ class SQLRepository {
   }
 
   async getOrg(tenantId: string, bustTheCache: Boolean = false) {
-    let cacheKey = 'GetOrg' + tenantId;
+    const cacheKey = 'GetOrg' + tenantId;
 
     if (bustTheCache) {
       this.myCache.del(cacheKey);
     }
 
-    let val = this.myCache.get(cacheKey);
+    const val = this.myCache.get(cacheKey);
 
     if (val) {
       return val;
@@ -353,13 +355,13 @@ class SQLRepository {
   }
 
   async getJiraOrg(tenantId: string, bustTheCache: Boolean = false) {
-    let orgs: any = await this.getJiraOrgs(tenantId, bustTheCache);
-    let val = orgs[0].id; //default returning the first one
+    const orgs: any = await this.getJiraOrgs(tenantId, bustTheCache);
+    const val = orgs[0].id; //default returning the first one
     return val;
   }
 
   async getJiraOrgs(tenantId: string, bustTheCache: Boolean = false) {
-    let cacheKey = 'GetJiraOrgs:' + tenantId;
+    const cacheKey = 'GetJiraOrgs:' + tenantId;
     // console.log (cacheKey);
     let orgs: any;
     if (bustTheCache) {
@@ -367,7 +369,7 @@ class SQLRepository {
       this.myCache.del(cacheKey);
     }
 
-    let val = this.myCache.get(cacheKey);
+    const val = this.myCache.get(cacheKey);
 
     if (val) {
       console.log('getJiraOrgs hitting the cache');
@@ -390,14 +392,14 @@ class SQLRepository {
   }
 
   async getJiraUsers(tenantId: string, org: string, bustTheCache: Boolean = false) {
-    let cacheKey = `getJiraUsers: tenantId: ${tenantId}  org: ${org}`;
+    const cacheKey = `getJiraUsers: tenantId: ${tenantId}  org: ${org}`;
     console.log(cacheKey);
 
     if (bustTheCache) {
       this.myCache.del(cacheKey);
     }
 
-    let val = this.myCache.get(cacheKey);
+    const val = this.myCache.get(cacheKey);
 
     if (val) {
       console.log('getJiraUsers hitting the cache');
@@ -421,7 +423,7 @@ class SQLRepository {
     await this.createPool();
     const request = await this.pool.request();
     request.input('TenantId', sql.Int, id);
-    let recordSet = await request.execute('SaveActiveTenant');
+    const recordSet = await request.execute('SaveActiveTenant');
     if (recordSet) {
       return recordSet.rowsAffected.length;
     } else return 0;
@@ -430,15 +432,15 @@ class SQLRepository {
   //Token will return UserName, DisplayName, ProfileURL, AuthToken, LastUpdated and Photo (URL)
 
   async getTenant(id: number) {
-    let cacheKey = 'GetTenant-' + id;
-    let val = this.myCache.get(cacheKey);
+    const cacheKey = 'GetTenant-' + id;
+    const val = this.myCache.get(cacheKey);
     if (val) {
       return val;
     }
     await this.createPool();
     const request = await this.pool.request();
     request.input('Id', sql.Int, id);
-    let recordSet = await request.execute('GetTenant');
+    const recordSet = await request.execute('GetTenant');
     if (recordSet.recordset.length > 0) {
       this.myCache.set(cacheKey, recordSet.recordset);
       // console.log(`==> getTenant is successfull for id:${id} `);
@@ -447,8 +449,8 @@ class SQLRepository {
   }
 
   async getJiraTenant(id: string) {
-    let cacheKey = 'getJiraTenant-' + id;
-    let val = this.myCache.get(cacheKey);
+    const cacheKey = 'getJiraTenant-' + id;
+    const val = this.myCache.get(cacheKey);
     if (val) {
       console.log('getJiraTenant hitting the cache');
       return val;
@@ -456,7 +458,7 @@ class SQLRepository {
     await this.createPool();
     const request = await this.pool.request();
     request.input('Id', sql.Char, id);
-    let recordSet = await request.execute('GetJiraTenant');
+    const recordSet = await request.execute('GetJiraTenant');
     if (recordSet.recordset.length > 0) {
       this.myCache.set(cacheKey, recordSet.recordset);
       // console.log(`==> getJiraTenant is successfull for id:${id} `);
@@ -465,10 +467,10 @@ class SQLRepository {
   }
 
   //GetPR4Repo
-  async getPR4Repo(org: string, repo: string, bustTheCache: boolean = false) {
+  async getPR4Repo(org: string, repo: string, bustTheCache = false) {
     await this.createPool();
-    let cacheKey = 'GetPR4Repo -' + org + repo;
-    let val = this.myCache.get(cacheKey);
+    const cacheKey = 'GetPR4Repo -' + org + repo;
+    const val = this.myCache.get(cacheKey);
     if (val) {
       return val;
     }
@@ -487,8 +489,8 @@ class SQLRepository {
   }
 
   async getToken(id: number) {
-    let cacheKey = 'GetTenant -' + id; //cacheKey is GetTenant because i am reading there cache value. This is different from norm
-    let val = this.myCache.get(cacheKey);
+    const cacheKey = 'GetTenant -' + id; //cacheKey is GetTenant because i am reading there cache value. This is different from norm
+    const val = this.myCache.get(cacheKey);
     if (val) {
       return this.decrypt(val.recordset[0].Auth_Token, id.toString());
     }
@@ -503,9 +505,9 @@ class SQLRepository {
     else return;
   }
 
-  async getTopDev4LastXDays(org: string, day: number = 1) {
-    let cacheKey = 'getTopDev4LastXDays' + org + day;
-    let val = this.myCache.get(cacheKey);
+  async getTopDev4LastXDays(org: string, day = 1) {
+    const cacheKey = 'getTopDev4LastXDays' + org + day;
+    const val = this.myCache.get(cacheKey);
     if (val) {
       return val;
     }
@@ -526,7 +528,7 @@ class SQLRepository {
     }
   }
 
-  async getPR4Id(org: string, id: number = 1) {
+  async getPR4Id(org: string, id = 1) {
     await this.createPool();
     const request = await this.pool.request();
     if (!org) {
@@ -538,10 +540,10 @@ class SQLRepository {
     return recordSet.recordset;
   }
 
-  async getPRCount4LastXDays(org: string, day: number = 1) {
+  async getPRCount4LastXDays(org: string, day = 1) {
     await this.createPool();
-    let cacheKey = 'PRCount4LastXDays' + org + day.toString();
-    let val = this.myCache.get(cacheKey);
+    const cacheKey = 'PRCount4LastXDays' + org + day.toString();
+    const val = this.myCache.get(cacheKey);
     if (val) {
       return val;
     }
@@ -559,16 +561,16 @@ class SQLRepository {
     return recordSet.recordset;
   }
 
-  async getPR4Dev(org: string, day: number = 1, login: string, action: string, pageSize: number) {
+  async getPR4Dev(org: string, day = 1, login: string, action: string, pageSize: number) {
     if (!org) {
       console.log(`==> Exiting getPRDev org cannot be null`);
       return;
     }
 
     //login can be null, it is a special case, in that case data come for all the devs - count
-    let cacheKey = 'PullRequest4Dev' + org + day.toString() + login;
+    const cacheKey = 'PullRequest4Dev' + org + day.toString() + login;
     //  console.log(`getPR4Dev: org:${org} day: ${day} login: ${login} action: ${action} pageSize: ${pageSize}`);
-    let val = this.myCache.get(cacheKey);
+    const val = this.myCache.get(cacheKey);
     if (val) {
       return val;
     }
@@ -605,7 +607,7 @@ class SQLRepository {
   /*
   PullRequest took longest time between open and close
   */
-  async getLongestPR(org: string, day: number = 1) {
+  async getLongestPR(org: string, day = 1) {
     await this.createPool();
     const request = await this.pool.request();
     if (!org) {
@@ -617,9 +619,9 @@ class SQLRepository {
     return recordSet.recordset;
   }
 
-  async getTopRepo4XDays(org: string, day: number = 1) {
-    let cacheKey = 'getTopRepo4XDays' + org + day.toString();
-    let val = this.myCache.get(cacheKey);
+  async getTopRepo4XDays(org: string, day = 1) {
+    const cacheKey = 'getTopRepo4XDays' + org + day.toString();
+    const val = this.myCache.get(cacheKey);
     if (val) {
       return val;
     }
@@ -637,9 +639,9 @@ class SQLRepository {
     return recordSet.recordset;
   }
 
-  async getPR4LastXDays(org: string, day: number = 1) {
-    let cacheKey = 'getPR4LastXDays' + org + day.toString();
-    let val = this.myCache.get(cacheKey);
+  async getPR4LastXDays(org: string, day = 1) {
+    const cacheKey = 'getPR4LastXDays' + org + day.toString();
+    const val = this.myCache.get(cacheKey);
     if (val) {
       return val;
     }
@@ -662,7 +664,7 @@ class SQLRepository {
       await this.createPool();
       const request = await this.pool.request();
       const rs = await request.query(query);
-      let results = rs.recordset;
+      const results = rs.recordset;
       if (isNaN(page)) {
         page = 1;
       }
@@ -676,8 +678,8 @@ class SQLRepository {
         pageSize = 10;
       }
 
-      let s: string = '[';
-      let ctr: number = 0;
+      let s = '[';
+      let ctr = 0;
       let startCtr: number = (page - 1) * pageSize;
       if (startCtr === 0) {
         startCtr = 1;
@@ -688,7 +690,7 @@ class SQLRepository {
         endCtr = results.length;
       }
 
-      for (let result of results) {
+      for (const result of results) {
         ctr = ctr + 1;
         if (ctr >= startCtr && ctr <= endCtr) {
           s = s + JSON.stringify(result);
@@ -716,7 +718,7 @@ class SQLRepository {
         tenant.DisplayName = '';
       }
       //Token is kept decrypted in DB
-      let token = tenant.AuthToken; //No Encryption for Jira
+      const token = tenant.AuthToken; //No Encryption for Jira
       request.input('Id', sql.Char, tenant.Id);
       request.input('email', sql.VarChar(200), tenant.Email);
       request.input('UserName', sql.VarChar(200), tenant.UserName);
@@ -761,9 +763,9 @@ class SQLRepository {
 
   async getSR4Id(srId: number, bustTheCache: boolean) {
     try {
-      let cacheKey = 'getMSR4Id' + srId;
+      const cacheKey = 'getMSR4Id' + srId;
       if (!bustTheCache) {
-        let val = this.myCache.get(cacheKey);
+        const val = this.myCache.get(cacheKey);
         if (val) {
           return val;
         }
@@ -784,9 +786,9 @@ class SQLRepository {
 
   async getSR4User(userId: string, bustTheCache: boolean) {
     try {
-      let cacheKey = 'getMSR4User' + userId;
+      const cacheKey = 'getMSR4User' + userId;
       if (!bustTheCache) {
-        let val = this.myCache.get(cacheKey);
+        const val = this.myCache.get(cacheKey);
         if (val) {
           return val;
         }
@@ -807,9 +809,9 @@ class SQLRepository {
 
   async GetSR4User4Review(userId: string, status: number, bustTheCache: boolean) {
     try {
-      let cacheKey = 'GetSR4User4Review' + userId + status;
+      const cacheKey = 'GetSR4User4Review' + userId + status;
       if (!bustTheCache) {
-        let val = this.myCache.get(cacheKey);
+        const val = this.myCache.get(cacheKey);
         if (val) {
           return val;
         }
@@ -840,7 +842,7 @@ class SQLRepository {
         tenant.DisplayName = '';
       }
 
-      let token = this.encrypt(tenant.AuthToken, tenant.Id.toString());
+      const token = this.encrypt(tenant.AuthToken, tenant.Id.toString());
       request.input('Id', sql.Int, tenant.Id);
       request.input('email', sql.VarChar(200), tenant.Email);
       request.input('UserName', sql.VarChar(200), tenant.UserName);
@@ -859,13 +861,13 @@ class SQLRepository {
   }
 
   encrypt(token: string, secret: string) {
-    let ciphertext = CryptoJS.AES.encrypt(token, secret);
+    const ciphertext = CryptoJS.AES.encrypt(token, secret);
     return ciphertext;
   }
 
   decrypt(token: string, secret: string) {
-    let bytes = CryptoJS.AES.decrypt(token, secret);
-    let plaintext = bytes.toString(CryptoJS.enc.Utf8);
+    const bytes = CryptoJS.AES.decrypt(token, secret);
+    const plaintext = bytes.toString(CryptoJS.enc.Utf8);
     return plaintext;
   }
 
@@ -875,7 +877,7 @@ class SQLRepository {
   async savePR4Repo(org: string, repo: string, body: string) {
     try {
       await this.createPool();
-      let pr = JSON.parse(body);
+      const pr = JSON.parse(body);
       let id: string;
       let url: string;
       let state: string;
@@ -887,8 +889,8 @@ class SQLRepository {
       let user_url: string;
 
       const request = await this.pool.request();
-      let nodes = pr.data.viewer.organization.repository.pullRequests.nodes;
-      if (nodes == undefined) {
+      const nodes = pr.data.viewer.organization.repository.pullRequests.nodes;
+      if (nodes === undefined) {
         console.log(`==> No PR found for org: ${org} Repo: ${repo}`);
       }
       if (nodes.length === 0) {
@@ -900,9 +902,8 @@ class SQLRepository {
       }
 
       //nodes.forEach(async (elm: any) => {
-      for (let i = 0; i < nodes.length; i++) {
-        let elm = nodes[i];
-        if (elm.author.login == undefined) {
+      for (const elm of nodes) {
+        if (elm.author.login === undefined) {
           console.log('login is invalid');
           continue;
         }
@@ -941,7 +942,7 @@ class SQLRepository {
         request.input('Avatar_Url', sql.VarChar(this.AVATAR_URL_LEN), avatar_url);
         request.input('User_Url', sql.VarChar(this.USER_URL_LEN), user_url);
         try {
-          let x = await request.execute('SavePR4Repo');
+          const x = await request.execute('SavePR4Repo');
           return x.rowsAffected[0];
         } catch (ex) {
           console.log(`==> Error! While saving PR for org:${org} repo: ${repo} - ${ex}`);
@@ -960,17 +961,11 @@ class SQLRepository {
       await this.createPool();
       const request = await this.pool.request();
       for (const o of orgs) {
-        let org: any = o;
+        const org: any = o;
         request.input('TenantId', sql.Int, Number(tenantId));
         request.input('Org', sql.VarChar(this.ORG_LEN), org.url.substr('https://github.com/'.length));
         request.input('DisplayName', sql.VarChar(this.ORG_LEN), org.name);
-        try {
-          const recordSet = await request.execute('SaveOrg');
-         
-        } catch (ex) {
-          console.log(ex);
-        }
-       
+        await request.execute('SaveOrg');
       }
       return orgs.length;
     } catch (ex) {
@@ -980,7 +975,7 @@ class SQLRepository {
 
   async saveJiraUsers(tenantId: string, org: string, devs: string[]) {
     try {
-      if (devs == undefined) return;
+      if (devs === undefined) return;
       if (devs.length === 0) {
         console.log('No devs to be saved!');
         return;
@@ -988,9 +983,9 @@ class SQLRepository {
       await this.createPool();
       const request = await this.pool.request();
 
-      for (let i = 0; i < devs.length; i++) {
-        let dev: any = devs[i];
-        let createdAt = String(dev.createdAt).substr(0, 10);
+      for (const d of devs) {
+        let dev: any = d;
+        // const createdAt = String(dev.createdAt).substr(0, 10);
         //console.log(`==> SaveDev = org: ${org} dev - Name: ${dev.name} \t| Email: ${dev.email} \t| login: ${dev.login} \t| ${dev.avatarUrl}`);
         request.input('TenantId', sql.Char, tenantId);
         request.input('Org', sql.VarChar(this.ORG_LEN), org); //
@@ -998,7 +993,7 @@ class SQLRepository {
         request.input('displayName', sql.VarChar(200), dev.displayName); //Rafat Sarosh
         request.input('avatarUrls', sql.Text, JSON.stringify(dev.avatarUrls)); //rsarosh
         request.input('self', sql.VarChar(500), dev.self);
-        const recordSet = await request.execute('SaveJiraUsers');
+        await request.execute('SaveJiraUsers');
         //return recordSet.rowsAffected[0];
       }
       console.log(`saved ${devs.length} Jira Dev for org: ${org}`);
@@ -1009,7 +1004,7 @@ class SQLRepository {
 
   async saveDevs(tenantId: string, org: string, devs: string[]) {
     try {
-      if (devs == undefined) return;
+      if (devs === undefined) return;
       if (devs.length === 0) {
         console.log('No devs to be saved!');
         return;
@@ -1018,9 +1013,8 @@ class SQLRepository {
       await this.createPool();
       const request = await this.pool.request();
 
-      for (let i = 0; i < devs.length; i++) {
-        let dev: any = devs[i];
-        let createdAt = String(dev.createdAt).substr(0, 10);
+      for (const d of devs) {
+        let dev: any = d;
         //console.log(`==> SaveDev = org: ${org} dev - Name: ${dev.name} \t| Email: ${dev.email} \t| login: ${dev.login} \t| ${dev.avatarUrl}`);
         request.input('TenantId', sql.Int, Number(tenantId));
         request.input('Org', sql.VarChar(this.ORG_LEN), org); //
@@ -1028,7 +1022,7 @@ class SQLRepository {
         request.input('name', sql.VarChar(200), dev.name); //Rafat Sarosh
         request.input('login', sql.VarChar(this.LOGIN_LEN), dev.login); //rsarosh
         request.input('avatarUrl', sql.VarChar(1200), dev.avatarUrl);
-        const recordSet = await request.execute('SaveDev');
+        await request.execute('SaveDev');
         //return recordSet.rowsAffected[0];
       }
       // console.log(`saved ${devs.length} Git Dev`);
@@ -1040,17 +1034,16 @@ class SQLRepository {
 
   async saveRepo(tenantId: string, org: string, repos: string[]) {
     try {
-      if (repos == undefined) return;
+      if (repos === undefined) return;
       if (repos.length === 0) {
         console.log('No repo to be saved!');
         return;
       }
       await this.createPool();
       const request = await this.pool.request();
-      let repoDetails: string;
-      for (let i = 0; i < repos.length; i++) {
-        let repo: any = repos[i];
-        let createdAt = String(repo.createdAt).substr(0, 10);
+      for (const r of repos) {
+        let repo: any = r;
+        const createdAt = String(repo.createdAt).substr(0, 10);
         // console.log(`SaveRepo = org: ${org} repo: ${repo.name}`);
         request.input('TenantId', sql.Int, Number(tenantId));
         request.input('Org', sql.VarChar(this.ORG_LEN), org);
@@ -1068,7 +1061,7 @@ class SQLRepository {
   }
 
   private shredObject(obj: any): PullRequest {
-    let pr: PullRequest = new PullRequest();
+    const pr: PullRequest = new PullRequest();
 
     try {
       pr.Org = _.get(obj.body, 'organization.login');

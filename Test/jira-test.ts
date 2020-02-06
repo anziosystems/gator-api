@@ -15,7 +15,7 @@ const jiraOrg = '786d2410-0054-411f-90ed-392c8cc1aad1'; //'0e493c98-6102-463a-bc
 
 describe('getJiraUsers', () => {
   it('should return rowsAffected', async () => {
-    let jiraRepository = new JiraRepository();
+    const jiraRepository = new JiraRepository();
     await jiraRepository.getJiraUsers(jiraTenant, jiraOrg, true).then((result: any) => {
       expect(JSON.parse(result).length).to.greaterThan(0);
     });
@@ -24,7 +24,7 @@ describe('getJiraUsers', () => {
 
 describe('getJiraOrgs', () => {
   it('should return rowsAffected', async () => {
-    let sqlRepository = new SQLRepository(null);
+    const sqlRepository = new SQLRepository(null);
     await sqlRepository.getJiraOrgs(jiraTenant).then((result: any) => {
       expect(result.length).to.greaterThan(0);
     });
@@ -33,7 +33,7 @@ describe('getJiraOrgs', () => {
 
 describe('getJiraIssues', () => {
   it('should return rowsAffected', async () => {
-    let jiraRepository = new JiraRepository();
+    const jiraRepository = new JiraRepository();
     jiraRepository
       .getJiraIssues(
         jiraTenant, //tenant
@@ -50,7 +50,7 @@ describe('getJiraIssues', () => {
 
 describe('getJiraOrg', () => {
   it('should return an object', async () => {
-    let sqlRepository = new SQLRepository(null);
+    const sqlRepository = new SQLRepository(null);
     await sqlRepository.getJiraOrg(jiraTenant).then((result: any) => {
       expect(isNullOrUndefined(result)).equals(false);
       expect(result).equals('0e493c98-6102-463a-bc17-4980be22651b');

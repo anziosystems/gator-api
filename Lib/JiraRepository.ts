@@ -1,17 +1,14 @@
-import * as _ from 'lodash';
-import {isNullOrUndefined} from 'util';
+// import * as _ from 'lodash';
 const NodeCache = require('node-cache');
 const request = require('request-promise');
 import {SQLRepository} from './sqlRepository';
-import {timingSafeEqual} from 'crypto';
-import {async} from 'rxjs/internal/scheduler/async';
 
 class JiraRepository {
   httpOptions: any;
   url: string;
   myCache: any;
   sqlRepository: SQLRepository;
-  CACHE_DURATION_SEC: number = 6000; //50 min
+  CACHE_DURATION_SEC = 6000; //50 min
 
   constructor() {
     this.sqlRepository = new SQLRepository(null);
@@ -21,16 +18,16 @@ class JiraRepository {
   }
 
   //returns the first org id
-  async getJiraOrg(jiraTenantId: string, bustTheCache: boolean = false) {
-    return await this.sqlRepository.getJiraOrg(jiraTenantId, bustTheCache);
+  async getJiraOrg(jiraTenantId: string, bustTheCache = false) {
+    return this.sqlRepository.getJiraOrg(jiraTenantId, bustTheCache);
   }
 
   //return all the org details
-  async getJiraOrgs(jiraTenantId: string, bustTheCache: boolean = false) {
-    return await this.sqlRepository.getJiraOrgs(jiraTenantId, bustTheCache);
+  async getJiraOrgs(jiraTenantId: string, bustTheCache = false) {
+    return this.sqlRepository.getJiraOrgs(jiraTenantId, bustTheCache);
   }
 
-  async getJiraUsers(jiraTenantId: string, org: string, bustTheCache: boolean = false) {
+  async getJiraUsers(jiraTenantId: string, org: string, bustTheCache = false) {
     console.log(`getJiraUsers: TenantId: ${jiraTenantId} Org: ${org}`);
 
     if (!bustTheCache) {
@@ -44,13 +41,14 @@ class JiraRepository {
     try {
       return await request(await this.makeJiraRequest(jiraTenantId, uri), async (error: any, response: any, body: any) => {
         if (response.statusCode === 200) {
-          let result = JSON.parse(body);
+          const result = JSON.parse(body);
           if (!result) {
             // console.log(`GetJiraUsers: No Users found for tenant:${jiraTenantId} org: ${org}`);
           } else {
             await this.sqlRepository.saveJiraUsers(jiraTenantId, org, result);
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
             this.sqlRepository.saveStatus(jiraTenantId, 'GET-JIRA-DEV-SUCCESS', ` Found ${result.length} devs for org: ${org}`);
-            return await this.sqlRepository.getJiraUsers(jiraTenantId, org);
+            return this.sqlRepository.getJiraUsers(jiraTenantId, org);
             //No paging for now - Getting all 500 developers
           }
         } else {
@@ -73,11 +71,11 @@ class JiraRepository {
     return before the await request is important to have unit test pass.
     
   */
-  async getJiraIssues(jiraTenantId: string, org: string = '0e493c98-6102-463a-bc17-4980be22651b', userId: string, status: string = '"In Progress" OR status="To Do"', fields: string = 'summary, status', bustTheCache: boolean = false): Promise<any> {
+  async getJiraIssues(jiraTenantId: string, org = '0e493c98-6102-463a-bc17-4980be22651b', userId: string, status = '"In Progress" OR status="To Do"', fields = 'summary, status', bustTheCache = false): Promise<any> {
     const cacheKey = `getJiraIssues:${jiraTenantId}-${org}-${userId}`;
 
     if (!bustTheCache) {
-      let val = this.myCache.get(cacheKey);
+      const val = this.myCache.get(cacheKey);
       if (val) {
         console.log('Issues from cache');
         return val;
@@ -89,7 +87,7 @@ class JiraRepository {
     try {
       return await request(await this.makeJiraRequest(jiraTenantId, uri), async (error: any, response: any, body: any) => {
         if (response.statusCode === 200) {
-          let result = JSON.parse(body);
+          const result = JSON.parse(body);
           if (!result) {
             console.log(`GetJiraIssues: No issues found for tenant:${jiraTenantId} OrgId: ${org}`);
             return result;
@@ -118,11 +116,11 @@ class JiraRepository {
   }
 
   //Get the token for the tenant and attaches to the call.
-  async makeJiraRequest(jiraTenantId: string, gUri: string, body: string = '', method: string = 'GET') {
+  async makeJiraRequest(jiraTenantId: string, gUri: string, body = '', method = 'GET') {
     try {
       const token = 'Bearer ' + (await this.sqlRepository.getJiraToken(jiraTenantId));
       //  console.log(`==> JiraToken: ${token} `);
-      let header = {
+      const header = {
         method: method,
         uri: 'https://api.atlassian.com/ex/jira/' + gUri,
         headers: {

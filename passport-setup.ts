@@ -19,7 +19,7 @@ passport.use(
     },
     (accessToken: any, refreshToken: any, profile: any, done: any) => {
       // optionally save profile data to db
-      let tenant = new JiraTenant();
+      const tenant = new JiraTenant();
       tenant.AuthToken = accessToken;
       // console.log(`==> Jira Toeken:  ${accessToken}  Name: ${profile.displayName}`);
       if (!refreshToken) refreshToken = '';
@@ -55,15 +55,20 @@ passport.use(
   */
       //tenant.accessableResources
       //Token is kept decrypted in DB - Catch it here for Postman
-      let sqlRepositoy = new SQLRepository(null);
-      sqlRepositoy.saveJiraTenant(tenant).then(result => {
-        if (result.message) {
-          //if error then pass the error message
-          return done(result, String(profile.id).trim());
-        }
-        //   console.log(`==> passport.use calling done with null, id:  ${profile.id}  Name: ${profile.displayName}`);
-        return done(null, String(profile.id).trim());
-      });
+      const sqlRepositoy = new SQLRepository(null);
+      sqlRepositoy
+        .saveJiraTenant(tenant)
+        .then(result => {
+          if (result.message) {
+            //if error then pass the error message
+            return done(result, String(profile.id).trim());
+          }
+          //   console.log(`==> passport.use calling done with null, id:  ${profile.id}  Name: ${profile.displayName}`);
+          return done(null, String(profile.id).trim());
+        })
+        .catch(err => {
+          console.log(`AtlassianStrategy Error: ${err}`);
+        });
     },
   ),
 );
@@ -80,7 +85,7 @@ passport.use(
       // console.log('==> accessToken: ' + accessToken);
       // console.log('==> refreshToken:' + refreshToken);
 
-      let tenant = new Tenant();
+      const tenant = new Tenant();
       tenant.AuthToken = accessToken;
       if (!refreshToken) refreshToken = '';
 
@@ -108,17 +113,22 @@ passport.use(
         }
       }
 
-      let sqlRepositoy = new SQLRepository(null);
+      const sqlRepositoy = new SQLRepository(null);
       //Id	    Email	              UserName	DisplayName	  ProfileUrl	                LastUpdated	            Auth_Token	                                                                                Refresh_Token	Photo
       //1040817	rsarosh@hotmail.com	rsarosh	  Rafat Sarosh	https://github.com/rsarosh	2020-01-26 18:35:16.507	U2FsdGVkX1/Ew4QHRzEs4lDzjSwL3stUR3aJxDUzIaaSTA/CTrQbEUTgnNQDZ/mwLrSfcTb89v7b5S+8VqPgVw==		              https://avatars1.githubusercontent.com/u/1040817?v=4
-      sqlRepositoy.saveTenant(tenant).then(result => {
-        if (result.message) {
-          //if error then pass the error message
-          return done(result, profile.id);
-        }
-        //   console.log(`==> passport.use calling done with null, id: ${profile.id}`);
-        return done(null, String(profile.id.trim()));
-      });
+      sqlRepositoy
+        .saveTenant(tenant)
+        .then(result => {
+          if (result.message) {
+            //if error then pass the error message
+            return done(result, profile.id);
+          }
+          //   console.log(`==> passport.use calling done with null, id: ${profile.id}`);
+          return done(null, String(profile.id.trim()));
+        })
+        .catch(err => {
+          console.log(`saveTenant Error: ${err}`);
+        });
     },
   ),
 );
@@ -133,7 +143,7 @@ passport.use(
     },
     (accessToken: any, refreshToken: any, profile: any, done: any) => {
       // optionally save profile data to db
-      let tenant = new JiraTenant();
+      const tenant = new JiraTenant();
       tenant.AuthToken = accessToken;
       // console.log(`==> Jira Toeken:  ${accessToken}  Name: ${profile.displayName}`);
       if (!refreshToken) refreshToken = '';
@@ -169,15 +179,20 @@ profile.accessibleResources[0]
 */
       //tenant.accessableResources
       //Token is kept decrypted in DB - Catch it here for Postman
-      let sqlRepositoy = new SQLRepository(null);
-      sqlRepositoy.saveJiraTenant(tenant).then(result => {
-        if (result.message) {
-          //if error then pass the error message
-          return done(result, String(profile.id).trim());
-        }
-        //   console.log(`==> passport.use calling done with null, id:  ${profile.id}  Name: ${profile.displayName}`);
-        return done(null, String(profile.id).trim());
-      });
+      const sqlRepositoy = new SQLRepository(null);
+      sqlRepositoy
+        .saveJiraTenant(tenant)
+        .then(result => {
+          if (result.message) {
+            //if error then pass the error message
+            return done(result, String(profile.id).trim());
+          }
+          //   console.log(`==> passport.use calling done with null, id:  ${profile.id}  Name: ${profile.displayName}`);
+          return done(null, String(profile.id).trim());
+        })
+        .catch(err => {
+          console.log(`saveJiraTenant Error: ${err}`);
+        });
     },
   ),
 );

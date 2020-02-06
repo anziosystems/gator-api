@@ -17,10 +17,8 @@
     "prettier:cli": "prettier \"**/*.ts\" \"**/*.js\" \"**/*.md\"",
     "prettier:check": "npm run prettier:cli -- -l",
     "prettier:fix": "npm run prettier:cli -- --write",
-    "lint": "npm run prettier:check && npm run tslint",
-    "lint:fix": "npm run tslint:fix && npm run prettier:fix",
-    "tslint": "tslint -p tsconfig.json",
-    "tslint:fix": "npm run tslint -- --fix",
+    "lint": "eslint --ext=ts . ",
+    "lint:fix": "eslint --ext=ts .  --fix",
     "posttest": "npm run lint"
   },
   "author": "Rafat Sarosh",
@@ -65,9 +63,17 @@
     "request": "^2.88.0",
     "request-promise": "^4.2.4",
     "rxjs": "^6.4.0",
-    "tslint": "^5.15.0",
     "typescript": "^3.4.3",
     "web-request": "^1.0.7",
     "zone.js": "^0.8.29"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^2.19.0",
+    "@typescript-eslint/parser": "^2.19.0",
+    "eslint": "^6.8.0",
+    "eslint-config-google": "^0.14.0",
+    "eslint-config-prettier": "^6.9.0",
+    "eslint-plugin-import": "^2.19.1",
+    "eslint-plugin-prettier": "^3.1.2"
   }
 }

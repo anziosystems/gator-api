@@ -12,9 +12,9 @@ import {SQLRepository} from './Lib/sqlRepository';
 import {GitRepository} from './Lib/GitRepository';
 import {JiraRepository} from './Lib/JiraRepository';
 
-let sqlRepositoy = new SQLRepository(null);
-let gitRepository = new GitRepository();
-let jiraRepository = new JiraRepository();
+const sqlRepositoy = new SQLRepository(null);
+const gitRepository = new GitRepository();
+const jiraRepository = new JiraRepository();
 
 const jwt = require('jsonwebtoken');
 const verifyOptions = {
@@ -53,25 +53,33 @@ async function isJiraTokenValid(tenantId: string): Promise<boolean> {
 
 function validateToken(req: any, res: any, next: any) {
   const tenantId = getTenant(req, res); //GetTenantId from req
-  isTokenValid(tenantId).then(val => {
-    if (!val) {
-      return res.json({val: false, code: 404, message: 'Auth Failed'});
-    } else {
-      next();
-    }
-  });
+  isTokenValid(tenantId)
+    .then(val => {
+      if (!val) {
+        return res.json({val: false, code: 404, message: 'Auth Failed'});
+      } else {
+        next();
+      }
+    })
+    .catch(ex => {
+      console.log(`validateToken ${ex}`);
+    });
 }
 
 function validateJiraToken(req: any, res: any, next: any) {
   const tenantId = getJiraTenant(req, res); //GetTenantId from req
   // console.log(`==> validateJiraToken: ${tenantId}`);
-  isJiraTokenValid(tenantId).then(val => {
-    if (!val) {
-      return res.json({val: false, code: 404, message: 'Jira Auth Failed'});
-    } else {
-      next();
-    }
-  });
+  isJiraTokenValid(tenantId)
+    .then(val => {
+      if (!val) {
+        return res.json({val: false, code: 404, message: 'Jira Auth Failed'});
+      } else {
+        next();
+      }
+    })
+    .catch(ex => {
+      console.log(`validateJiraToken ${ex}`);
+    });
 }
 
 function getTenant(req: any, res: any) {
@@ -122,30 +130,42 @@ function getJiraTenant(req: any, res: any) {
 
 //header must have JiraTenant
 router.get('/GetJiraOrgs', validateJiraToken, (req: any, res: any) => {
-  jiraRepository.getJiraOrgs(getJiraTenant(req, res), Boolean(req.query.bustTheCache === 'true')).then(result => {
-    /*
+  jiraRepository
+    .getJiraOrgs(getJiraTenant(req, res), Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      /*
       result
       Array(3) [Object, Object, Object]
       result[0]
       Object {id: "0e493c98-6102-463a-bc17-4980be22651b", url: "https://labshare.atlassian.net", name: "labshare", scopes: Array(4), avatarUrl: "https://site-admin-avatar-cdn.prod.public.atl-paas…"}
     */
-    return res.json(result); //guid string of the AccessResource Id
-  });
+      return res.json(result); //guid string of the AccessResource Id
+    })
+    .catch(err => {
+      console.log(`GetJiraOrg: ${err}`);
+      return res.json(err);
+    });
 });
 
 //
 router.get('/GetJiraUsers', validateJiraToken, (req: any, res: any) => {
-  jiraRepository.getJiraUsers(getJiraTenant(req, res), req.query.org, Boolean(req.query.bustTheCache === 'true')).then(result => {
-    /*
+  jiraRepository
+    .getJiraUsers(getJiraTenant(req, res), req.query.org, Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      /*
     JSON.parse(result)
     Array(29) [Object, Object, Object, Object, Object, Object, Object, Object, …]
     JSON.parse(result)[0]
     Object {self: "https://api.atlassian.com/ex/jira/786d2410-0054-41…", accountId: "5d53f3cbc6b9320d9ea5bdc2", accountType: "app", avatarUrls: Object, displayName: "Jira Outlook", …}
      */
-    //let r = JSON.parse (result); -No need to parse the result
+      //let r = JSON.parse (result); -No need to parse the result
 
-    return res.json(result); //guid string of the AccessResource Id
-  });
+      return res.json(result); //guid string of the AccessResource Id
+    })
+    .catch(err => {
+      console.log(`getJiraTenant: ${err}`);
+      return res.json(err);
+    });
 });
 
 //header must have JiraTenant
@@ -161,29 +181,37 @@ router.get('/GetJiraIssues', validateJiraToken, (req: any, res: any) => {
     )
     .then(result => {
       return res.json(result);
+    })
+    .catch(err => {
+      console.log(`GetJiraIssues: ${err}`);
+      return res.json(err);
     });
 });
 
 router.get('/GetOrg', validateToken, async (req: any, res: any) => {
-  console.log (`calling getOrg bustTheCashe: ${req.query.bustTheCache} GetfromGit: ${req.query.getFromGit}`)
-  await gitRepository.getOrg(getTenant(req, res),
-   Boolean(req.query.bustTheCache === 'true'), 
-   Boolean(req.query.getFromGit === 'true')).then(result => {
-    try{
-    if(!result)  {
-      console.log (`getOrg is null`);
-    }
-    return res.json(result);
+  console.log(`calling getOrg bustTheCashe: ${req.query.bustTheCache} GetfromGit: ${req.query.getFromGit}`);
+  await gitRepository.getOrg(getTenant(req, res), Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true')).then(result => {
+    try {
+      if (!result) {
+        console.log(`getOrg is null`);
+      }
+      return res.json(result);
     } catch (ex) {
-      console.log ('GetOrg: ' + ex)
+      console.log('GetOrg: ' + ex);
     }
   });
 });
 
 router.get('/getGitLoggedInUSerDetails', validateToken, (req: any, res: any) => {
-  sqlRepositoy.getGitLoggedInUSerDetails(getTenant(req, res), Boolean(req.query.bustTheCache === 'true')).then(result => {
-    return res.json(result);
-  });
+  sqlRepositoy
+    .getGitLoggedInUSerDetails(getTenant(req, res), Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`getGitLoggedInUSerDetails: ${err}`);
+      return res.json(err);
+    });
 });
 
 /* 
@@ -197,9 +225,15 @@ returns {
 
 */
 router.get('/GetGraphData4XDays', validateToken, (req: any, res: any) => {
-  sqlRepositoy.GetGraphData4XDays(req.query.org, req.query.day, Boolean(req.query.bustTheCache === 'true')).then(result => {
-    return res.json(result);
-  });
+  sqlRepositoy
+    .GetGraphData4XDays(req.query.org, req.query.day, Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`GetGraphData4XDays: ${err}`);
+      return res.json(err);
+    });
 });
 
 router.get('/GetHookStatus', validateToken, (req: any, res: any) => {
@@ -247,18 +281,30 @@ router.get('/GetHookStatus', validateToken, (req: any, res: any) => {
 });
 
 router.get('/GetRepositoryPR', validateToken, (req: any, res: any) => {
-  sqlRepositoy.getRepoPR(req.query.org, req.query.repo, req.query.day, req.query.pageSize).then(result => {
-    return res.json(result);
-  });
+  sqlRepositoy
+    .getRepoPR(req.query.org, req.query.repo, req.query.day, req.query.pageSize)
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`GetRepositoryPR: ${err}`);
+      return res.json(err);
+    });
 });
 
 router.get('/TopDevForLastXDays', validateToken, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
-  sqlRepositoy.getTopDev4LastXDays(req.query.org, req.query.day).then(result => {
-    return res.json(result);
-  });
+  sqlRepositoy
+    .getTopDev4LastXDays(req.query.org, req.query.day)
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`getTopDev4LastXDays: ${err}`);
+      return res.json(err);
+    });
 });
 /*
 
@@ -282,110 +328,182 @@ router.get('/PullRequestCountForLastXDays', validateToken, (req: any, res: any) 
   if (!req.query.day) {
     req.query.day = '1';
   }
-  sqlRepositoy.getPRCount4LastXDays(req.query.org, req.query.day).then(result => {
-    return res.json(result);
-  });
+  sqlRepositoy
+    .getPRCount4LastXDays(req.query.org, req.query.day)
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`PullRequestCountForLastXDays: ${err}`);
+      return res.json(err);
+    });
 });
 
 router.get('/PullRequestForLastXDays', validateToken, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
-  sqlRepositoy.getPR4LastXDays(getTenant(req, res), req.query.day).then(result => {
-    return res.json(result);
-  });
+  sqlRepositoy
+    .getPR4LastXDays(getTenant(req, res), req.query.day)
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`PullRequestForLastXDays: ${err}`);
+      return res.json(err);
+    });
 });
 
 router.get('/GetTopRespositories4XDays', validateToken, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
-  sqlRepositoy.getTopRepo4XDays(req.query.org, req.query.day).then(result => {
-    return res.json(result);
-  });
+  sqlRepositoy
+    .getTopRepo4XDays(req.query.org, req.query.day)
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`GetTopRespositories4XDays: ${err}`);
+      return res.json(err);
+    });
 });
 
 router.get('/PullRequest4Dev', validateToken, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
-  sqlRepositoy.getPR4Dev(req.query.org, req.query.day, req.query.login, req.query.action, req.query.pageSize).then(result => {
-    return res.json(result);
-  });
+  sqlRepositoy
+    .getPR4Dev(req.query.org, req.query.day, req.query.login, req.query.action, req.query.pageSize)
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`PullRequest4Dev: ${err}`);
+      return res.json(err);
+    });
 });
 
-router.post('/saveMSR', validateToken, (req: any, res: any) => {
+router.post('/getSR4User', validateToken, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
-  let b = req.body  ;
-  sqlRepositoy.saveMSR(
-    req.body.srId, req.body.userId, req.body.org, req.body.statusDetails, 
-    req.body.reviewer, req.body.status, req.body.links, req.body.manager, 
-    req.body.managerComment, req.body.managerStatus).then(result => {
-    return res.json(result);
-  });
+  sqlRepositoy
+    .saveMSR(req.body.srId, req.body.userId, req.body.org, req.body.statusDetails, req.body.reviewer, req.body.status, req.body.links, req.body.manager, req.body.managerComment, req.body.managerStatus)
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`getSR4User: ${err}`);
+      return res.json(err);
+    });
 });
 
 router.get('/getSR4User', validateToken, (req: any, res: any) => {
-  sqlRepositoy.getSR4User(req.query.userid,  Boolean(req.query.bustTheCache === 'true')).then(result => {
-    return res.json(result);
-  });
+  sqlRepositoy
+    .getSR4User(req.query.userid, Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`getSR4User: ${err}`);
+      return res.json(err);
+    });
 });
 
- 
 router.get('/GetSR4User4Review', validateToken, (req: any, res: any) => {
-  sqlRepositoy.GetSR4User4Review(req.query.userid, req.query.status, Boolean(req.query.bustTheCache === 'true')).then(result => {
-    return res.json(result);
-  });
+  sqlRepositoy
+    .GetSR4User4Review(req.query.userid, req.query.status, Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`GetSR4User4Review: ${err}`);
+      return res.json(err);
+    });
 });
-
 
 router.get('/GetSR4Id', validateToken, (req: any, res: any) => {
-  
-  sqlRepositoy.getSR4Id(req.query.id,  Boolean(req.query.bustTheCache === 'true')).then(result => {
-    return res.json(result);
-  });
+  sqlRepositoy
+    .getSR4Id(req.query.id, Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`GetSR4Id: ${err}`);
+      return res.json(err);
+    });
 });
-
 
 //    /GetOrg?tenantId='rsarosh@hotmail.com'&Org='LabShare'&bustTheCache=false&getFromGit = true
 router.get('/GetRepos', validateToken, (req: any, res: any) => {
-  gitRepository.getRepos(getTenant(req, res), req.query.org, Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true')).then(result => {
-    if (result) {
-      return res.json(result);
-    }
-  });
+  gitRepository
+    .getRepos(getTenant(req, res), req.query.org, Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true'))
+    .then(result => {
+      if (result) {
+        return res.json(result);
+      }
+    })
+    .catch(err => {
+      console.log(`GetRepos: ${err}`);
+      return res.json(err);
+    });
 });
 
 router.get('/GetPRfromGit', validateToken, (req: any, res: any) => {
   const tenantId = getTenant(req, res);
-  gitRepository.getRepos(tenantId, req.query.org, false, false).then(result => {
-    for (let i = 0; i < result.length; i++) {
-      const res = gitRepository.fillPullRequest(tenantId, req.query.org, result[i].RepoName);
-    }
-    return res.json(result.length);
-  });
+  gitRepository
+    .getRepos(tenantId, req.query.org, false, false)
+    .then(result => {
+      for (const r of result) {
+        gitRepository.fillPullRequest(tenantId, req.query.org, r.RepoName).catch(ex => {
+          console.log(`GetPRfromGit ${ex}`);
+        });
+      }
+      return res.json(result.length);
+    })
+    .catch(err => {
+      console.log(`GetPRfromGit: ${err}`);
+      return res.json(err);
+    });
 });
 
 router.get('/GetAllRepoCollection4TenantOrg', validateToken, (req: any, res: any) => {
-  sqlRepositoy.getAllRepoCollection4TenantOrg(getTenant(req, res), req.query.org, Boolean(req.query.bustTheCache === 'true')).then(result => {
-    return res.json(result);
-  });
+  sqlRepositoy
+    .getAllRepoCollection4TenantOrg(getTenant(req, res), req.query.org, Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`GetAllRepoCollection4TenantOrg: ${err}`);
+      return res.json(err);
+    });
 });
 
 //collectionName
 router.get('/GetRepoCollectionByName', validateToken, (req: any, res: any) => {
-  sqlRepositoy.getAllRepoCollection4TenantOrg(req.query.collectionName, '', Boolean(req.query.bustTheCache === 'true')).then(result => {
-    return res.json(result.recordset);
-  });
+  sqlRepositoy
+    .getAllRepoCollection4TenantOrg(req.query.collectionName, '', Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result.recordset);
+    })
+    .catch(err => {
+      console.log(`GetRepoCollectionByName: ${err}`);
+      return res.json(err);
+    });
 });
 
 router.get('/SetupWebHook', validateToken, (req: any, res: any) => {
-  gitRepository.setupWebHook(getTenant(req, res), req.query.org).then((result: any) => {
-    console.log('==>Setupwebhook returning ' + result);
-    return res.json({val: result});
-  });
+  gitRepository
+    .setupWebHook(getTenant(req, res), req.query.org)
+    .then((result: any) => {
+      console.log('==>Setupwebhook returning ' + result);
+      return res.json({val: result});
+    })
+    .catch(err => {
+      console.log(`SetupWebHook: ${err}`);
+      return res.json(err);
+    });
 });
 
 module.exports = router;

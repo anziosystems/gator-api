@@ -10,8 +10,8 @@ import {GitRepository} from '../Lib/GitRepository';
 
 describe('SaveTenant', () => {
   it('should return rowsAffected', async () => {
-    let sqlRepositoy = new SQLRepository(null);
-    let tenant = new Tenant();
+    const sqlRepositoy = new SQLRepository(null);
+    const tenant = new Tenant();
     tenant.AuthToken = 'XXXX';
     tenant.RefreshToken = 'XXXX';
     tenant.UserName = 'Rafat';
@@ -27,12 +27,11 @@ describe('SaveTenant', () => {
   });
 });
 
-
 describe('SaveStatus', () => {
   it('should return rowsAffected', async () => {
-    let sqlRepositoy = new SQLRepository(null);
-    let tenantId: string = '1040817';
-    await sqlRepositoy.saveStatus(tenantId,'Testing', 'Message from Testing' ).then(result => {
+    const sqlRepositoy = new SQLRepository(null);
+    const tenantId = '1040817';
+    await sqlRepositoy.saveStatus(tenantId, 'Testing', 'Message from Testing').then(result => {
       expect(result).to.greaterThan(0);
     });
   });
@@ -40,19 +39,17 @@ describe('SaveStatus', () => {
 
 describe('SaveActiveTenant', () => {
   it('should return rowsAffected', async () => {
-    let sqlRepositoy = new SQLRepository(null);
-    let tenantId: number = 1040817;
+    const sqlRepositoy = new SQLRepository(null);
+    const tenantId = 1040817;
     await sqlRepositoy.setActiveTenant(tenantId).then(result => {
       expect(result).to.greaterThan(0);
     });
   });
 });
 
-
-
 describe('FillPullRequest', () => {
   it('should return rowsAffected', async () => {
-    let gitRepository = new GitRepository();
+    const gitRepository = new GitRepository();
     await gitRepository.fillPullRequest('1040817', 'LabShare', 'forms', true, true, '').then(result => {
       expect(result.length).to.greaterThan(0);
     });

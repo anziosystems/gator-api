@@ -8,11 +8,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const util_1 = require("util");
-const NodeCache = require('node-cache');
+// import * as _ from 'lodash';
 const sqlRepository_1 = require("./sqlRepository");
 // const req = require('request');
 const request = require('request-promise');
+//if ever have async issues use requestAsync
+//usage: await requestAsync
+//const requestAsync = promisify (require('request-promise'));
 class GitRepository {
     constructor() {
         this.sqlRepository = new sqlRepository_1.SQLRepository(null);
@@ -22,23 +24,27 @@ class GitRepository {
         return __awaiter(this, void 0, void 0, function* () {
             const url = 'https://api.github.com/orgs/' + org + '/hooks';
             console.log('==>checking hook ' + url);
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
             this.sqlRepository.saveStatus(tenantId, 'CHECK-HOOK', ' ');
             const reqHeader = yield this.makeGitRequest(tenantId, 'GET', url, 'GET');
             try {
                 return new Promise((resolve, reject) => {
                     request(reqHeader, (error, response, body) => {
                         if (!error && response.statusCode === 200) {
-                            let a = JSON.parse(body);
+                            const a = JSON.parse(body);
                             if (a.length > 0) {
+                                // eslint-disable-next-line @typescript-eslint/no-floating-promises
                                 this.sqlRepository.saveStatus(tenantId, 'CHECK-HOOK-SUCCESS-' + org.substr(0, 20), ' ');
                                 resolve(true);
                             }
                             else {
+                                // eslint-disable-next-line @typescript-eslint/no-floating-promises
                                 this.sqlRepository.saveStatus(tenantId, 'CHECK-HOOK-FAIL-' + org.substr(0, 20), ' ');
                                 reject(false);
                             }
                         }
                         else {
+                            // eslint-disable-next-line @typescript-eslint/no-floating-promises
                             this.sqlRepository.saveStatus(tenantId, 'CHECK-HOOK-FAIL-' + org.substr(0, 20), ' ');
                             reject(false);
                         }
@@ -54,7 +60,7 @@ class GitRepository {
     getPullRequestFromGit(tenantId, org, repo) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log(`Getting PR from git for org: ${org}  repo :${repo}`);
-            let graphQL = `{\"query\":\"{viewer  {  name          organization(login: \\"` +
+            const graphQL = `{\"query\":\"{viewer  {  name          organization(login: \\"` +
                 org +
                 `\\") {     name        repository(name: \\"` +
                 repo +
@@ -63,15 +69,18 @@ class GitRepository {
                 request(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                     if (response.statusCode === 200) {
                         yield this.sqlRepository.savePR4Repo(org, repo, body);
+                        // eslint-disable-next-line @typescript-eslint/no-floating-promises
                         this.sqlRepository.saveStatus(tenantId, 'GET-PR-SUCCESS-' + org.substr(0, 20), `org: ${org}  repo: ${repo}`);
                     }
                     else {
                         console.log('GetPullRequestFromGit: ' + body);
+                        // eslint-disable-next-line @typescript-eslint/no-floating-promises
                         this.sqlRepository.saveStatus(tenantId, 'GET-PR-FAIL-' + org.substr(0, 20), body);
                     }
                 }));
             }
             catch (ex) {
+                // eslint-disable-next-line @typescript-eslint/no-floating-promises
                 this.sqlRepository.saveStatus(tenantId, 'GET-PR-FAIL-' + org.substr(0, 20), ex);
                 console.log(`GetPullRequestFromGit Error! => ${ex}`);
             }
@@ -79,7 +88,7 @@ class GitRepository {
     }
     fillPullRequest(tenantId, org, repo, bustTheCache = false, getFromGit = false, endCursor = '') {
         return __awaiter(this, void 0, void 0, function* () {
-            let cacheKey = 'FillPullRequest' + tenantId + org + repo;
+            const cacheKey = 'FillPullRequest' + tenantId + org + repo;
             if (bustTheCache) {
                 this.sqlRepository.myCache.del(cacheKey);
             }
@@ -98,14 +107,14 @@ class GitRepository {
                     //Lets go to git
                     yield this.getPullRequestFromGit(tenantId, org, repo);
                     //git call has put the PR in SQL, now lets get it from (cache).
-                    return yield this.sqlRepository.getPR4Repo(org, repo);
+                    return this.sqlRepository.getPR4Repo(org, repo);
                 }
             }
             else {
                 //Lets go to git
                 yield this.getPullRequestFromGit(tenantId, org, repo);
                 //git call has put the PR in SQL, now lets get it from (cache).
-                return yield this.sqlRepository.getPR4Repo(org, repo);
+                return this.sqlRepository.getPR4Repo(org, repo);
             }
         });
     }
@@ -122,17 +131,18 @@ class GitRepository {
                 graphQL = `{\"query\":\"query {  organization(login: \\"${orgName}\\") {  name  membersWithRole(first: 100) { nodes { name login  email  avatarUrl  } pageInfo { endCursor  hasNextPage }}}}\",\"variables\":{}}`;
             }
             try {
-                // console.log(` ==> getDevsFromGit: ${graphQL}`);
                 request(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                     if (response.statusCode === 400) {
                         console.log(`getDevsFromGit: No Devs found for org: ${orgName} - ${response.body}`);
+                        // eslint-disable-next-line @typescript-eslint/no-floating-promises
                         this.sqlRepository.saveStatus(tenantId, 'GET-DEV-FAIL', `${orgName} - ${response.body}`);
                         return;
                     }
                     if (response.statusCode === 200) {
-                        let result = JSON.parse(body);
+                        const result = JSON.parse(body);
                         if (!result.data) {
                             console.log(`getDevsFromGit: No Devs found for org: ${orgName}`);
+                            // eslint-disable-next-line @typescript-eslint/no-floating-promises
                             this.sqlRepository.saveStatus(tenantId, 'GET-DEV-FAIL', `${orgName}`);
                         }
                         else {
@@ -140,9 +150,10 @@ class GitRepository {
                             yield this.sqlRepository.saveDevs(tenantId, orgName, result.data.organization.membersWithRole.nodes);
                             yield this.sqlRepository.saveStatus(tenantId, 'GET-DEV-SUCCESS', `${result.data.organization.membersWithRole.nodes.length} Devs updated for ${orgName}`);
                             if (result.data.organization.membersWithRole.pageInfo) {
-                                let pageInfo = result.data.organization.membersWithRole.pageInfo;
+                                const pageInfo = result.data.organization.membersWithRole.pageInfo;
                                 if (pageInfo.hasNextPage) {
-                                    this.getDevsFromGit(tenantId, org, pageInfo.endCursor); //ooph! Recursive call
+                                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                                    this.getDevsFromGit(tenantId, org, pageInfo.endCursor); //Recursive call
                                 }
                             }
                         }
@@ -172,21 +183,25 @@ class GitRepository {
             try {
                 request(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                     if (response.statusCode === 200) {
-                        let result = JSON.parse(body);
+                        const result = JSON.parse(body);
                         if (!result.data) {
                             console.log('==> No repo found for org:' + org);
+                            // eslint-disable-next-line @typescript-eslint/no-floating-promises
                             this.sqlRepository.saveStatus(tenantId, 'GET-REPO-SUCCESS-' + org.substr(0, 20), 'No repo found for org:' + org);
                         }
                         else {
+                            // eslint-disable-next-line @typescript-eslint/no-floating-promises
                             this.sqlRepository.saveStatus(tenantId, 'GET-REPO-SUCCESS-' + org.substr(0, 20), `${result.data.organization.repositories.nodes.length} repo found for org: ${org}`);
                             yield this.sqlRepository.saveRepo(tenantId, org, result.data.organization.repositories.nodes);
-                            let pageInfo = result.data.organization.repositories.pageInfo;
+                            const pageInfo = result.data.organization.repositories.pageInfo;
                             if (pageInfo.hasNextPage) {
-                                this.getRepoFromGit(tenantId, org, pageInfo.endCursor); //ooph! Recursive call
+                                // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                                this.getRepoFromGit(tenantId, org, pageInfo.endCursor); // Recursive call
                             }
                         }
                     }
                     else {
+                        // eslint-disable-next-line @typescript-eslint/no-floating-promises
                         this.sqlRepository.saveStatus(tenantId, 'GET-REPO-FAIL-' + org.substr(0, 20), `response status code: ${response.statusCode}`);
                         console.log('GetRpoFromGit: org - ' + org + ' - ' + body);
                     }
@@ -195,6 +210,7 @@ class GitRepository {
                 return yield this.sqlRepository.getRepo(tenantId, org, false);
             }
             catch (ex) {
+                // eslint-disable-next-line @typescript-eslint/no-floating-promises
                 this.sqlRepository.saveStatus(tenantId, 'GET-REPO-FAIL-' + org.substr(0, 20), ex);
                 console.log(ex);
             }
@@ -202,12 +218,12 @@ class GitRepository {
     }
     getRepos(tenantId, org, bustTheCache = false, getFromGit = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            let cacheKey = 'GetRepos' + tenantId + org;
+            const cacheKey = 'GetRepos' + tenantId + org;
             if (bustTheCache) {
                 this.sqlRepository.myCache.del(cacheKey);
             }
             if (getFromGit) {
-                return yield this.getRepoFromGit(tenantId, org);
+                return this.getRepoFromGit(tenantId, org);
             }
             else {
                 //Get from local store
@@ -221,7 +237,7 @@ class GitRepository {
                     return result;
                 }
                 else {
-                    return yield this.getRepoFromGit(tenantId, org);
+                    return this.getRepoFromGit(tenantId, org);
                 }
             }
         });
@@ -230,7 +246,7 @@ class GitRepository {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const token = 'Bearer ' + (yield this.sqlRepository.getToken(Number(tenantId)));
-                let header = {
+                const header = {
                     method: method,
                     uri: gUri,
                     headers: {
@@ -276,11 +292,13 @@ class GitRepository {
             try {
                 yield request(yield this.makeGitRequest(tenantId, graphQL, 'https://api.github.com/orgs/' + org + '/hooks'), (error, response, body) => {
                     if (response.statusCode === 201) {
+                        // eslint-disable-next-line @typescript-eslint/no-floating-promises
                         this.sqlRepository.saveStatus(tenantId, 'SET-HOOK-SUCCESS-' + org.substr(0, 20), ' ');
                         console.log('Successfully hook is setup');
                     }
                     else {
                         if (response.statusCode === 422) {
+                            // eslint-disable-next-line @typescript-eslint/no-floating-promises
                             this.sqlRepository.saveStatus(tenantId, 'SET-HOOK-FAIL-' + org.substr(0, 20), `response status: ${response.statusCode}`);
                             console.log('==> Warning: Hook already existing: ' + response.statusCode);
                         }
@@ -307,7 +325,7 @@ class GitRepository {
     getOrg(tenantId, bustTheCache = false, getFromGit = false) {
         return __awaiter(this, void 0, void 0, function* () {
             //Lets check in our local sql tables first
-            let cacheKey = 'GetOrg' + tenantId;
+            const cacheKey = 'GetOrg' + tenantId;
             if (bustTheCache) {
                 this.sqlRepository.myCache.del(cacheKey);
             }
@@ -320,18 +338,20 @@ class GitRepository {
             //Lets go to git
             const graphQL = `{\"query\": \"query { viewer {name organizations(last: 100) { nodes { name url }} }}\",\"variables\":{}}`;
             /* Without this promise wrap this code will not work */
-            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
                 try {
-                    yield util_1.promisify(request)(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
+                    request(this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                         if (response.statusCode === 200) {
+                            // eslint-disable-next-line @typescript-eslint/no-floating-promises
                             this.sqlRepository.saveStatus(tenantId, 'GET-ORG-SUCCESS');
-                            let orgs = JSON.parse(response.body).data.viewer.organizations.nodes;
+                            const orgs = JSON.parse(response.body).data.viewer.organizations.nodes;
                             yield this.sqlRepository.saveOrg(tenantId, orgs);
                             yield this.UpdateDev4Org(tenantId, orgs);
-                            let result = yield this.sqlRepository.getOrg(tenantId);
+                            const result = yield this.sqlRepository.getOrg(tenantId);
                             resolve(result);
                         }
                         else {
+                            // eslint-disable-next-line @typescript-eslint/no-floating-promises
                             this.sqlRepository.saveStatus(tenantId, 'GET-ORG-FAIL', `status: ${response.statusCode}`);
                             console.log('error: ' + response.statusCode);
                             console.log(body);
@@ -340,11 +360,12 @@ class GitRepository {
                     }));
                 }
                 catch (ex) {
+                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
                     this.sqlRepository.saveStatus(tenantId, 'GET-ORG-FAIL', ex);
                     console.log(ex);
                     reject(null);
                 }
-            }));
+            });
             console.log('why');
         });
     }

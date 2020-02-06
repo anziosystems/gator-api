@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+// import * as _ from 'lodash';
 const NodeCache = require('node-cache');
 const request = require('request-promise');
 const sqlRepository_1 = require("./sqlRepository");
@@ -22,13 +23,13 @@ class JiraRepository {
     //returns the first org id
     getJiraOrg(jiraTenantId, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.sqlRepository.getJiraOrg(jiraTenantId, bustTheCache);
+            return this.sqlRepository.getJiraOrg(jiraTenantId, bustTheCache);
         });
     }
     //return all the org details
     getJiraOrgs(jiraTenantId, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.sqlRepository.getJiraOrgs(jiraTenantId, bustTheCache);
+            return this.sqlRepository.getJiraOrgs(jiraTenantId, bustTheCache);
         });
     }
     getJiraUsers(jiraTenantId, org, bustTheCache = false) {
@@ -45,14 +46,15 @@ class JiraRepository {
             try {
                 return yield request(yield this.makeJiraRequest(jiraTenantId, uri), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                     if (response.statusCode === 200) {
-                        let result = JSON.parse(body);
+                        const result = JSON.parse(body);
                         if (!result) {
                             // console.log(`GetJiraUsers: No Users found for tenant:${jiraTenantId} org: ${org}`);
                         }
                         else {
                             yield this.sqlRepository.saveJiraUsers(jiraTenantId, org, result);
+                            // eslint-disable-next-line @typescript-eslint/no-floating-promises
                             this.sqlRepository.saveStatus(jiraTenantId, 'GET-JIRA-DEV-SUCCESS', ` Found ${result.length} devs for org: ${org}`);
-                            return yield this.sqlRepository.getJiraUsers(jiraTenantId, org);
+                            return this.sqlRepository.getJiraUsers(jiraTenantId, org);
                             //No paging for now - Getting all 500 developers
                         }
                     }
@@ -81,7 +83,7 @@ class JiraRepository {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = `getJiraIssues:${jiraTenantId}-${org}-${userId}`;
             if (!bustTheCache) {
-                let val = this.myCache.get(cacheKey);
+                const val = this.myCache.get(cacheKey);
                 if (val) {
                     console.log('Issues from cache');
                     return val;
@@ -93,7 +95,7 @@ class JiraRepository {
             try {
                 return yield request(yield this.makeJiraRequest(jiraTenantId, uri), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                     if (response.statusCode === 200) {
-                        let result = JSON.parse(body);
+                        const result = JSON.parse(body);
                         if (!result) {
                             console.log(`GetJiraIssues: No issues found for tenant:${jiraTenantId} OrgId: ${org}`);
                             return result;
@@ -131,7 +133,7 @@ class JiraRepository {
             try {
                 const token = 'Bearer ' + (yield this.sqlRepository.getJiraToken(jiraTenantId));
                 //  console.log(`==> JiraToken: ${token} `);
-                let header = {
+                const header = {
                     method: method,
                     uri: 'https://api.atlassian.com/ex/jira/' + gUri,
                     headers: {

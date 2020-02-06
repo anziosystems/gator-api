@@ -12,7 +12,7 @@ app.set('view engine', 'ejs');
 app.use(cors());
 const dotenv = require('dotenv');
 dotenv.config();
-import {SQLRepository, Tenant} from './Lib/sqlRepository';
+import {SQLRepository} from './Lib/sqlRepository';
 
 app.use(function(req: any, res: any, next: any) {
   res.header('Access-Control-Allow-Origin', '*');
@@ -50,7 +50,8 @@ passport.serializeUser((user: any, done: any) => {
 passport.deserializeUser(function(id: any, done: any) {
   try {
     console.log(`==> Inside DeserializeUser - id: ${id}`);
-    let sqlRepositoy = new SQLRepository(null);
+    const sqlRepositoy = new SQLRepository(null);
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sqlRepositoy.getTenant(id).then(result => {
       if (result) {
         console.log('==> inside deserialize - user.id: ' + result[0].Id);
