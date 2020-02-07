@@ -1,11 +1,16 @@
-// import * as _ from 'lodash';
+/* eslint-disable no-unused-vars */
+/* eslint-disable no-useless-escape */
+import * as _ from 'lodash';
 import {SQLRepository} from './sqlRepository';
-// const req = require('request');
+// eslint-disable-next-line no-unused-vars
+import {rejects} from 'assert';
+import {promisify} from 'util';
+const req = require('request');
 const request = require('request-promise');
 
 //if ever have async issues use requestAsync
 //usage: await requestAsync
-//const requestAsync = promisify (require('request-promise'));
+const requestAsync = promisify(require('request-promise'));
 
 class GitRepository {
   httpOptions: any;
@@ -197,7 +202,7 @@ class GitRepository {
     } catch (ex) {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.sqlRepository.saveStatus(tenantId, 'GET-REPO-FAIL-' + org.substr(0, 20), ex);
-      console.log(ex);
+      console.log('==> getRepoFromGit: Error-' + ex);
     }
   }
 
@@ -302,6 +307,9 @@ class GitRepository {
     }
   }
 
+  /* This should be the model function for how to call git queries 
+  Promise wrapper await etc
+  */
   async getOrg(tenantId: string, bustTheCache: Boolean = false, getFromGit: Boolean = false) {
     //Lets check in our local sql tables first
     const cacheKey = 'GetOrg' + tenantId;
@@ -318,33 +326,40 @@ class GitRepository {
     //Lets go to git
     const graphQL = `{\"query\": \"query { viewer {name organizations(last: 100) { nodes { name url }} }}\",\"variables\":{}}`;
     /* Without this promise wrap this code will not work */
+    const gitReq = await this.makeGitRequest(tenantId, graphQL);
     return new Promise((resolve, reject) => {
       try {
-        request(this.makeGitRequest(tenantId, graphQL), async (error: any, response: any, body: any) => {
-          if (response.statusCode === 200) {
-            // eslint-disable-next-line @typescript-eslint/no-floating-promises
-            this.sqlRepository.saveStatus(tenantId, 'GET-ORG-SUCCESS');
-            const orgs: string[] = JSON.parse(response.body).data.viewer.organizations.nodes;
-            await this.sqlRepository.saveOrg(tenantId, orgs);
-            await this.UpdateDev4Org(tenantId, orgs);
-            const result = await this.sqlRepository.getOrg(tenantId);
-            resolve(result);
+        request( gitReq, async (error: any, response: any, body: any) => {
+          if (response) {
+            if (response.statusCode === 200) {
+              // eslint-disable-next-line @typescript-eslint/no-floating-promises
+              this.sqlRepository.saveStatus(tenantId, 'GET-ORG-SUCCESS');
+              const orgs: string[] = JSON.parse(response.body).data.viewer.organizations.nodes;
+              await this.sqlRepository.saveOrg(tenantId, orgs);
+              await this.UpdateDev4Org(tenantId, orgs);
+              const result = await this.sqlRepository.getOrg(tenantId);
+              resolve(result);
+            } else {
+              // eslint-disable-next-line @typescript-eslint/no-floating-promises
+              this.sqlRepository.saveStatus(tenantId, 'GET-ORG-FAIL', `status: ${response.statusCode}`);
+              console.log('getOrg: error: ' + response.statusCode);
+              console.log('getOrg: error: ' + body);
+              reject(null);
+            }
           } else {
-            // eslint-disable-next-line @typescript-eslint/no-floating-promises
-            this.sqlRepository.saveStatus(tenantId, 'GET-ORG-FAIL', `status: ${response.statusCode}`);
-            console.log('error: ' + response.statusCode);
-            console.log(body);
-            reject(null);
+            console.log(`getOrg no results returned:  ${error}`);
+            reject(error);
           }
         });
       } catch (ex) {
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
         this.sqlRepository.saveStatus(tenantId, 'GET-ORG-FAIL', ex);
-        console.log(ex);
-        reject(null);
+        console.log('getOrg' + ex);
+        reject();
       }
+    }).catch(ex => {
+      console.log(`getOrg:  ${ex}`);
     });
-    console.log('why');
   }
 }
 

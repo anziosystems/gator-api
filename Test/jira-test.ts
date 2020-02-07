@@ -1,12 +1,12 @@
 // tslint:disable:no-any
 // tslint:disable:no-invalid-this
 import {expect} from 'chai';
-import {Context as MochaContext} from 'mocha';
-import {doesNotReject, AssertionError} from 'assert';
-import {Observable, of, Subject} from 'rxjs';
-import * as jsonBadData from './data/Sample.data.json';
-import {SQLRepository, Tenant} from '../Lib/sqlRepository';
-import {GitRepository} from '../Lib/GitRepository';
+// import {Context as MochaContext} from 'mocha';
+// import {doesNotReject, AssertionError} from 'assert';
+// import {Observable, of, Subject} from 'rxjs';
+// import * as jsonBadData from './data/Sample.data.json';
+import {SQLRepository} from '../Lib/sqlRepository';
+// import {GitRepository} from '../Lib/GitRepository';
 import {JiraRepository} from '../Lib/JiraRepository';
 import {isNullOrUndefined} from 'util';
 

@@ -1,21 +1,22 @@
 //https://www.youtube.com/watch?v=or1_A4sJ-oY
 const router = require('express').Router();
 const passport = require('passport');
-// const passport_setup = require('./passport-setup');
+//NOTE - DONT F*** REMOVE THIS unreferenced variable - welcome to JS land - IF below line is removed then passport strategy will not work
+const passport_setup = require('./passport-setup');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 dotenv.config();
 //var callbackURL = 'http://localhost:8080/callback';
 const callbackURL = process.env.CALL_BACK_URL; //'https://gator-ui.azurewebsites.net/callback';
 //This method is not called any more, it is here for the test
-router.get('/login', (req, res) => { });
-router.get('/github', passport.authenticate('github'), (req, res) => {
+router.get('/login', () => { });
+router.get('/github', passport.authenticate('github'), () => {
     //This function will never be called.
 });
-router.get('/atlassian', passport.authenticate('atlassian'), (req, res) => {
+router.get('/atlassian', passport.authenticate('atlassian'), () => {
     //This function will never be called.
 });
-router.get('/bitbucket', passport.authenticate('bitbucket'), (req, res) => {
+router.get('/bitbucket', passport.authenticate('bitbucket'), () => {
     //This function will never be called.
 });
 router.get('/logout', (req, res) => {

@@ -8,13 +8,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-// import * as _ from 'lodash';
 const sqlRepository_1 = require("./sqlRepository");
-// const req = require('request');
+const util_1 = require("util");
+const req = require('request');
 const request = require('request-promise');
 //if ever have async issues use requestAsync
 //usage: await requestAsync
-//const requestAsync = promisify (require('request-promise'));
+const requestAsync = util_1.promisify(require('request-promise'));
 class GitRepository {
     constructor() {
         this.sqlRepository = new sqlRepository_1.SQLRepository(null);
@@ -212,7 +212,7 @@ class GitRepository {
             catch (ex) {
                 // eslint-disable-next-line @typescript-eslint/no-floating-promises
                 this.sqlRepository.saveStatus(tenantId, 'GET-REPO-FAIL-' + org.substr(0, 20), ex);
-                console.log(ex);
+                console.log('==> getRepoFromGit: Error-' + ex);
             }
         });
     }
@@ -338,35 +338,43 @@ class GitRepository {
             //Lets go to git
             const graphQL = `{\"query\": \"query { viewer {name organizations(last: 100) { nodes { name url }} }}\",\"variables\":{}}`;
             /* Without this promise wrap this code will not work */
+            const gitReq = yield this.makeGitRequest(tenantId, graphQL);
             return new Promise((resolve, reject) => {
                 try {
-                    request(this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
-                        if (response.statusCode === 200) {
-                            // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                            this.sqlRepository.saveStatus(tenantId, 'GET-ORG-SUCCESS');
-                            const orgs = JSON.parse(response.body).data.viewer.organizations.nodes;
-                            yield this.sqlRepository.saveOrg(tenantId, orgs);
-                            yield this.UpdateDev4Org(tenantId, orgs);
-                            const result = yield this.sqlRepository.getOrg(tenantId);
-                            resolve(result);
+                    request(gitReq, (error, response, body) => __awaiter(this, void 0, void 0, function* () {
+                        if (response) {
+                            if (response.statusCode === 200) {
+                                // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                                this.sqlRepository.saveStatus(tenantId, 'GET-ORG-SUCCESS');
+                                const orgs = JSON.parse(response.body).data.viewer.organizations.nodes;
+                                yield this.sqlRepository.saveOrg(tenantId, orgs);
+                                yield this.UpdateDev4Org(tenantId, orgs);
+                                const result = yield this.sqlRepository.getOrg(tenantId);
+                                resolve(result);
+                            }
+                            else {
+                                // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                                this.sqlRepository.saveStatus(tenantId, 'GET-ORG-FAIL', `status: ${response.statusCode}`);
+                                console.log('getOrg: error: ' + response.statusCode);
+                                console.log('getOrg: error: ' + body);
+                                reject(null);
+                            }
                         }
                         else {
-                            // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                            this.sqlRepository.saveStatus(tenantId, 'GET-ORG-FAIL', `status: ${response.statusCode}`);
-                            console.log('error: ' + response.statusCode);
-                            console.log(body);
-                            reject(null);
+                            console.log(`getOrg no results returned:  ${error}`);
+                            reject(error);
                         }
                     }));
                 }
                 catch (ex) {
                     // eslint-disable-next-line @typescript-eslint/no-floating-promises
                     this.sqlRepository.saveStatus(tenantId, 'GET-ORG-FAIL', ex);
-                    console.log(ex);
-                    reject(null);
+                    console.log('getOrg' + ex);
+                    reject();
                 }
+            }).catch(ex => {
+                console.log(`getOrg:  ${ex}`);
             });
-            console.log('why');
         });
     }
 }

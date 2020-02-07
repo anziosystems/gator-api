@@ -470,9 +470,13 @@ class SQLRepository {
   async getPR4Repo(org: string, repo: string, bustTheCache = false) {
     await this.createPool();
     const cacheKey = 'GetPR4Repo -' + org + repo;
-    const val = this.myCache.get(cacheKey);
-    if (val) {
-      return val;
+    if (bustTheCache) {
+      this.myCache.delete(cacheKey);
+    } else {
+      const val = this.myCache.get(cacheKey);
+      if (val) {
+        return val;
+      }
     }
     const request = await this.pool.request();
 

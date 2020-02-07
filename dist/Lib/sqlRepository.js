@@ -449,9 +449,14 @@ class SQLRepository {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();
             const cacheKey = 'GetPR4Repo -' + org + repo;
-            const val = this.myCache.get(cacheKey);
-            if (val) {
-                return val;
+            if (bustTheCache) {
+                this.myCache.delete(cacheKey);
+            }
+            else {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
             }
             const request = yield this.pool.request();
             request.input('org', sql.VarChar(this.ORG_LEN), org);

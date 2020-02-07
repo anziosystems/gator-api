@@ -63,7 +63,7 @@ function isJiraTokenValid(tenantId) {
     });
 }
 function validateToken(req, res, next) {
-    const tenantId = getTenant(req, res); //GetTenantId from req
+    const tenantId = getTenant(req); //GetTenantId from req
     isTokenValid(tenantId)
         .then(val => {
         if (!val) {
@@ -78,7 +78,7 @@ function validateToken(req, res, next) {
     });
 }
 function validateJiraToken(req, res, next) {
-    const tenantId = getJiraTenant(req, res); //GetTenantId from req
+    const tenantId = getJiraTenant(req); //GetTenantId from req
     // console.log(`==> validateJiraToken: ${tenantId}`);
     isJiraTokenValid(tenantId)
         .then(val => {
@@ -93,7 +93,7 @@ function validateJiraToken(req, res, next) {
         console.log(`validateJiraToken ${ex}`);
     });
 }
-function getTenant(req, res) {
+function getTenant(req) {
     try {
         const token = req.headers['authorization']; //it is tenantId in header
         //
@@ -110,7 +110,7 @@ function getTenant(req, res) {
     }
 }
 //token has the tenantId - It always come in authorization header as a token
-function getJiraTenant(req, res) {
+function getJiraTenant(req) {
     try {
         const token = req.headers['authorization'].trim(); //it is tenantId in header
         // console.log(` ==> GetJiraTenant raw token from the call ${token}`);
@@ -143,7 +143,7 @@ function getJiraTenant(req, res) {
 //header must have JiraTenant
 router.get('/GetJiraOrgs', validateJiraToken, (req, res) => {
     jiraRepository
-        .getJiraOrgs(getJiraTenant(req, res), Boolean(req.query.bustTheCache === 'true'))
+        .getJiraOrgs(getJiraTenant(req), Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         /*
         result
@@ -161,7 +161,7 @@ router.get('/GetJiraOrgs', validateJiraToken, (req, res) => {
 //
 router.get('/GetJiraUsers', validateJiraToken, (req, res) => {
     jiraRepository
-        .getJiraUsers(getJiraTenant(req, res), req.query.org, Boolean(req.query.bustTheCache === 'true'))
+        .getJiraUsers(getJiraTenant(req), req.query.org, Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         /*
       JSON.parse(result)
@@ -180,7 +180,7 @@ router.get('/GetJiraUsers', validateJiraToken, (req, res) => {
 //header must have JiraTenant
 router.get('/GetJiraIssues', validateJiraToken, (req, res) => {
     jiraRepository
-        .getJiraIssues(getJiraTenant(req, res), //tenant
+        .getJiraIssues(getJiraTenant(req), //tenant
     req.query.org, //org
     req.query.userid, //'557058:f39310b9-d30a-41a3-8011-6a6ae5eeed07', //userId
     '"In Progress" OR status="To Do"', //status
@@ -195,22 +195,28 @@ router.get('/GetJiraIssues', validateJiraToken, (req, res) => {
     });
 });
 router.get('/GetOrg', validateToken, (req, res) => __awaiter(this, void 0, void 0, function* () {
-    console.log(`calling getOrg bustTheCashe: ${req.query.bustTheCache} GetfromGit: ${req.query.getFromGit}`);
-    yield gitRepository.getOrg(getTenant(req, res), Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true')).then(result => {
+    // console.log(`calling getOrg bustTheCashe: ${req.query.bustTheCache} GetfromGit: ${req.query.getFromGit}`);
+    yield gitRepository
+        .getOrg(getTenant(req), Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true'))
+        .then(result => {
         try {
             if (!result) {
                 console.log(`getOrg is null`);
+                return res.json(null);
             }
             return res.json(result);
         }
         catch (ex) {
             console.log('GetOrg: ' + ex);
         }
+    })
+        .catch(ex => {
+        console.log(`GetOrg Error: ${ex}`);
     });
 }));
 router.get('/getGitLoggedInUSerDetails', validateToken, (req, res) => {
     sqlRepositoy
-        .getGitLoggedInUSerDetails(getTenant(req, res), Boolean(req.query.bustTheCache === 'true'))
+        .getGitLoggedInUSerDetails(getTenant(req), Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         return res.json(result);
     })
@@ -241,7 +247,7 @@ router.get('/GetGraphData4XDays', validateToken, (req, res) => {
     });
 });
 router.get('/GetHookStatus', validateToken, (req, res) => {
-    const tenantId = getTenant(req, res);
+    const tenantId = getTenant(req);
     gitRepository
         .GetHookStatus(tenantId, req.query.org)
         .then(result => {
@@ -346,7 +352,7 @@ router.get('/PullRequestForLastXDays', validateToken, (req, res) => {
         req.query.day = '1';
     }
     sqlRepositoy
-        .getPR4LastXDays(getTenant(req, res), req.query.day)
+        .getPR4LastXDays(getTenant(req), req.query.day)
         .then(result => {
         return res.json(result);
     })
@@ -433,7 +439,7 @@ router.get('/GetSR4Id', validateToken, (req, res) => {
 //    /GetOrg?tenantId='rsarosh@hotmail.com'&Org='LabShare'&bustTheCache=false&getFromGit = true
 router.get('/GetRepos', validateToken, (req, res) => {
     gitRepository
-        .getRepos(getTenant(req, res), req.query.org, Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true'))
+        .getRepos(getTenant(req), req.query.org, Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true'))
         .then(result => {
         if (result) {
             return res.json(result);
@@ -445,7 +451,7 @@ router.get('/GetRepos', validateToken, (req, res) => {
     });
 });
 router.get('/GetPRfromGit', validateToken, (req, res) => {
-    const tenantId = getTenant(req, res);
+    const tenantId = getTenant(req);
     gitRepository
         .getRepos(tenantId, req.query.org, false, false)
         .then(result => {
@@ -463,7 +469,7 @@ router.get('/GetPRfromGit', validateToken, (req, res) => {
 });
 router.get('/GetAllRepoCollection4TenantOrg', validateToken, (req, res) => {
     sqlRepositoy
-        .getAllRepoCollection4TenantOrg(getTenant(req, res), req.query.org, Boolean(req.query.bustTheCache === 'true'))
+        .getAllRepoCollection4TenantOrg(getTenant(req), req.query.org, Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         return res.json(result);
     })
@@ -486,7 +492,7 @@ router.get('/GetRepoCollectionByName', validateToken, (req, res) => {
 });
 router.get('/SetupWebHook', validateToken, (req, res) => {
     gitRepository
-        .setupWebHook(getTenant(req, res), req.query.org)
+        .setupWebHook(getTenant(req), req.query.org)
         .then((result) => {
         console.log('==>Setupwebhook returning ' + result);
         return res.json({ val: result });
