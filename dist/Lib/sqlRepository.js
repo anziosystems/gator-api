@@ -518,6 +518,29 @@ class SQLRepository {
             }
         });
     }
+    getGitDev4Org(org) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getGitDev4Org' + org;
+            const val = this.myCache.get(cacheKey);
+            if (val) {
+                return val;
+            }
+            yield this.createPool();
+            const request = yield this.pool.request();
+            if (!org) {
+                throw new Error('tenant cannot be null');
+            }
+            request.input('Org', sql.VarChar(this.ORG_LEN), org);
+            const recordSet = yield request.execute('GitDev4Org');
+            if (recordSet.recordset) {
+                this.myCache.set(cacheKey, recordSet.recordset);
+                return recordSet.recordset;
+            }
+            else {
+                return;
+            }
+        });
+    }
     getPR4Id(org, id = 1) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();

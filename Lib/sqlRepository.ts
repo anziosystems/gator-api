@@ -532,6 +532,28 @@ class SQLRepository {
     }
   }
 
+  async getGitDev4Org(org: string) {
+    const cacheKey = 'getGitDev4Org' + org ;
+    const val = this.myCache.get(cacheKey);
+    if (val) {
+      return val;
+    }
+
+    await this.createPool();
+    const request = await this.pool.request();
+    if (!org) {
+      throw new Error('tenant cannot be null');
+    }
+    request.input('Org', sql.VarChar(this.ORG_LEN), org);
+    const recordSet = await request.execute('GitDev4Org');
+    if (recordSet.recordset) {
+      this.myCache.set(cacheKey, recordSet.recordset);
+      return recordSet.recordset;
+    } else {
+      return;
+    }
+  }
+
   async getPR4Id(org: string, id = 1) {
     await this.createPool();
     const request = await this.pool.request();

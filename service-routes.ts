@@ -312,6 +312,19 @@ router.get('/TopDevForLastXDays', validateToken, (req: any, res: any) => {
       return res.json(err);
     });
 });
+
+router.get('/GitDev4Org', validateToken, (req: any, res: any) => {
+  sqlRepositoy
+    .getGitDev4Org(req.query.org)
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`GitDev4Org: ${err}`);
+      return res.json(err);
+    });
+});
+
 /*
 
 PullRequestCountForLastXDays
