@@ -389,7 +389,7 @@ router.get('/PullRequest4Dev', validateToken, (req, res) => {
         return res.json(err);
     });
 });
-router.post('/getSR4User', validateToken, (req, res) => {
+router.post('/SaveMSR', validateToken, (req, res) => {
     if (!req.query.day) {
         req.query.day = '1';
     }

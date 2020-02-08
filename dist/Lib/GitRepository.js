@@ -322,6 +322,9 @@ class GitRepository {
             }
         });
     }
+    /* This should be the model function for how to call git queries
+    Promise wrapper await etc
+    */
     getOrg(tenantId, bustTheCache = false, getFromGit = false) {
         return __awaiter(this, void 0, void 0, function* () {
             //Lets check in our local sql tables first
