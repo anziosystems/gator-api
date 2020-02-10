@@ -240,9 +240,9 @@ class SQLRepository {
         });
     }
     // Date, Ctr, State (open, closed) will be returned
-    GetGraphData4XDays(org, day, bustTheCache = false) {
+    GetGraphData4XDays(org, day, login, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = 'GetGraphData4XDays-' + org + day;
+            const cacheKey = 'GetGraphData4XDays-' + org + login + day;
             if (bustTheCache) {
                 this.myCache.del(cacheKey);
             }
@@ -252,8 +252,9 @@ class SQLRepository {
             }
             yield this.createPool();
             const request = yield this.pool.request();
-            request.input('day', sql.Int, day);
-            request.input('org', sql.VarChar(this.ORG_LEN), org);
+            request.input('Day', sql.Int, day);
+            request.input('Login', sql.VarChar(this.LOGIN_LEN), login);
+            request.input('Org', sql.VarChar(this.ORG_LEN), org);
             const recordSet = yield request.execute('GetGraphData4XDays');
             if (recordSet) {
                 this.myCache.set(cacheKey, recordSet.recordset);
@@ -554,10 +555,10 @@ class SQLRepository {
             return recordSet.recordset;
         });
     }
-    getPRCount4LastXDays(org, day = 1) {
+    getPRCount4LastXDays(org, login, day = 1) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();
-            const cacheKey = 'PRCount4LastXDays' + org + day.toString();
+            const cacheKey = 'PRCount4LastXDays' + org + login + day.toString();
             const val = this.myCache.get(cacheKey);
             if (val) {
                 return val;
@@ -567,6 +568,7 @@ class SQLRepository {
                 throw new Error('org cannot be null');
             }
             request.input('Org', sql.VarChar(this.ORG_LEN), org);
+            request.input('Login', sql.VarChar(this.LOGIN_LEN), login);
             request.input('Day', sql.Int, day);
             const recordSet = yield request.execute('PRCount4LastXDays');
             if (recordSet.recordset.length > 0) {

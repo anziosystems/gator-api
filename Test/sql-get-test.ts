@@ -134,7 +134,7 @@ describe('GetGraphData4XDays', () => {
     const sqlRepositoy = new SQLRepository(null);
     const org = 'LabShare';
     const day = 30;
-    await sqlRepositoy.GetGraphData4XDays(org, day, true).then((result: any) => {
+    await sqlRepositoy.GetGraphData4XDays(org, day, 'rsarosh', true).then((result: any) => {
       expect(result[0].Ctr).to.greaterThan(0);
       //result[0].state = 'closed'
       //result[0].Date = "May 1 2019"
@@ -173,7 +173,7 @@ describe('PullRequestCountForLastXDays', () => {
     const tenant = '1040817';
     const day = 30;
 
-    await sqlRepositoy.getPRCount4LastXDays(tenant, day).then((result: any) => {
+    await sqlRepositoy.getPRCount4LastXDays(tenant, 'rsarosh', day).then((result: any) => {
       expect(result.toTable.length).to.greaterThan(0);
     });
   });

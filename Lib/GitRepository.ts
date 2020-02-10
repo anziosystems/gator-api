@@ -63,7 +63,7 @@ class GitRepository {
       org +
       `\\") {     name        repository(name: \\"` +
       repo +
-      `\\") { name            pullRequests(last: 10) {  nodes { id  url  state  title   permalink   createdAt  body  repository { name } author                                                                                                                                                                                { login  avatarUrl url                                           }            }          }        }      }    }  }\",\"variables\":{}}`;
+      `\\") { name            pullRequests(last: 25) {  nodes { id  url  state  title   permalink   createdAt  body  repository { name } author                                                                                                                                                                                { login  avatarUrl url                                           }            }          }        }      }    }  }\",\"variables\":{}}`;
 
     try {
       request(await this.makeGitRequest(tenantId, graphQL), async (error: any, response: any, body: any) => {
@@ -329,7 +329,7 @@ class GitRepository {
     const gitReq = await this.makeGitRequest(tenantId, graphQL);
     return new Promise((resolve, reject) => {
       try {
-        request( gitReq, async (error: any, response: any, body: any) => {
+        request(gitReq, async (error: any, response: any, body: any) => {
           if (response) {
             if (response.statusCode === 200) {
               // eslint-disable-next-line @typescript-eslint/no-floating-promises

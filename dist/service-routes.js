@@ -237,7 +237,7 @@ returns {
 */
 router.get('/GetGraphData4XDays', validateToken, (req, res) => {
     sqlRepositoy
-        .GetGraphData4XDays(req.query.org, req.query.day, Boolean(req.query.bustTheCache === 'true'))
+        .GetGraphData4XDays(req.query.org, req.query.day, req.query.login, Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         return res.json(result);
     })
@@ -349,7 +349,7 @@ router.get('/PullRequestCountForLastXDays', validateToken, (req, res) => {
         req.query.day = '1';
     }
     sqlRepositoy
-        .getPRCount4LastXDays(req.query.org, req.query.day)
+        .getPRCount4LastXDays(req.query.org, req.query.login, req.query.day)
         .then(result => {
         return res.json(result);
     })
