@@ -767,6 +767,10 @@ class SQLRepository {
 
   async saveMSR(srId: number, userId: string, org: string, statusDetails: string, reviewer: string, status: number, links: string, manager: string, managerComment: string, managerStatus: number) {
     try {
+      
+      const cacheKey = 'getMSR4Id' + srId;
+      this.myCache.del(cacheKey);
+
       const request = await this.pool.request();
       request.input('SRId', sql.Int, srId);
       request.input('UserId', sql.VarChar(100), userId);
