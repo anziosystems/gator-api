@@ -774,7 +774,7 @@ class SQLRepository {
       request.input('SRId', sql.Int, srId);
       request.input('UserId', sql.VarChar(100), userId);
       request.input('Org', sql.VarChar(200), org);
-      request.input('StatusDetails', sql.VarChar(4000), statusDetails);
+      request.input('StatusDetails', sql.VarChar(10000), statusDetails);
       request.input('Reviewer', sql.VarChar(500), reviewer);
       request.input('Status', sql.Int, status);
       request.input('Links', sql.VarChar(1000), links);
