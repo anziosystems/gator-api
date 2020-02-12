@@ -767,7 +767,6 @@ class SQLRepository {
 
   async saveMSR(srId: number, userId: string, org: string, statusDetails: string, reviewer: string, status: number, links: string, manager: string, managerComment: string, managerStatus: number) {
     try {
-      
       const cacheKey = 'getMSR4Id' + srId;
       this.myCache.del(cacheKey);
 
@@ -775,7 +774,7 @@ class SQLRepository {
       request.input('SRId', sql.Int, srId);
       request.input('UserId', sql.VarChar(100), userId);
       request.input('Org', sql.VarChar(200), org);
-      request.input('StatusDetails', sql.VarChar(200), statusDetails);
+      request.input('StatusDetails', sql.VarChar(4000), statusDetails);
       request.input('Reviewer', sql.VarChar(500), reviewer);
       request.input('Status', sql.Int, status);
       request.input('Links', sql.VarChar(1000), links);
