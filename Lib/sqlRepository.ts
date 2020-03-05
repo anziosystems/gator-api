@@ -107,7 +107,8 @@ class SQLRepository {
       this.sqlConfigSetting.password = process.env.SQL_Password;
       this.sqlConfigSetting.port = 1433;
       this.sqlConfigSetting.encrypt = true;
-
+      // this.sqlConfigSetting.options = '{ trustedConnection: true} ';
+      // this.sqlConfigSetting.driver = 'msnodesqlv8';
       await new sql.ConnectionPool(this.sqlConfigSetting).connect().then((pool: any) => {
         this.pool = pool;
         //console.log(`==> createPool is successfull`);
@@ -493,6 +494,47 @@ class SQLRepository {
     }
   }
 
+  //saveOrgChart
+  async saveOrgChart( userId: string, org: string, orgChart:string ) {
+    await this.createPool();
+   
+    const request = await this.pool.request();
+
+    request.input('org', sql.VarChar(this.ORG_LEN), org);
+    request.input('userId', sql.VarChar(this.LOGIN_LEN), userId);
+    request.input('orgChart', sql.VarChar, orgChart);
+    const recordSet = await request.execute('SaveOrgChart');
+    if (recordSet.recordset.length > 0) {
+      return recordSet.recordset;
+    } else {
+      return 0;
+    }
+  }
+
+
+    //saveOrgChart
+    async getOrgChart(org: string, bustTheCache: boolean = false) {
+      await this.createPool();
+      const cacheKey = 'getOrgChart -' + org ;
+      if (bustTheCache) {
+        this.myCache.delete(cacheKey);
+      } else {
+        const val = this.myCache.get(cacheKey);
+        if (val) {
+          return val;
+        }
+      }
+      const request = await this.pool.request();
+      request.input('org', sql.VarChar(this.ORG_LEN), org);
+      const recordSet = await request.execute('getOrgChart');
+      if (recordSet.recordset.length > 0) {
+        this.myCache.set(cacheKey, recordSet.recordset);
+        return recordSet.recordset;
+      } else {
+        return 0;
+      }
+    }
+
   async getToken(id: number) {
     const cacheKey = 'GetTenant -' + id; //cacheKey is GetTenant because i am reading there cache value. This is different from norm
     const val = this.myCache.get(cacheKey);
@@ -769,7 +811,6 @@ class SQLRepository {
     try {
       const cacheKey = 'getMSR4Id' + srId;
       this.myCache.del(cacheKey);
-
       const request = await this.pool.request();
       request.input('SRId', sql.Int, srId);
       request.input('UserId', sql.VarChar(100), userId);

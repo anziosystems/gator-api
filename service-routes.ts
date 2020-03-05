@@ -413,7 +413,7 @@ router.post('/SaveMSR', validateToken, (req: any, res: any) => {
       return res.json(result);
     })
     .catch(err => {
-      console.log(`getSR4User: ${err}`);
+      console.log(`SaveMSR: ${err}`);
       return res.json(err);
     });
 });
@@ -521,6 +521,37 @@ router.get('/SetupWebHook', validateToken, (req: any, res: any) => {
     })
     .catch(err => {
       console.log(`SetupWebHook: ${err}`);
+      return res.json(err);
+    });
+});
+
+
+router.post('/SaveOrgChart', validateToken, (req: any, res: any) => {
+  if (!req.query.day) {
+    req.query.day = '1';
+  }
+  sqlRepositoy
+    .saveOrgChart( req.body.userId, req.body.org,  req.body.orgChart)
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`SaveOrgChart: ${err}`);
+      return res.json(err);
+    });
+});
+
+router.post('/GetOrgChart', validateToken, (req: any, res: any) => {
+  if (!req.query.day) {
+    req.query.day = '1';
+  }
+  sqlRepositoy
+    .getOrgChart(req.body.org, Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`GetOrgChart: ${err}`);
       return res.json(err);
     });
 });

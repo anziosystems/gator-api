@@ -72,6 +72,8 @@ class SQLRepository {
                 this.sqlConfigSetting.password = process.env.SQL_Password;
                 this.sqlConfigSetting.port = 1433;
                 this.sqlConfigSetting.encrypt = true;
+                // this.sqlConfigSetting.options = '{ trustedConnection: true} ';
+                // this.sqlConfigSetting.driver = 'msnodesqlv8';
                 yield new sql.ConnectionPool(this.sqlConfigSetting).connect().then((pool) => {
                     this.pool = pool;
                     //console.log(`==> createPool is successfull`);
@@ -758,11 +760,13 @@ class SQLRepository {
     saveMSR(srId, userId, org, statusDetails, reviewer, status, links, manager, managerComment, managerStatus) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
+                const cacheKey = 'getMSR4Id' + srId;
+                this.myCache.del(cacheKey);
                 const request = yield this.pool.request();
                 request.input('SRId', sql.Int, srId);
                 request.input('UserId', sql.VarChar(100), userId);
                 request.input('Org', sql.VarChar(200), org);
-                request.input('StatusDetails', sql.VarChar(200), statusDetails);
+                request.input('StatusDetails', sql.VarChar(10000), statusDetails);
                 request.input('Reviewer', sql.VarChar(500), reviewer);
                 request.input('Status', sql.Int, status);
                 request.input('Links', sql.VarChar(1000), links);
