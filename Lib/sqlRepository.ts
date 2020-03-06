@@ -495,9 +495,9 @@ class SQLRepository {
   }
 
   //saveOrgChart
-  async saveOrgChart( userId: string, org: string, orgChart:string ) {
+  async saveOrgChart(userId: string, org: string, orgChart: string) {
     await this.createPool();
-   
+
     const request = await this.pool.request();
 
     request.input('org', sql.VarChar(this.ORG_LEN), org);
@@ -511,29 +511,28 @@ class SQLRepository {
     }
   }
 
-
-    //saveOrgChart
-    async getOrgChart(org: string, bustTheCache: boolean = false) {
-      await this.createPool();
-      const cacheKey = 'getOrgChart -' + org ;
-      if (bustTheCache) {
-        this.myCache.delete(cacheKey);
-      } else {
-        const val = this.myCache.get(cacheKey);
-        if (val) {
-          return val;
-        }
-      }
-      const request = await this.pool.request();
-      request.input('org', sql.VarChar(this.ORG_LEN), org);
-      const recordSet = await request.execute('getOrgChart');
-      if (recordSet.recordset.length > 0) {
-        this.myCache.set(cacheKey, recordSet.recordset);
-        return recordSet.recordset;
-      } else {
-        return 0;
+  //saveOrgChart
+  async getOrgChart(org: string, bustTheCache: boolean = false) {
+    await this.createPool();
+    const cacheKey = 'getOrgChart -' + org;
+    if (bustTheCache) {
+      this.myCache.delete(cacheKey);
+    } else {
+      const val = this.myCache.get(cacheKey);
+      if (val) {
+        return val;
       }
     }
+    const request = await this.pool.request();
+    request.input('org', sql.VarChar(this.ORG_LEN), org);
+    const recordSet = await request.execute('getOrgChart');
+    if (recordSet.recordset.length > 0) {
+      this.myCache.set(cacheKey, recordSet.recordset);
+      return recordSet.recordset;
+    } else {
+      return 0;
+    }
+  }
 
   async getToken(id: number) {
     const cacheKey = 'GetTenant -' + id; //cacheKey is GetTenant because i am reading there cache value. This is different from norm
@@ -879,18 +878,23 @@ class SQLRepository {
     }
   }
 
-  async GetSR4User4Review(userId: string, status: number, bustTheCache: boolean) {
+  async GetSR4User4Review(userId: string, status: number, userFilter: string = null, dateFilter: string = null, bustTheCache: boolean) {
     try {
       const cacheKey = 'GetSR4User4Review' + userId + status;
-      if (!bustTheCache) {
-        const val = this.myCache.get(cacheKey);
-        if (val) {
-          return val;
-        }
-      }
+      // if (!bustTheCache) {
+      //   const val = this.myCache.get(cacheKey);
+      //   if (val) {
+      //     return val;
+      //   }
+      // }
+      userFilter = userFilter.trim();
+      dateFilter = dateFilter.trim();
       const request = await this.pool.request();
       request.input('UserId', sql.VarChar(100), userId);
       request.input('Status', sql.Int, status);
+      request.input('UserFilter', sql.VarChar, userFilter != 'null' ? userFilter : null);
+      request.input('DateFilter', sql.VarChar(50), dateFilter != 'null' ? dateFilter : null);
+
       const recordSet = await request.execute('GetSR4User4Review');
       if (recordSet) {
         this.myCache.set(cacheKey, recordSet.recordset);

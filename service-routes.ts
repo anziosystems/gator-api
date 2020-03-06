@@ -432,7 +432,7 @@ router.get('/getSR4User', validateToken, (req: any, res: any) => {
 
 router.get('/GetSR4User4Review', validateToken, (req: any, res: any) => {
   sqlRepositoy
-    .GetSR4User4Review(req.query.userid, req.query.status, Boolean(req.query.bustTheCache === 'true'))
+    .GetSR4User4Review(req.query.userid, req.query.status, req.query.userFilter, req.query.dateFilter,  Boolean(req.query.bustTheCache === 'true'))
     .then(result => {
       return res.json(result);
     })

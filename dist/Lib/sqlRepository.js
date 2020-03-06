@@ -474,6 +474,49 @@ class SQLRepository {
             }
         });
     }
+    //saveOrgChart
+    saveOrgChart(userId, org, orgChart) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.createPool();
+            const request = yield this.pool.request();
+            request.input('org', sql.VarChar(this.ORG_LEN), org);
+            request.input('userId', sql.VarChar(this.LOGIN_LEN), userId);
+            request.input('orgChart', sql.VarChar, orgChart);
+            const recordSet = yield request.execute('SaveOrgChart');
+            if (recordSet.recordset.length > 0) {
+                return recordSet.recordset;
+            }
+            else {
+                return 0;
+            }
+        });
+    }
+    //saveOrgChart
+    getOrgChart(org, bustTheCache = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.createPool();
+            const cacheKey = 'getOrgChart -' + org;
+            if (bustTheCache) {
+                this.myCache.delete(cacheKey);
+            }
+            else {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+            }
+            const request = yield this.pool.request();
+            request.input('org', sql.VarChar(this.ORG_LEN), org);
+            const recordSet = yield request.execute('getOrgChart');
+            if (recordSet.recordset.length > 0) {
+                this.myCache.set(cacheKey, recordSet.recordset);
+                return recordSet.recordset;
+            }
+            else {
+                return 0;
+            }
+        });
+    }
     getToken(id) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'GetTenant -' + id; //cacheKey is GetTenant because i am reading there cache value. This is different from norm
@@ -831,19 +874,23 @@ class SQLRepository {
             }
         });
     }
-    GetSR4User4Review(userId, status, bustTheCache) {
+    GetSR4User4Review(userId, status, userFilter = null, dateFilter = null, bustTheCache) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const cacheKey = 'GetSR4User4Review' + userId + status;
-                if (!bustTheCache) {
-                    const val = this.myCache.get(cacheKey);
-                    if (val) {
-                        return val;
-                    }
-                }
+                // if (!bustTheCache) {
+                //   const val = this.myCache.get(cacheKey);
+                //   if (val) {
+                //     return val;
+                //   }
+                // }
+                userFilter = userFilter.trim();
+                dateFilter = dateFilter.trim();
                 const request = yield this.pool.request();
                 request.input('UserId', sql.VarChar(100), userId);
                 request.input('Status', sql.Int, status);
+                request.input('UserFilter', sql.VarChar, userFilter != 'null' ? userFilter : null);
+                request.input('DateFilter', sql.VarChar(50), dateFilter != 'null' ? dateFilter : null);
                 const recordSet = yield request.execute('GetSR4User4Review');
                 if (recordSet) {
                     this.myCache.set(cacheKey, recordSet.recordset);
