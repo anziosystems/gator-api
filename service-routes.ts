@@ -442,6 +442,67 @@ router.get('/GetSR4User4Review', validateToken, (req: any, res: any) => {
     });
 });
 
+
+router.get('/getUserRole', validateToken, (req: any, res: any) => {
+  sqlRepositoy
+    .getUserRole(req.query.userid, req.query.org,  Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`getUserRole: ${err}`);
+      return res.json(err);
+    });
+});
+
+router.get('/getRole4Org', validateToken, (req: any, res: any) => {
+  sqlRepositoy
+    .getRole4Org( req.query.org,  Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`getRole4Org: ${err}`);
+      return res.json(err);
+    });
+});
+
+router.get('/saveUserRole', validateToken, (req: any, res: any) => {
+  sqlRepositoy
+    .saveUserRole(req.query.userid, req.query.org, req.query.role)
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`saveUserRole: ${err}`);
+      return res.json(err);
+    });
+});
+
+router.get('/isUserAdmin', validateToken, (req: any, res: any) => {
+  sqlRepositoy
+    .isUserAdmin(req.query.userid, req.query.org,  Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`isUserAdmin: ${err}`);
+      return res.json(err);
+    });
+});
+
+router.get('/isUserMSRAdmin', validateToken, (req: any, res: any) => {
+  sqlRepositoy
+    .isUserMSRAdmin(req.query.userid, req.query.org,  Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`isUserMSRAdmin: ${err}`);
+      return res.json(err);
+    });
+});
+
 router.get('/GetSR4Id', validateToken, (req: any, res: any) => {
   sqlRepositoy
     .getSR4Id(req.query.id, Boolean(req.query.bustTheCache === 'true'))

@@ -1162,6 +1162,126 @@ class SQLRepository {
 
     return pr;
   }
+
+  //UserRole
+  async getUserRole(loginId: string, org: string,  bustTheCache: boolean) {
+    try {
+      const cacheKey = 'getUserRole' + loginId + org;
+      if (!bustTheCache) {
+        const val = this.myCache.get(cacheKey);
+        if (val) {
+          return val;
+        }
+      }
+      const request = await this.pool.request();
+      request.input('login', sql.VarChar(100), loginId);
+      request.input('org', sql.VarChar(200), org);
+      const recordSet = await request.execute('getUserRole');
+      if (recordSet) {
+        this.myCache.set(cacheKey, recordSet.recordset);
+      }
+      return recordSet.recordset;
+    } catch (ex) {
+      console.log(`==> ${ex}`);
+      return ex;
+    }
+  }
+
+  async getRole4Org( org: string,  bustTheCache: boolean) {
+    try {
+      const cacheKey = 'getRole4Org'  + org;
+      if (!bustTheCache) {
+        const val = this.myCache.get(cacheKey);
+        if (val) {
+          return val;
+        }
+      }
+      const request = await this.pool.request();
+      request.input('org', sql.VarChar(200), org);
+      const recordSet = await request.execute('getRole4Org');
+      if (recordSet) {
+        this.myCache.set(cacheKey, recordSet.recordset);
+      }
+      return recordSet.recordset;
+    } catch (ex) {
+      console.log(`==> ${ex}`);
+      return ex;
+    }
+  }
+
+  async isUserAdmin(loginId: string, org: string,  bustTheCache: boolean) {
+    try {
+      const cacheKey = 'isUserAdmin' + loginId + org;
+      if (!bustTheCache) {
+        const val = this.myCache.get(cacheKey);
+        if (val) {
+          return val;
+        }
+      }
+      const request = await this.pool.request();
+      request.input('login', sql.VarChar(100), loginId);
+      request.input('org', sql.VarChar(200), org);
+      const recordSet = await request.execute('IsAdmin');
+      if (recordSet) {
+        this.myCache.set(cacheKey, recordSet.recordset);
+      }
+      return recordSet.recordset;
+    } catch (ex) {
+      console.log(`==> ${ex}`);
+      return ex;
+    }
+  }
+
+  async isUserMSRAdmin(loginId: string, org: string,  bustTheCache: boolean) {
+    try {
+      const cacheKey = 'isUserMSRAdmin' + loginId + org;
+      if (!bustTheCache) {
+        const val = this.myCache.get(cacheKey);
+        if (val) {
+          return val;
+        }
+      }
+      const request = await this.pool.request();
+      request.input('login', sql.VarChar(100), loginId);
+      request.input('org', sql.VarChar(200), org);
+      const recordSet = await request.execute('IsMSRAdmin');
+      if (recordSet) {
+        this.myCache.set(cacheKey, recordSet.recordset);
+      }
+      return recordSet.recordset;
+    } catch (ex) {
+      console.log(`==> ${ex}`);
+      return ex;
+    }
+  }
+
+  async saveUserRole(login: string, org: string, role: string) {
+    try {
+      if (!role) {
+        console.log (`saveUserRole => role cannot be null`);
+        return;
+      }
+      if (!login) {
+        console.log (`saveUserRole => login cannot be null`);
+        return;
+      }
+      if (!org) {
+        console.log (`saveUserRole => org cannot be null`);
+        return;
+      }
+      
+      await this.createPool();
+      const request = await this.pool.request();
+      request.input('login', sql.VarChar(this.LOGIN_LEN), login);
+      request.input('Org', sql.VarChar(this.ORG_LEN), org);
+      request.input('role', sql.VarChar(100), role);
+      const recordSet = await request.execute('SaveUserRole');
+      return recordSet.rowsAffected[0];
+    } catch (ex) {
+      return ex;
+    }
+  }
+
 }
 
 export {SQLRepository, Tenant, JiraTenant};

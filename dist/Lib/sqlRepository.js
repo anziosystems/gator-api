@@ -1166,6 +1166,110 @@ class SQLRepository {
         }
         return pr;
     }
+    //UserRole
+    getUserRole(loginId, org, bustTheCache) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const cacheKey = 'getUserRole' + loginId + org;
+                if (!bustTheCache) {
+                    const val = this.myCache.get(cacheKey);
+                    if (val) {
+                        return val;
+                    }
+                }
+                const request = yield this.pool.request();
+                request.input('login', sql.VarChar(100), loginId);
+                request.input('org', sql.VarChar(200), org);
+                const recordSet = yield request.execute('getUserRole');
+                if (recordSet) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                }
+                return recordSet.recordset;
+            }
+            catch (ex) {
+                console.log(`==> ${ex}`);
+                return ex;
+            }
+        });
+    }
+    isUserAdmin(loginId, org, bustTheCache) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const cacheKey = 'isUserAdmin' + loginId + org;
+                if (!bustTheCache) {
+                    const val = this.myCache.get(cacheKey);
+                    if (val) {
+                        return val;
+                    }
+                }
+                const request = yield this.pool.request();
+                request.input('login', sql.VarChar(100), loginId);
+                request.input('org', sql.VarChar(200), org);
+                const recordSet = yield request.execute('IsAdmin');
+                if (recordSet) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                }
+                return recordSet.recordset;
+            }
+            catch (ex) {
+                console.log(`==> ${ex}`);
+                return ex;
+            }
+        });
+    }
+    isUserMSRAdmin(loginId, org, bustTheCache) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const cacheKey = 'isUserMSRAdmin' + loginId + org;
+                if (!bustTheCache) {
+                    const val = this.myCache.get(cacheKey);
+                    if (val) {
+                        return val;
+                    }
+                }
+                const request = yield this.pool.request();
+                request.input('login', sql.VarChar(100), loginId);
+                request.input('org', sql.VarChar(200), org);
+                const recordSet = yield request.execute('IsMSRAdmin');
+                if (recordSet) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                }
+                return recordSet.recordset;
+            }
+            catch (ex) {
+                console.log(`==> ${ex}`);
+                return ex;
+            }
+        });
+    }
+    saveUserRole(login, org, role) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (!role) {
+                    console.log(`saveUserRole => role cannot be null`);
+                    return;
+                }
+                if (!login) {
+                    console.log(`saveUserRole => login cannot be null`);
+                    return;
+                }
+                if (!org) {
+                    console.log(`saveUserRole => org cannot be null`);
+                    return;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('login', sql.VarChar(this.LOGIN_LEN), login);
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                request.input('role', sql.VarChar(100), role);
+                const recordSet = yield request.execute('SaveUserRole');
+                return recordSet.rowsAffected[0];
+            }
+            catch (ex) {
+                return ex;
+            }
+        });
+    }
 }
 exports.SQLRepository = SQLRepository;
 //# sourceMappingURL=sqlRepository.js.map
