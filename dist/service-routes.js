@@ -541,5 +541,73 @@ router.post('/GetOrgChart', validateToken, (req, res) => {
         return res.json(err);
     });
 });
+router.get('/getUserRole', validateToken, (req, res) => {
+    sqlRepositoy
+        .getUserRole(req.query.userid, req.query.org, Boolean(req.query.bustTheCache === 'true'))
+        .then(result => {
+        return res.json(result);
+    })
+        .catch(err => {
+        console.log(`getUserRole: ${err}`);
+        return res.json(err);
+    });
+});
+router.get('/getRole4Org', validateToken, (req, res) => {
+    sqlRepositoy
+        .getRole4Org(req.query.org, Boolean(req.query.bustTheCache === 'true'))
+        .then(result => {
+        return res.json(result);
+    })
+        .catch(err => {
+        console.log(`getRole4Org: ${err}`);
+        return res.json(err);
+    });
+});
+router.post('/saveUserRole', validateToken, (req, res) => {
+    //check the caller and reject the call if he is not already an admin
+    //only Admin can add userroles
+    let tenantId = getTenant(req); //GetTenantId from req
+    sqlRepositoy.getGitLoggedInUSerDetails(tenantId, false).then(result => {
+        sqlRepositoy.isUserAdmin(result.UserName, req.body.org, false).then(r => {
+            //check r here, if tenant is an admin let the call go thru, else reject
+            if (r === 1) {
+                sqlRepositoy
+                    .saveUserRole(req.body.userId, req.body.org, req.body.role)
+                    .then(result => {
+                    return res.json(result);
+                })
+                    .catch(err => {
+                    console.log(`saveUserRole: ${err}`);
+                    return res.json(err);
+                });
+            }
+            else {
+                return res.json({ val: tenantId, code: 401, message: 'Unauthorize: Caller not admin' });
+            }
+        });
+    });
+});
+router.get('/isUserAdmin', validateToken, (req, res) => {
+    sqlRepositoy
+        .isUserAdmin(req.query.userid, req.query.org, Boolean(req.query.bustTheCache === 'true'))
+        .then(result => {
+        return res.json(result);
+    })
+        .catch(err => {
+        console.log(`isUserAdmin: ${err}`);
+        return res.json(err);
+    });
+});
+router.get('/isUserMSRAdmin', validateToken, (req, res) => {
+    sqlRepositoy
+        .isUserMSRAdmin(req.query.userid, req.query.org, Boolean(req.query.bustTheCache === 'true'))
+        .then(result => {
+        return res.json(result);
+    })
+        .catch(err => {
+        console.log(`isUserMSRAdmin: ${err}`);
+        return res.json(err);
+    });
+});
 module.exports = router;
 //# sourceMappingURL=service-routes.js.map

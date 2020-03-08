@@ -432,73 +432,12 @@ router.get('/getSR4User', validateToken, (req: any, res: any) => {
 
 router.get('/GetSR4User4Review', validateToken, (req: any, res: any) => {
   sqlRepositoy
-    .GetSR4User4Review(req.query.userid, req.query.status, req.query.userFilter, req.query.dateFilter,  Boolean(req.query.bustTheCache === 'true'))
+    .GetSR4User4Review(req.query.userid, req.query.status, req.query.userFilter, req.query.dateFilter, Boolean(req.query.bustTheCache === 'true'))
     .then(result => {
       return res.json(result);
     })
     .catch(err => {
       console.log(`GetSR4User4Review: ${err}`);
-      return res.json(err);
-    });
-});
-
-
-router.get('/getUserRole', validateToken, (req: any, res: any) => {
-  sqlRepositoy
-    .getUserRole(req.query.userid, req.query.org,  Boolean(req.query.bustTheCache === 'true'))
-    .then(result => {
-      return res.json(result);
-    })
-    .catch(err => {
-      console.log(`getUserRole: ${err}`);
-      return res.json(err);
-    });
-});
-
-router.get('/getRole4Org', validateToken, (req: any, res: any) => {
-  sqlRepositoy
-    .getRole4Org( req.query.org,  Boolean(req.query.bustTheCache === 'true'))
-    .then(result => {
-      return res.json(result);
-    })
-    .catch(err => {
-      console.log(`getRole4Org: ${err}`);
-      return res.json(err);
-    });
-});
-
-router.get('/saveUserRole', validateToken, (req: any, res: any) => {
-  sqlRepositoy
-    .saveUserRole(req.query.userid, req.query.org, req.query.role)
-    .then(result => {
-      return res.json(result);
-    })
-    .catch(err => {
-      console.log(`saveUserRole: ${err}`);
-      return res.json(err);
-    });
-});
-
-router.get('/isUserAdmin', validateToken, (req: any, res: any) => {
-  sqlRepositoy
-    .isUserAdmin(req.query.userid, req.query.org,  Boolean(req.query.bustTheCache === 'true'))
-    .then(result => {
-      return res.json(result);
-    })
-    .catch(err => {
-      console.log(`isUserAdmin: ${err}`);
-      return res.json(err);
-    });
-});
-
-router.get('/isUserMSRAdmin', validateToken, (req: any, res: any) => {
-  sqlRepositoy
-    .isUserMSRAdmin(req.query.userid, req.query.org,  Boolean(req.query.bustTheCache === 'true'))
-    .then(result => {
-      return res.json(result);
-    })
-    .catch(err => {
-      console.log(`isUserMSRAdmin: ${err}`);
       return res.json(err);
     });
 });
@@ -586,13 +525,12 @@ router.get('/SetupWebHook', validateToken, (req: any, res: any) => {
     });
 });
 
-
 router.post('/SaveOrgChart', validateToken, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
   sqlRepositoy
-    .saveOrgChart( req.body.userId, req.body.org,  req.body.orgChart)
+    .saveOrgChart(req.body.userId, req.body.org, req.body.orgChart)
     .then(result => {
       return res.json(result);
     })
@@ -613,6 +551,79 @@ router.post('/GetOrgChart', validateToken, (req: any, res: any) => {
     })
     .catch(err => {
       console.log(`GetOrgChart: ${err}`);
+      return res.json(err);
+    });
+});
+
+router.get('/getUserRole', validateToken, (req: any, res: any) => {
+  sqlRepositoy
+    .getUserRole(req.query.userid, req.query.org, Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`getUserRole: ${err}`);
+      return res.json(err);
+    });
+});
+
+router.get('/getRole4Org', validateToken, (req: any, res: any) => {
+  sqlRepositoy
+    .getRole4Org(req.query.org, Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`getRole4Org: ${err}`);
+      return res.json(err);
+    });
+});
+
+router.post('/saveUserRole', validateToken, (req: any, res: any) => {
+  //check the caller and reject the call if he is not already an admin
+  //only Admin can add userroles
+
+  let tenantId = getTenant(req); //GetTenantId from req
+  sqlRepositoy.getGitLoggedInUSerDetails(tenantId, false).then(result => {
+    sqlRepositoy.isUserAdmin(result.UserName, req.body.org, false).then(r => {
+      //check r here, if tenant is an admin let the call go thru, else reject
+      if (r === 1) {
+        sqlRepositoy
+          .saveUserRole(req.body.userId, req.body.org, req.body.role)
+          .then(result => {
+            return res.json(result);
+          })
+          .catch(err => {
+            console.log(`saveUserRole: ${err}`);
+            return res.json(err);
+          });
+      } else {
+        return res.json({val: tenantId, code: 401, message: 'Unauthorize: Caller not admin'});
+      }
+    });
+  });
+});
+
+router.get('/isUserAdmin', validateToken, (req: any, res: any) => {
+  sqlRepositoy
+    .isUserAdmin(req.query.userid, req.query.org, Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`isUserAdmin: ${err}`);
+      return res.json(err);
+    });
+});
+
+router.get('/isUserMSRAdmin', validateToken, (req: any, res: any) => {
+  sqlRepositoy
+    .isUserMSRAdmin(req.query.userid, req.query.org, Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`isUserMSRAdmin: ${err}`);
       return res.json(err);
     });
 });

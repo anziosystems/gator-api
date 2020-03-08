@@ -1164,7 +1164,7 @@ class SQLRepository {
   }
 
   //UserRole
-  async getUserRole(loginId: string, org: string,  bustTheCache: boolean) {
+  async getUserRole(loginId: string, org: string, bustTheCache: boolean) {
     try {
       const cacheKey = 'getUserRole' + loginId + org;
       if (!bustTheCache) {
@@ -1187,9 +1187,9 @@ class SQLRepository {
     }
   }
 
-  async getRole4Org( org: string,  bustTheCache: boolean) {
+  async getRole4Org(org: string, bustTheCache: boolean) {
     try {
-      const cacheKey = 'getRole4Org'  + org;
+      const cacheKey = 'getRole4Org' + org;
       if (!bustTheCache) {
         const val = this.myCache.get(cacheKey);
         if (val) {
@@ -1209,7 +1209,7 @@ class SQLRepository {
     }
   }
 
-  async isUserAdmin(loginId: string, org: string,  bustTheCache: boolean) {
+  async isUserAdmin(loginId: string, org: string, bustTheCache: boolean) {
     try {
       const cacheKey = 'isUserAdmin' + loginId + org;
       if (!bustTheCache) {
@@ -1223,16 +1223,16 @@ class SQLRepository {
       request.input('org', sql.VarChar(200), org);
       const recordSet = await request.execute('IsAdmin');
       if (recordSet) {
-        this.myCache.set(cacheKey, recordSet.recordset);
+        this.myCache.set(cacheKey, recordSet.returnValue);//1 is true and zero is false
       }
-      return recordSet.recordset;
+      return recordSet.returnValue;
     } catch (ex) {
       console.log(`==> ${ex}`);
       return ex;
     }
   }
 
-  async isUserMSRAdmin(loginId: string, org: string,  bustTheCache: boolean) {
+  async isUserMSRAdmin(loginId: string, org: string, bustTheCache: boolean) {
     try {
       const cacheKey = 'isUserMSRAdmin' + loginId + org;
       if (!bustTheCache) {
@@ -1258,18 +1258,18 @@ class SQLRepository {
   async saveUserRole(login: string, org: string, role: string) {
     try {
       if (!role) {
-        console.log (`saveUserRole => role cannot be null`);
+        console.log(`saveUserRole => role cannot be null`);
         return;
       }
       if (!login) {
-        console.log (`saveUserRole => login cannot be null`);
+        console.log(`saveUserRole => login cannot be null`);
         return;
       }
       if (!org) {
-        console.log (`saveUserRole => org cannot be null`);
+        console.log(`saveUserRole => org cannot be null`);
         return;
       }
-      
+
       await this.createPool();
       const request = await this.pool.request();
       request.input('login', sql.VarChar(this.LOGIN_LEN), login);
@@ -1278,10 +1278,10 @@ class SQLRepository {
       const recordSet = await request.execute('SaveUserRole');
       return recordSet.rowsAffected[0];
     } catch (ex) {
+      console.log (ex);
       return ex;
     }
   }
-
 }
 
 export {SQLRepository, Tenant, JiraTenant};

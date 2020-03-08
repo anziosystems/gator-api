@@ -1192,6 +1192,30 @@ class SQLRepository {
             }
         });
     }
+    getRole4Org(org, bustTheCache) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const cacheKey = 'getRole4Org' + org;
+                if (!bustTheCache) {
+                    const val = this.myCache.get(cacheKey);
+                    if (val) {
+                        return val;
+                    }
+                }
+                const request = yield this.pool.request();
+                request.input('org', sql.VarChar(200), org);
+                const recordSet = yield request.execute('getRole4Org');
+                if (recordSet) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                }
+                return recordSet.recordset;
+            }
+            catch (ex) {
+                console.log(`==> ${ex}`);
+                return ex;
+            }
+        });
+    }
     isUserAdmin(loginId, org, bustTheCache) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -1207,9 +1231,9 @@ class SQLRepository {
                 request.input('org', sql.VarChar(200), org);
                 const recordSet = yield request.execute('IsAdmin');
                 if (recordSet) {
-                    this.myCache.set(cacheKey, recordSet.recordset);
+                    this.myCache.set(cacheKey, recordSet.returnValue); //1 is true and zero is false
                 }
-                return recordSet.recordset;
+                return recordSet.returnValue;
             }
             catch (ex) {
                 console.log(`==> ${ex}`);
@@ -1266,6 +1290,7 @@ class SQLRepository {
                 return recordSet.rowsAffected[0];
             }
             catch (ex) {
+                console.log(ex);
                 return ex;
             }
         });
