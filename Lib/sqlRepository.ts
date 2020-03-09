@@ -1223,7 +1223,7 @@ class SQLRepository {
       request.input('org', sql.VarChar(200), org);
       const recordSet = await request.execute('IsAdmin');
       if (recordSet) {
-        this.myCache.set(cacheKey, recordSet.returnValue);//1 is true and zero is false
+        this.myCache.set(cacheKey, recordSet.returnValue); //1 is true and zero is false
       }
       return recordSet.returnValue;
     } catch (ex) {
@@ -1271,6 +1271,7 @@ class SQLRepository {
       }
 
       await this.createPool();
+
       const request = await this.pool.request();
       request.input('login', sql.VarChar(this.LOGIN_LEN), login);
       request.input('Org', sql.VarChar(this.ORG_LEN), org);
@@ -1278,7 +1279,36 @@ class SQLRepository {
       const recordSet = await request.execute('SaveUserRole');
       return recordSet.rowsAffected[0];
     } catch (ex) {
-      console.log (ex);
+      console.log(ex);
+      return ex;
+    }
+  }
+
+  async deleteUserRole(login: string, org: string, role: string) {
+    try {
+      if (!role) {
+        console.log(`saveUserRole => role cannot be null`);
+        return;
+      }
+      if (!login) {
+        console.log(`saveUserRole => login cannot be null`);
+        return;
+      }
+      if (!org) {
+        console.log(`saveUserRole => org cannot be null`);
+        return;
+      }
+
+      await this.createPool();
+
+      const request = await this.pool.request();
+      request.input('login', sql.VarChar(this.LOGIN_LEN), login);
+      request.input('Org', sql.VarChar(this.ORG_LEN), org);
+      request.input('Role', sql.VarChar(100), role);
+      const recordSet = await request.execute('DeleteUserRole');
+      return recordSet.rowsAffected[0];
+    } catch (ex) {
+      console.log(ex);
       return ex;
     }
   }

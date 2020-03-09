@@ -604,6 +604,33 @@ router.post('/saveUserRole', validateToken, (req: any, res: any) => {
   });
 });
 
+router.post('/deleteUserRole', validateToken, (req: any, res: any) => {
+  //check the caller and reject the call if he is not already an admin
+  //only Admin can add userroles
+
+  let tenantId = getTenant(req); //GetTenantId from req
+  sqlRepositoy.getGitLoggedInUSerDetails(tenantId, false).then(result => {
+    sqlRepositoy.isUserAdmin(result.UserName, req.body.org, false).then(r => {
+      //check r here, if tenant is an admin let the call go thru, else reject
+      if (r === 1) {
+        sqlRepositoy
+          .deleteUserRole(req.body.userId, req.body.org, req.body.role)
+          .then(result => {
+            return res.json(result);
+          })
+          .catch(err => {
+            console.log(`deleteUserRole: ${err}`);
+            return res.json(err);
+          });
+      } else {
+        return res.json({val: tenantId, code: 401, message: 'Unauthorize: Caller not admin'});
+      }
+    });
+  });
+});
+
+
+
 router.get('/isUserAdmin', validateToken, (req: any, res: any) => {
   sqlRepositoy
     .isUserAdmin(req.query.userid, req.query.org, Boolean(req.query.bustTheCache === 'true'))

@@ -1295,6 +1295,35 @@ class SQLRepository {
             }
         });
     }
+    deleteUserRole(login, org, role) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (!role) {
+                    console.log(`saveUserRole => role cannot be null`);
+                    return;
+                }
+                if (!login) {
+                    console.log(`saveUserRole => login cannot be null`);
+                    return;
+                }
+                if (!org) {
+                    console.log(`saveUserRole => org cannot be null`);
+                    return;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('login', sql.VarChar(this.LOGIN_LEN), login);
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                request.input('Role', sql.VarChar(100), role);
+                const recordSet = yield request.execute('DeleteUserRole');
+                return recordSet.rowsAffected[0];
+            }
+            catch (ex) {
+                console.log(ex);
+                return ex;
+            }
+        });
+    }
 }
 exports.SQLRepository = SQLRepository;
 //# sourceMappingURL=sqlRepository.js.map
