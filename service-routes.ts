@@ -569,7 +569,7 @@ router.get('/getUserRole', validateToken, (req: any, res: any) => {
 
 router.get('/getRole4Org', validateToken, (req: any, res: any) => {
   sqlRepositoy
-    .getRole4Org(req.query.org, Boolean(req.query.bustTheCache === 'true'))
+    .getRole4Org(req.query.org, true)
     .then(result => {
       return res.json(result);
     })
