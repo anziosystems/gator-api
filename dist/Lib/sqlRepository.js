@@ -1079,7 +1079,7 @@ class SQLRepository {
             }
         });
     }
-    saveDevs(tenantId, org, devs) {
+    saveDevs(org, devs) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 if (devs === undefined)
@@ -1093,7 +1093,6 @@ class SQLRepository {
                 for (const d of devs) {
                     let dev = d;
                     //console.log(`==> SaveDev = org: ${org} dev - Name: ${dev.name} \t| Email: ${dev.email} \t| login: ${dev.login} \t| ${dev.avatarUrl}`);
-                    request.input('TenantId', sql.Int, Number(tenantId));
                     request.input('Org', sql.VarChar(this.ORG_LEN), org); //
                     request.input('email', sql.VarChar(200), dev.email); //rsarosh@hotmail.com
                     request.input('name', sql.VarChar(200), dev.name); //Rafat Sarosh

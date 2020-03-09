@@ -1,8 +1,9 @@
 Developers
 
-Developer table is updated by calling git for the developer. In developer table, the tenant
-id is also saved, this is the tenantId of the caller. If rsarosh is logged in and i have a 
-id of 4567 then developer table  will store all the developer for 4567, then if other  userlogged
-in and his tenantId is 7777, then developer will again have all the developers for 7777.
-This is keeping many developers for many times
+Developer table is updated by calling git for the developer. 
+
+Developer table is authoratative list of all the dev in an org. This table is used to build the view
+vwOpenClosedPR
+
+
 

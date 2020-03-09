@@ -147,7 +147,7 @@ class GitRepository {
                         }
                         else {
                             // console.log(`getDevsFromGit: ${result.data.organization.membersWithRole.nodes.length} dev found for org: ${orgName}`);
-                            yield this.sqlRepository.saveDevs(tenantId, orgName, result.data.organization.membersWithRole.nodes);
+                            yield this.sqlRepository.saveDevs(orgName, result.data.organization.membersWithRole.nodes);
                             yield this.sqlRepository.saveStatus(tenantId, 'GET-DEV-SUCCESS', `${result.data.organization.membersWithRole.nodes.length} Devs updated for ${orgName}`);
                             if (result.data.organization.membersWithRole.pageInfo) {
                                 const pageInfo = result.data.organization.membersWithRole.pageInfo;
