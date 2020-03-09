@@ -164,7 +164,7 @@ class GitRepository {
                     }
                 }));
                 //git call has put the org in SQL, now lets get it from (cache).
-                return yield this.sqlRepository.getDevs(tenantId, org);
+                return yield this.sqlRepository.GetOrg4Tenant(tenantId, org);
             }
             catch (ex) {
                 console.log(ex);

@@ -231,13 +231,13 @@ class SQLRepository {
                 return false;
         });
     }
-    getDevs(tenantId, org) {
+    GetOrg4Tenant(tenantId, org) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();
             const request = yield this.pool.request();
             request.input('org', sql.VarChar(this.ORG_LEN), org);
             request.input('TenantId', sql.Int, Number(tenantId));
-            const recordSet = yield request.execute('GetDevs');
+            const recordSet = yield request.execute('GetOrg4Tenant');
             return recordSet.recordset;
         });
     }

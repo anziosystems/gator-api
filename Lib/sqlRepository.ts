@@ -249,12 +249,12 @@ class SQLRepository {
     } else return false;
   }
 
-  async getDevs(tenantId: string, org: string) {
+  async GetOrg4Tenant(tenantId: string, org: string) {
     await this.createPool();
     const request = await this.pool.request();
     request.input('org', sql.VarChar(this.ORG_LEN), org);
     request.input('TenantId', sql.Int, Number(tenantId));
-    const recordSet = await request.execute('GetDevs');
+    const recordSet = await request.execute('GetOrg4Tenant');
     return recordSet.recordset;
   }
 
