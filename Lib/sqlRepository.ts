@@ -473,7 +473,7 @@ class SQLRepository {
     await this.createPool();
     const cacheKey = 'GetPR4Repo -' + org + repo;
     if (bustTheCache) {
-      this.myCache.delete(cacheKey);
+      this.myCache.del(cacheKey);
     } else {
       const val = this.myCache.get(cacheKey);
       if (val) {
@@ -516,7 +516,7 @@ class SQLRepository {
     await this.createPool();
     const cacheKey = 'getOrgChart -' + org;
     if (bustTheCache) {
-      this.myCache.delete(cacheKey);
+      this.myCache.del(cacheKey);
     } else {
       const val = this.myCache.get(cacheKey);
       if (val) {
@@ -881,12 +881,6 @@ class SQLRepository {
   async GetSR4User4Review(userId: string, status: number, userFilter: string = null, dateFilter: string = null, bustTheCache: boolean) {
     try {
       const cacheKey = 'GetSR4User4Review' + userId + status;
-      // if (!bustTheCache) {
-      //   const val = this.myCache.get(cacheKey);
-      //   if (val) {
-      //     return val;
-      //   }
-      // }
       userFilter = userFilter.trim();
       dateFilter = dateFilter.trim();
       const request = await this.pool.request();

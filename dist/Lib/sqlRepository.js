@@ -453,7 +453,7 @@ class SQLRepository {
             yield this.createPool();
             const cacheKey = 'GetPR4Repo -' + org + repo;
             if (bustTheCache) {
-                this.myCache.delete(cacheKey);
+                this.myCache.del(cacheKey);
             }
             else {
                 const val = this.myCache.get(cacheKey);
@@ -497,7 +497,7 @@ class SQLRepository {
             yield this.createPool();
             const cacheKey = 'getOrgChart -' + org;
             if (bustTheCache) {
-                this.myCache.delete(cacheKey);
+                this.myCache.del(cacheKey);
             }
             else {
                 const val = this.myCache.get(cacheKey);
@@ -878,12 +878,6 @@ class SQLRepository {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const cacheKey = 'GetSR4User4Review' + userId + status;
-                // if (!bustTheCache) {
-                //   const val = this.myCache.get(cacheKey);
-                //   if (val) {
-                //     return val;
-                //   }
-                // }
                 userFilter = userFilter.trim();
                 dateFilter = dateFilter.trim();
                 const request = yield this.pool.request();

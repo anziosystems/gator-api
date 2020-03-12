@@ -525,7 +525,7 @@ router.get('/SetupWebHook', validateToken, (req: any, res: any) => {
     });
 });
 
-router.post('/SaveOrgChart', validateToken, (req: any, res: any) => {
+router.post('/saveOrgChart', validateToken, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
@@ -535,17 +535,17 @@ router.post('/SaveOrgChart', validateToken, (req: any, res: any) => {
       return res.json(result);
     })
     .catch(err => {
-      console.log(`SaveOrgChart: ${err}`);
+      console.log(`saveOrgChart: ${err}`);
       return res.json(err);
     });
 });
 
-router.post('/GetOrgChart', validateToken, (req: any, res: any) => {
+router.get('/getOrgChart', validateToken, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
   sqlRepositoy
-    .getOrgChart(req.body.org, Boolean(req.query.bustTheCache === 'true'))
+    .getOrgChart(req.query.org, Boolean(req.query.bustTheCache === 'true'))
     .then(result => {
       return res.json(result);
     })
