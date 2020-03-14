@@ -529,15 +529,25 @@ router.post('/saveOrgChart', validateToken, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
-  sqlRepositoy
-    .saveOrgChart(req.body.userId, req.body.org, req.body.orgChart)
-    .then(result => {
-      return res.json(result);
-    })
-    .catch(err => {
-      console.log(`saveOrgChart: ${err}`);
-      return res.json(err);
+  let tenantId = getTenant(req); //GetTenantId from req
+  sqlRepositoy.getGitLoggedInUSerDetails(tenantId, false).then(result => {
+    sqlRepositoy.isUserAdmin(result.UserName, req.body.org, false).then(r => {
+      //check r here, if tenant is an admin let the call go thru, else reject
+      if (r === 1) {
+        sqlRepositoy
+          .saveOrgChart(req.body.userId, req.body.org, req.body.orgChart)
+          .then(result => {
+            return res.json(result);
+          })
+          .catch(err => {
+            console.log(`saveOrgChart: ${err}`);
+            return res.json(err);
+          });
+      } else {
+        return res.json({val: tenantId, code: 401, message: 'Unauthorize: Caller not Admin'});
+      }
     });
+  });
 });
 
 router.get('/getOrgChart', validateToken, (req: any, res: any) => {
@@ -628,8 +638,6 @@ router.post('/deleteUserRole', validateToken, (req: any, res: any) => {
     });
   });
 });
-
-
 
 router.get('/isUserAdmin', validateToken, (req: any, res: any) => {
   sqlRepositoy
