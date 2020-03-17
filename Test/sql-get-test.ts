@@ -21,7 +21,7 @@ describe('TopDevForLastXDays', () => {
   });
 });
 
-describe.only('GetOrg', () => {
+describe('GetOrg', () => {
   it('should return rowsAffected', async () => {
     const gitRepository = new GitRepository();
     await gitRepository.getOrg('1040817', true, true).then(result => {
@@ -38,6 +38,17 @@ describe('GetRepos', () => {
     });
   });
 });
+
+//getGitHygiene
+describe.only('getGitHygiene', () => {
+  it('should return rowsAffected', async () => {
+    const gitRepository = new GitRepository();
+    await gitRepository.getGitHygiene('1040817', 'LabShare').then(result => {
+      expect(result).to.greaterThan(0);
+    });
+  });
+});
+
 
 describe('getDevs4Org', () => {
   it('should return rowsAffected', async () => {

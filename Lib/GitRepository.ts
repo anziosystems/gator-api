@@ -27,7 +27,7 @@ class GitRepository {
     console.log('==>checking hook ' + url);
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     this.sqlRepository.saveStatus(tenantId, 'CHECK-HOOK', ' ');
-    const reqHeader = await this.makeGitRequest(tenantId, 'GET', url, 'GET');
+    const reqHeader = await this.makeGitRequestHeader(tenantId, 'GET', url, 'GET');
     try {
       return new Promise((resolve, reject) => {
         request(reqHeader, (error: any, response: any, body: any) => {
@@ -66,7 +66,7 @@ class GitRepository {
       `\\") { name            pullRequests(last: 25) {  nodes { id  url  state  title   permalink   createdAt  body  repository { name } author                                                                                                                                                                                { login  avatarUrl url                                           }            }          }        }      }    }  }\",\"variables\":{}}`;
 
     try {
-      request(await this.makeGitRequest(tenantId, graphQL), async (error: any, response: any, body: any) => {
+      request(await this.makeGitRequestHeader(tenantId, graphQL), async (error: any, response: any, body: any) => {
         if (response.statusCode === 200) {
           await this.sqlRepository.savePR4Repo(org, repo, body);
           // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -125,7 +125,7 @@ class GitRepository {
       graphQL = `{\"query\":\"query {  organization(login: \\"${orgName}\\") {  name  membersWithRole(first: 100) { nodes { name login  email  avatarUrl  } pageInfo { endCursor  hasNextPage }}}}\",\"variables\":{}}`;
     }
     try {
-      request(await this.makeGitRequest(tenantId, graphQL), async (error: any, response: any, body: any) => {
+      request(await this.makeGitRequestHeader(tenantId, graphQL), async (error: any, response: any, body: any) => {
         if (response.statusCode === 400) {
           console.log(`getDevsFromGit: No Devs found for org: ${orgName} - ${response.body}`);
           // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -171,7 +171,7 @@ class GitRepository {
     }
     try {
       request(
-        await this.makeGitRequest(tenantId, graphQL),
+        await this.makeGitRequestHeader(tenantId, graphQL),
 
         async (error: any, response: any, body: any) => {
           if (response.statusCode === 200) {
@@ -230,7 +230,7 @@ class GitRepository {
     }
   }
 
-  async makeGitRequest(tenantId: string, graphQL: string, gUri = 'https://api.github.com/graphql', method = 'POST') {
+  async makeGitRequestHeader(tenantId: string, graphQL: string = '', gUri = 'https://api.github.com/graphql', method = 'POST') {
     try {
       const token = 'Bearer ' + (await this.sqlRepository.getToken(Number(tenantId)));
       const header = {
@@ -248,7 +248,25 @@ class GitRepository {
 
       return header;
     } catch (ex) {
-      console.log('MakeGitRequest: ' + ex + ' tenantId: ' + tenantId);
+      console.log('makeGitRequestHeader: ' + ex + ' tenantId: ' + tenantId);
+    }
+  }
+
+  async makeGitRequestHeaderLight(tenantId: string) {
+    try {
+      const token = 'Bearer ' + (await this.sqlRepository.getToken(Number(tenantId)));
+      const header = {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: token,
+          Accept: 'application/vnd.github.machine-man-preview+json',
+          'cache-control': 'no-cache',
+          'user-agent': 'Gator',
+        },
+      };
+      return header.headers;
+    } catch (ex) {
+      console.log('makeGitRequestHeaderLight: ' + ex + ' tenantId: ' + tenantId);
     }
   }
 
@@ -278,7 +296,7 @@ class GitRepository {
     }`;
 
     try {
-      await request(await this.makeGitRequest(tenantId, graphQL, 'https://api.github.com/orgs/' + org + '/hooks'), (error: any, response: any, body: any) => {
+      await request(await this.makeGitRequestHeader(tenantId, graphQL, 'https://api.github.com/orgs/' + org + '/hooks'), (error: any, response: any, body: any) => {
         if (response.statusCode === 201) {
           // eslint-disable-next-line @typescript-eslint/no-floating-promises
           this.sqlRepository.saveStatus(tenantId, 'SET-HOOK-SUCCESS-' + org.substr(0, 20), ' ');
@@ -326,7 +344,7 @@ class GitRepository {
     //Lets go to git
     const graphQL = `{\"query\": \"query { viewer {name organizations(last: 100) { nodes { name url }} }}\",\"variables\":{}}`;
     /* Without this promise wrap this code will not work */
-    const gitReq = await this.makeGitRequest(tenantId, graphQL);
+    const gitReq = await this.makeGitRequestHeader(tenantId, graphQL);
     return new Promise((resolve, reject) => {
       try {
         request(gitReq, async (error: any, response: any, body: any) => {
@@ -360,6 +378,187 @@ class GitRepository {
     }).catch(ex => {
       console.log(`getOrg:  ${ex}`);
     });
+  }
+
+  async getGitHygiene(tenantId: string, org: string): Promise<any> {
+    const rp = require('request-promise');
+    const yaml = require('js-yaml');
+    const fs = require('fs');
+    const getUrlFile = (repo: any, file: any) => `https://api.github.com/repos/${org}/${repo}/contents/${file}`;
+    const getUrlReposAtPage = (page: number) => `https://api.github.com/orgs/${org}/repos?page=${page}&per_page=10`;
+    const getUrlProtection = (repo: any, branch: string) => `https://api.github.com/repos/${org}/${repo}/branches/${branch}/protection`;
+
+    const checkFile = async (repo: any, file: string) => {
+      const options = {url: getUrlFile(repo, file), headers: await this.makeGitRequestHeaderLight(tenantId)};
+      try {
+        await rp.get(options);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    };
+
+    const getFile = async (repo: any, file: string) => {
+      const options = {url: getUrlFile(repo, file), headers: await this.makeGitRequestHeaderLight(tenantId)};
+      let res;
+      try {
+        res = await rp.get(options);
+        const parsed = JSON.parse(res);
+        const content64 = parsed.content;
+        const text = Buffer.from(content64, 'base64').toString('ascii');
+        return text;
+      } catch (e) {
+        return false;
+      }
+    };
+
+    const checkBranchRules = async (name: any) => {
+      const url = getUrlProtection(name, 'master');
+      const options = {url: url, headers: await this.makeGitRequestHeaderLight(tenantId)};
+      try {
+        const res = await rp.get(options);
+        return true;
+      } catch (e) {
+        const message = e.error;
+        if (e.statusCode === 404 && message === 'Branch not protected') {
+          return false;
+        } else {
+          return true;
+        }
+      }
+    };
+
+    const contains = (a: any[], b: string | any[]) => Array.isArray(a) && a.some(e => b.indexOf(e) > -1);
+
+    const repos = await this.getRepos(tenantId, org, false, false);
+    const names2 = await repos.map((x: any) => {
+      return x.RepoName;
+    });
+    console.log('Total repos:', repos.length);
+    const names = names2.slice (1,5); //REMOVE AFTER TESTING
+    names.sort(function(a: any, b: any) {
+      return a.toLowerCase().localeCompare(b.toLowerCase());
+    });
+    const result: any = {};
+
+    for (const [index, name] of names.entries()) {
+      // result.push(name);
+      result[name] = [];
+      let packageJson: string | false;
+      let travis;
+      [result[name]['hasCodeOwners'], result[name]['hasBranchProtection'], travis, packageJson] = await Promise.all([checkFile(name, 'CODEOWNERS'), checkBranchRules(name), getFile(name, '.travis.yml'), getFile(name, 'package.json')]);
+
+      result[name]['hasPackageJson'] = false;
+      result[name]['hasScripts'] = false;
+      result[name]['hasScriptLint'] = 'n/a';
+      result[name]['hasScriptPrettier'] = 'n/a';
+      result[name]['hasScriptEslint'] = 'n/a';
+      result[name]['hasScriptTslint'] = 'n/a';
+      result[name]['hasScriptTests'] = 'n/a';
+      result[name]['hasScriptCommitLint'] = 'n/a';
+      result[name]['hasTravis'] = false;
+      result[name]['hasTravisTest'] = 'n/a';
+      result[name]['hasTravisCoverage'] = 'n/a';
+      result[name]['hasTravisLint'] = 'n/a';
+      result[name]['hasTravisCodecov'] = 'n/a';
+
+      if (packageJson) {
+        const json = JSON.parse(packageJson);
+        result[name]['hasPackageJson'] = true;
+
+        if (typeof json.scripts === 'object') {
+          result[name]['hasScripts'] = true;
+          result[name]['hasScriptLint'] = !!json.scripts.lint;
+          result[name]['hasScriptPrettier'] = !!json.scripts.prettier;
+          result[name]['hasScriptEslint'] = !!json.scripts.eslint;
+          result[name]['hasScriptTslint'] = !!json.scripts.tslint;
+          result[name]['hasScriptTests'] = !!json.scripts.test;
+          result[name]['hasScriptCommitLint'] = !!json.scripts.commitmsg;
+        }
+      }
+
+      if (travis) {
+        result[name]['hasTravis'] = true;
+        try {
+          const yml = yaml.load(travis);
+          console.log(`'travis => processing ${name}`);
+          result[name]['hasTravisTest'] = () => {
+            try {
+              contains(yml.install, ['xvfb-run npm test', 'npm run test', 'ng test']) || contains(yml.script, ['xvfb-run npm test', 'npm run test', 'ng test']);
+            } catch (ex) {
+              return false;
+            }
+          };
+          result[name]['hasTravisCoverage'] = () => {
+            try {
+              contains(yml.install, ['xvfb-run npm run coverage', 'npm run coverage']) || contains(yml.script, ['xvfb-run npm run coverage', 'npm run coverage']);
+            } catch (ex) {
+              return false;
+            }
+          };
+          result[name]['hasTravisLint'] = () => {
+            try {
+              contains(yml.install, ['xvfb-run npm lint', 'npm run lint', 'ng lint']) || contains(yml.script, ['xvfb-run npm lint', 'npm run lint', 'ng lint']);
+            } catch (ex) {
+              return false;
+            }
+          };
+          result[name]['hasTravisCodecov'] = () => {
+            try {
+              contains(yml.script, ['codecov']);
+            } catch (ex) {
+              return false;
+            }
+          };
+        } catch (ex) {
+          console.log(ex.message);
+          result[name]['hasTravisTest'] = false;
+          result[name]['hasTravisCoverage'] = false;
+          result[name]['hasTravisLint'] = false;
+          result[name]['hasTravisCodecov'] = false;
+        }
+      }
+    }
+
+    const rows: any = []
+    const rowNames = Object.keys(result[names[0]]);
+    /*
+    result => 
+      Object {banking: Array(0), IMOD: Array(0), line-crush-backend: Array(0), X: Array(0)}
+      banking:Array(0) [, …]
+        hasBranchProtection:true
+        hasCodeOwners:true
+        hasPackageJson:true
+        hasScriptCommitLint:false
+        hasScriptEslint:false
+        hasScriptLint:true
+        hasScriptPrettier:false
+        hasScripts:true
+        hasScriptTests:true
+        hasScriptTslint:false
+        hasTravis:false
+        hasTravisCodecov:"n/a"
+        hasTravisCoverage:"n/a"
+        hasTravisLint:"n/a"
+        hasTravisTest:"n/a"
+        length:0
+    */
+    rowNames.forEach((n, index) => {
+      rows[index] = [n];
+      names.forEach((repo: string | number) => {
+        let val = '';
+        if (result[repo][n] === true) {
+          val = 'Y';
+        }
+        if (result[repo][n] === false) {
+          val = 'N';
+        }
+        rows[index].push(val);
+      });
+    });
+    rows.unshift(names);
+    rows[0].unshift('Repo');
+    return rows;
   }
 }
 

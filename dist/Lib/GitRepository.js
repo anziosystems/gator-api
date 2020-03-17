@@ -26,7 +26,7 @@ class GitRepository {
             console.log('==>checking hook ' + url);
             // eslint-disable-next-line @typescript-eslint/no-floating-promises
             this.sqlRepository.saveStatus(tenantId, 'CHECK-HOOK', ' ');
-            const reqHeader = yield this.makeGitRequest(tenantId, 'GET', url, 'GET');
+            const reqHeader = yield this.makeGitRequestHeader(tenantId, 'GET', url, 'GET');
             try {
                 return new Promise((resolve, reject) => {
                     request(reqHeader, (error, response, body) => {
@@ -66,7 +66,7 @@ class GitRepository {
                 repo +
                 `\\") { name            pullRequests(last: 25) {  nodes { id  url  state  title   permalink   createdAt  body  repository { name } author                                                                                                                                                                                { login  avatarUrl url                                           }            }          }        }      }    }  }\",\"variables\":{}}`;
             try {
-                request(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
+                request(yield this.makeGitRequestHeader(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                     if (response.statusCode === 200) {
                         yield this.sqlRepository.savePR4Repo(org, repo, body);
                         // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -131,7 +131,7 @@ class GitRepository {
                 graphQL = `{\"query\":\"query {  organization(login: \\"${orgName}\\") {  name  membersWithRole(first: 100) { nodes { name login  email  avatarUrl  } pageInfo { endCursor  hasNextPage }}}}\",\"variables\":{}}`;
             }
             try {
-                request(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
+                request(yield this.makeGitRequestHeader(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                     if (response.statusCode === 400) {
                         console.log(`getDevsFromGit: No Devs found for org: ${orgName} - ${response.body}`);
                         // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -181,7 +181,7 @@ class GitRepository {
                 graphQL = `{\"query\":\"query {  organization(login: ` + org + `) { repositories(first: 50 ) {      nodes {id  name  isDisabled isArchived description homepageUrl createdAt } pageInfo { endCursor hasNextPage  } }  }}\",\"variables\":{}}`;
             }
             try {
-                request(yield this.makeGitRequest(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
+                request(yield this.makeGitRequestHeader(tenantId, graphQL), (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                     if (response.statusCode === 200) {
                         const result = JSON.parse(body);
                         if (!result.data) {
@@ -242,7 +242,7 @@ class GitRepository {
             }
         });
     }
-    makeGitRequest(tenantId, graphQL, gUri = 'https://api.github.com/graphql', method = 'POST') {
+    makeGitRequestHeader(tenantId, graphQL = '', gUri = 'https://api.github.com/graphql', method = 'POST') {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const token = 'Bearer ' + (yield this.sqlRepository.getToken(Number(tenantId)));
@@ -261,7 +261,27 @@ class GitRepository {
                 return header;
             }
             catch (ex) {
-                console.log('MakeGitRequest: ' + ex + ' tenantId: ' + tenantId);
+                console.log('makeGitRequestHeader: ' + ex + ' tenantId: ' + tenantId);
+            }
+        });
+    }
+    makeGitRequestHeaderLight(tenantId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const token = 'Bearer ' + (yield this.sqlRepository.getToken(Number(tenantId)));
+                const header = {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: token,
+                        Accept: 'application/vnd.github.machine-man-preview+json',
+                        'cache-control': 'no-cache',
+                        'user-agent': 'Gator',
+                    },
+                };
+                return header.headers;
+            }
+            catch (ex) {
+                console.log('makeGitRequestHeaderLight: ' + ex + ' tenantId: ' + tenantId);
             }
         });
     }
@@ -290,7 +310,7 @@ class GitRepository {
       }
     }`;
             try {
-                yield request(yield this.makeGitRequest(tenantId, graphQL, 'https://api.github.com/orgs/' + org + '/hooks'), (error, response, body) => {
+                yield request(yield this.makeGitRequestHeader(tenantId, graphQL, 'https://api.github.com/orgs/' + org + '/hooks'), (error, response, body) => {
                     if (response.statusCode === 201) {
                         // eslint-disable-next-line @typescript-eslint/no-floating-promises
                         this.sqlRepository.saveStatus(tenantId, 'SET-HOOK-SUCCESS-' + org.substr(0, 20), ' ');
@@ -341,7 +361,7 @@ class GitRepository {
             //Lets go to git
             const graphQL = `{\"query\": \"query { viewer {name organizations(last: 100) { nodes { name url }} }}\",\"variables\":{}}`;
             /* Without this promise wrap this code will not work */
-            const gitReq = yield this.makeGitRequest(tenantId, graphQL);
+            const gitReq = yield this.makeGitRequestHeader(tenantId, graphQL);
             return new Promise((resolve, reject) => {
                 try {
                     request(gitReq, (error, response, body) => __awaiter(this, void 0, void 0, function* () {
@@ -378,6 +398,165 @@ class GitRepository {
             }).catch(ex => {
                 console.log(`getOrg:  ${ex}`);
             });
+        });
+    }
+    getGitHygiene(tenantId, org) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const rp = require('request-promise');
+            const yaml = require('js-yaml');
+            const fs = require('fs');
+            const getUrlFile = (repo, file) => `https://api.github.com/repos/${org}/${repo}/contents/${file}`;
+            const getUrlReposAtPage = (page) => `https://api.github.com/orgs/${org}/repos?page=${page}&per_page=10`;
+            const getUrlProtection = (repo, branch) => `https://api.github.com/repos/${org}/${repo}/branches/${branch}/protection`;
+            const checkFile = (repo, file) => __awaiter(this, void 0, void 0, function* () {
+                const options = { url: getUrlFile(repo, file), headers: yield this.makeGitRequestHeaderLight(tenantId) };
+                try {
+                    yield rp.get(options);
+                    return true;
+                }
+                catch (e) {
+                    return false;
+                }
+            });
+            const getFile = (repo, file) => __awaiter(this, void 0, void 0, function* () {
+                const options = { url: getUrlFile(repo, file), headers: yield this.makeGitRequestHeaderLight(tenantId) };
+                let res;
+                try {
+                    res = yield rp.get(options);
+                    const parsed = JSON.parse(res);
+                    const content64 = parsed.content;
+                    const text = Buffer.from(content64, 'base64').toString('ascii');
+                    return text;
+                }
+                catch (e) {
+                    return false;
+                }
+            });
+            const checkBranchRules = (name) => __awaiter(this, void 0, void 0, function* () {
+                const url = getUrlProtection(name, 'master');
+                const options = { url: url, headers: yield this.makeGitRequestHeaderLight(tenantId) };
+                try {
+                    const res = yield rp.get(options);
+                    return true;
+                }
+                catch (e) {
+                    const message = e.error;
+                    if (e.statusCode === 404 && message === 'Branch not protected') {
+                        return false;
+                    }
+                    else {
+                        return true;
+                    }
+                }
+            });
+            const contains = (a, b) => Array.isArray(a) && a.some(e => b.indexOf(e) > -1);
+            const repos = yield this.getRepos(tenantId, org, false, false);
+            const names2 = yield repos.map((x) => {
+                return x.RepoName;
+            });
+            console.log('Total repos:', repos.length);
+            const names = names2.slice(1, 5); //REMOVE AFTER TESTING
+            names.sort(function (a, b) {
+                return a.toLowerCase().localeCompare(b.toLowerCase());
+            });
+            const result = {};
+            for (const [index, name] of names.entries()) {
+                // result.push(name);
+                result[name] = [];
+                let packageJson;
+                let travis;
+                [result[name]['hasCodeOwners'], result[name]['hasBranchProtection'], travis, packageJson] = yield Promise.all([checkFile(name, 'CODEOWNERS'), checkBranchRules(name), getFile(name, '.travis.yml'), getFile(name, 'package.json')]);
+                result[name]['hasPackageJson'] = false;
+                result[name]['hasScripts'] = false;
+                result[name]['hasScriptLint'] = 'n/a';
+                result[name]['hasScriptPrettier'] = 'n/a';
+                result[name]['hasScriptEslint'] = 'n/a';
+                result[name]['hasScriptTslint'] = 'n/a';
+                result[name]['hasScriptTests'] = 'n/a';
+                result[name]['hasScriptCommitLint'] = 'n/a';
+                result[name]['hasTravis'] = false;
+                result[name]['hasTravisTest'] = 'n/a';
+                result[name]['hasTravisCoverage'] = 'n/a';
+                result[name]['hasTravisLint'] = 'n/a';
+                result[name]['hasTravisCodecov'] = 'n/a';
+                if (packageJson) {
+                    const json = JSON.parse(packageJson);
+                    result[name]['hasPackageJson'] = true;
+                    if (typeof json.scripts === 'object') {
+                        result[name]['hasScripts'] = true;
+                        result[name]['hasScriptLint'] = !!json.scripts.lint;
+                        result[name]['hasScriptPrettier'] = !!json.scripts.prettier;
+                        result[name]['hasScriptEslint'] = !!json.scripts.eslint;
+                        result[name]['hasScriptTslint'] = !!json.scripts.tslint;
+                        result[name]['hasScriptTests'] = !!json.scripts.test;
+                        result[name]['hasScriptCommitLint'] = !!json.scripts.commitmsg;
+                    }
+                }
+                if (travis) {
+                    result[name]['hasTravis'] = true;
+                    try {
+                        const yml = yaml.load(travis);
+                        console.log(`'travis => processing ${name}`);
+                        result[name]['hasTravisTest'] = () => {
+                            try {
+                                contains(yml.install, ['xvfb-run npm test', 'npm run test', 'ng test']) || contains(yml.script, ['xvfb-run npm test', 'npm run test', 'ng test']);
+                            }
+                            catch (ex) {
+                                return false;
+                            }
+                        };
+                        result[name]['hasTravisCoverage'] = () => {
+                            try {
+                                contains(yml.install, ['xvfb-run npm run coverage', 'npm run coverage']) || contains(yml.script, ['xvfb-run npm run coverage', 'npm run coverage']);
+                            }
+                            catch (ex) {
+                                return false;
+                            }
+                        };
+                        result[name]['hasTravisLint'] = () => {
+                            try {
+                                contains(yml.install, ['xvfb-run npm lint', 'npm run lint', 'ng lint']) || contains(yml.script, ['xvfb-run npm lint', 'npm run lint', 'ng lint']);
+                            }
+                            catch (ex) {
+                                return false;
+                            }
+                        };
+                        result[name]['hasTravisCodecov'] = () => {
+                            try {
+                                contains(yml.script, ['codecov']);
+                            }
+                            catch (ex) {
+                                return false;
+                            }
+                        };
+                    }
+                    catch (ex) {
+                        console.log(ex.message);
+                        result[name]['hasTravisTest'] = false;
+                        result[name]['hasTravisCoverage'] = false;
+                        result[name]['hasTravisLint'] = false;
+                        result[name]['hasTravisCodecov'] = false;
+                    }
+                }
+            }
+            const rows = [];
+            const rowNames = Object.keys(result[names[0]]);
+            rowNames.forEach((n, index) => {
+                rows[index] = [n];
+                names.forEach((repo) => {
+                    let val = '';
+                    if (result[repo][n] === true) {
+                        val = 'Y';
+                    }
+                    if (result[repo][n] === false) {
+                        val = 'N';
+                    }
+                    rows[index].push(val);
+                });
+            });
+            rows.unshift(names);
+            rows[0].unshift('Repo');
+            return rows;
         });
     }
 }
