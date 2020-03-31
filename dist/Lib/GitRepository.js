@@ -541,6 +541,27 @@ class GitRepository {
             }
             const rows = [];
             const rowNames = Object.keys(result[names[0]]);
+            /*
+            result =>
+              Object {banking: Array(0), IMOD: Array(0), line-crush-backend: Array(0), X: Array(0)}
+              banking:Array(0) [, …]
+                hasBranchProtection:true
+                hasCodeOwners:true
+                hasPackageJson:true
+                hasScriptCommitLint:false
+                hasScriptEslint:false
+                hasScriptLint:true
+                hasScriptPrettier:false
+                hasScripts:true
+                hasScriptTests:true
+                hasScriptTslint:false
+                hasTravis:false
+                hasTravisCodecov:"n/a"
+                hasTravisCoverage:"n/a"
+                hasTravisLint:"n/a"
+                hasTravisTest:"n/a"
+                length:0
+            */
             rowNames.forEach((n, index) => {
                 rows[index] = [n];
                 names.forEach((repo) => {
