@@ -60,7 +60,7 @@ class SQLRepository {
             //   }));
         }
         this.createPool().catch(ex => {
-            console.log(`create pool failed: ${ex}`);
+            console.log(`[E] create pool failed: ${ex}`);
         });
     }
     createPool() {
@@ -76,7 +76,6 @@ class SQLRepository {
                 // this.sqlConfigSetting.driver = 'msnodesqlv8';
                 yield new sql.ConnectionPool(this.sqlConfigSetting).connect().then((pool) => {
                     this.pool = pool;
-                    //console.log(`==> createPool is successfull`);
                 });
             }
         });
@@ -84,9 +83,8 @@ class SQLRepository {
     //return 0 if not a valid tenant or the token more than 7 days old
     checkToken(tenantId) {
         return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'CheckToken: ' + tenantId;
             try {
-                const cacheKey = 'CheckToken: ' + tenantId;
-                //console.log (cacheKey);
                 const val = this.myCache.get(cacheKey);
                 if (val) {
                     return val;
@@ -103,15 +101,15 @@ class SQLRepository {
                     return false;
             }
             catch (ex) {
-                console.log(`==> CheckToken ${ex}`);
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
                 return false;
             }
         });
     }
     getGitLoggedInUSerDetails(tenantId, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getGitLoggedInUSerDetails: ' + tenantId;
             try {
-                const cacheKey = 'getGitLoggedInUSerDetails: ' + tenantId;
                 if (!bustTheCache) {
                     const val = this.myCache.get(cacheKey);
                     if (val) {
@@ -130,7 +128,7 @@ class SQLRepository {
                     return false;
             }
             catch (ex) {
-                console.log(`==> CheckToken ${ex}`);
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
                 return false;
             }
         });
@@ -152,9 +150,9 @@ class SQLRepository {
     //return 0 if not a valid tenant or the token more than 7 days old
     checkJiraToken(tenantId) {
         return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'CheckJiraToken: ' + tenantId;
             try {
                 tenantId = tenantId.trim();
-                const cacheKey = 'CheckJiraToken: ' + tenantId;
                 // console.log (cacheKey);
                 const val = this.myCache.get(cacheKey);
                 if (val) {
@@ -176,15 +174,15 @@ class SQLRepository {
                     return false;
             }
             catch (ex) {
-                console.log(`==> CheckJiraToken ${ex}`);
+                console.log(`[E]  ${cacheKey} -  ${ex}`);
                 return false;
             }
         });
     }
     getRepoPR(org, repo, day, pageSize) {
         return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'GetRepoPR' + org + repo + day;
             try {
-                const cacheKey = 'GetRepoPR' + org + repo + day;
                 const val = this.myCache.get(cacheKey);
                 if (val) {
                     return val;
@@ -204,7 +202,7 @@ class SQLRepository {
                     return false;
             }
             catch (ex) {
-                console.log(`==> getRepoPR {ex}`);
+                console.log(`[E]  ${cacheKey} - ${ex}`);
                 return false;
             }
         });
@@ -212,121 +210,168 @@ class SQLRepository {
     getAllRepoCollection4TenantOrg(tenantId, org, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'getAllRepoCollection4TenantOrg' + org + tenantId;
-            if (!bustTheCache) {
+            try {
+                if (!bustTheCache) {
+                    const val = this.myCache.get(cacheKey);
+                    if (val) {
+                        return val;
+                    }
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('TenantId', sql.Int, Number(tenantId));
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                const recordSet = yield request.execute('[GetAllRepoCollection4TenantOrg]');
+                if (recordSet) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else
+                    return false;
+            }
+            catch (ex) {
+                console.log(`[E]  ${cacheKey} - ${ex}`);
+                return false;
+            }
+        });
+    }
+    GetOrg4Tenant(tenantId, org, bustTheCache = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = `GetOrg4Tenant- tenantId: ${tenantId} org: ${org}`;
+            try {
+                if (bustTheCache) {
+                    this.myCache.del(cacheKey);
+                }
                 const val = this.myCache.get(cacheKey);
                 if (val) {
                     return val;
                 }
-            }
-            yield this.createPool();
-            const request = yield this.pool.request();
-            request.input('TenantId', sql.Int, Number(tenantId));
-            request.input('Org', sql.VarChar(this.ORG_LEN), org);
-            const recordSet = yield request.execute('[GetAllRepoCollection4TenantOrg]');
-            if (recordSet) {
-                this.myCache.set(cacheKey, recordSet.recordset);
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('org', sql.VarChar(this.ORG_LEN), org);
+                request.input('TenantId', sql.Int, Number(tenantId));
+                const recordSet = yield request.execute('GetOrg4Tenant');
+                if (recordSet) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                }
                 return recordSet.recordset;
             }
-            else
-                return false;
-        });
-    }
-    GetOrg4Tenant(tenantId, org) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.createPool();
-            const request = yield this.pool.request();
-            request.input('org', sql.VarChar(this.ORG_LEN), org);
-            request.input('TenantId', sql.Int, Number(tenantId));
-            const recordSet = yield request.execute('GetOrg4Tenant');
-            return recordSet.recordset;
+            catch (ex) {
+                console.log(`${cacheKey}  Error: ${ex}`);
+                return null;
+            }
         });
     }
     // Date, Ctr, State (open, closed) will be returned
     GetGraphData4XDays(org, day, login, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'GetGraphData4XDays-' + org + login + day;
-            if (bustTheCache) {
-                this.myCache.del(cacheKey);
+            try {
+                if (bustTheCache) {
+                    this.myCache.del(cacheKey);
+                }
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Day', sql.Int, day);
+                request.input('Login', sql.VarChar(this.LOGIN_LEN), login);
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                const recordSet = yield request.execute('GetGraphData4XDays');
+                if (recordSet) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                }
+                return recordSet.recordset;
             }
-            const val = this.myCache.get(cacheKey);
-            if (val) {
-                return val;
+            catch (ex) {
+                console.log(`${cacheKey}  Error: ${ex}`);
+                return null;
             }
-            yield this.createPool();
-            const request = yield this.pool.request();
-            request.input('Day', sql.Int, day);
-            request.input('Login', sql.VarChar(this.LOGIN_LEN), login);
-            request.input('Org', sql.VarChar(this.ORG_LEN), org);
-            const recordSet = yield request.execute('GetGraphData4XDays');
-            if (recordSet) {
-                this.myCache.set(cacheKey, recordSet.recordset);
-            }
-            return recordSet.recordset;
         });
     }
     saveStatus(tenantId, status, message = '') {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.createPool();
-            const request = yield this.pool.request();
-            if (!message) {
-                message = '';
-            }
-            else {
-                if (message.length >= this.MESSAGE_LEN) {
-                    message = message.substr(0, this.MESSAGE_LEN - 2);
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!message) {
+                    message = '';
+                }
+                else {
+                    if (message.length >= this.MESSAGE_LEN) {
+                        message = message.substr(0, this.MESSAGE_LEN - 2);
+                    }
+                }
+                request.input('status', sql.VarChar(this.STATUS_LEN), status);
+                request.input('message', sql.VarChar(this.MESSAGE_LEN), message);
+                request.input('TenantId', sql.Int, Number(tenantId));
+                const recordSet = yield request.execute('saveStatus');
+                if (recordSet) {
+                    return recordSet.rowsAffected.length;
+                }
+                else {
+                    return 0;
                 }
             }
-            request.input('status', sql.VarChar(this.STATUS_LEN), status);
-            request.input('message', sql.VarChar(this.MESSAGE_LEN), message);
-            request.input('TenantId', sql.Int, Number(tenantId));
-            const recordSet = yield request.execute('saveStatus');
-            if (recordSet) {
-                return recordSet.rowsAffected.length;
-            }
-            else {
+            catch (ex) {
+                console.log(`[E]  saveStatus: ${tenantId} ${status}  Error: ${ex}`);
                 return 0;
             }
         });
     }
     getRepo(tenantId, org, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = 'GetRepo' + tenantId + org;
-            if (bustTheCache) {
-                this.myCache.del(cacheKey);
+            const cacheKey = `GetRepo: tenantId: ${tenantId} org: ${org}`;
+            try {
+                if (bustTheCache) {
+                    this.myCache.del(cacheKey);
+                }
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('TenantId', sql.Int, Number(tenantId));
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                const recordSet = yield request.execute('GetRepos');
+                if (recordSet) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                }
+                return recordSet.recordset;
             }
-            const val = this.myCache.get(cacheKey);
-            if (val) {
-                return val;
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return null;
             }
-            yield this.createPool();
-            const request = yield this.pool.request();
-            request.input('TenantId', sql.Int, Number(tenantId));
-            request.input('Org', sql.VarChar(this.ORG_LEN), org);
-            const recordSet = yield request.execute('GetRepos');
-            if (recordSet) {
-                this.myCache.set(cacheKey, recordSet.recordset);
-            }
-            return recordSet.recordset;
         });
     }
     getOrg(tenantId, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'GetOrg' + tenantId;
-            if (bustTheCache) {
-                this.myCache.del(cacheKey);
+            try {
+                if (bustTheCache) {
+                    this.myCache.del(cacheKey);
+                }
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('TenantId', sql.Int, Number(tenantId));
+                const recordSet = yield request.execute('GetOrg');
+                if (recordSet.recordset) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                }
+                return recordSet.recordset;
             }
-            const val = this.myCache.get(cacheKey);
-            if (val) {
-                return val;
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return null;
             }
-            yield this.createPool();
-            const request = yield this.pool.request();
-            request.input('TenantId', sql.Int, Number(tenantId));
-            const recordSet = yield request.execute('GetOrg');
-            if (recordSet.recordset) {
-                this.myCache.set(cacheKey, recordSet.recordset);
-            }
-            return recordSet.recordset;
         });
     }
     getJiraOrg(tenantId, bustTheCache = false) {
@@ -339,112 +384,133 @@ class SQLRepository {
     getJiraOrgs(tenantId, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'GetJiraOrgs:' + tenantId;
-            // console.log (cacheKey);
             let orgs;
-            if (bustTheCache) {
-                console.log(' ==>GetJiraOrg: hitting the cache.');
-                this.myCache.del(cacheKey);
+            try {
+                if (bustTheCache) {
+                    this.myCache.del(cacheKey);
+                }
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('TenantId', sql.Char, tenantId);
+                const recordSet = yield request.execute('GetJiraOrg');
+                if (recordSet.recordset) {
+                    orgs = JSON.parse(recordSet.recordset[0].AccessibleResources);
+                    this.myCache.set(cacheKey, orgs);
+                }
+                else {
+                    console.log(cacheKey + ' NOT Found orgs!!!');
+                }
+                return orgs;
             }
-            const val = this.myCache.get(cacheKey);
-            if (val) {
-                console.log('getJiraOrgs hitting the cache');
-                return val;
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return orgs;
             }
-            yield this.createPool();
-            const request = yield this.pool.request();
-            request.input('TenantId', sql.Char, tenantId);
-            const recordSet = yield request.execute('GetJiraOrg');
-            if (recordSet.recordset) {
-                orgs = JSON.parse(recordSet.recordset[0].AccessibleResources);
-                this.myCache.set(cacheKey, orgs);
-                //      console.log (cacheKey + ' Found orgs!!!');
-            }
-            else {
-                console.log(cacheKey + ' NOT Found orgs!!!');
-            }
-            return orgs;
         });
     }
     getJiraUsers(tenantId, org, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = `getJiraUsers: tenantId: ${tenantId}  org: ${org}`;
-            console.log(cacheKey);
-            if (bustTheCache) {
-                this.myCache.del(cacheKey);
+            try {
+                const cacheKey = `getJiraUsers: tenantId: ${tenantId}  org: ${org}`;
+                if (bustTheCache) {
+                    this.myCache.del(cacheKey);
+                }
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('TenantId', sql.Char, tenantId);
+                request.input('Org', sql.Char, org);
+                const recordSet = yield request.execute('GetJiraUsers');
+                if (recordSet.recordset.length > 0) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else
+                    return null;
             }
-            const val = this.myCache.get(cacheKey);
-            if (val) {
-                console.log('getJiraUsers hitting the cache');
-                return val;
-            }
-            yield this.createPool();
-            const request = yield this.pool.request();
-            request.input('TenantId', sql.Char, tenantId);
-            request.input('Org', sql.Char, org);
-            const recordSet = yield request.execute('GetJiraUsers');
-            if (recordSet.recordset.length > 0) {
-                this.myCache.set(cacheKey, recordSet.recordset);
-                console.log(`Found: ${recordSet.recordset.length} records for org: ${org} `);
-                return recordSet.recordset;
-            }
-            else
+            catch (ex) {
+                console.log(`[E]  getJiraUsers id: ${tenantId} org: ${org} Error: ${ex}`);
                 return null;
+            }
         });
     }
     //No one calls this yet, the SP is called directly from another SP GetTenant. Leaving for future use.
     setActiveTenant(id) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.createPool();
-            const request = yield this.pool.request();
-            request.input('TenantId', sql.Int, id);
-            const recordSet = yield request.execute('SaveActiveTenant');
-            if (recordSet) {
-                return recordSet.rowsAffected.length;
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('TenantId', sql.Int, id);
+                const recordSet = yield request.execute('SaveActiveTenant');
+                if (recordSet) {
+                    return recordSet.rowsAffected.length;
+                }
+                else
+                    return 0;
             }
-            else
+            catch (ex) {
+                console.log(`[E]  setActiveTenant id: ${id} Error: ${ex}`);
                 return 0;
+            }
         });
     }
     //Token will return UserName, DisplayName, ProfileURL, AuthToken, LastUpdated and Photo (URL)
     getTenant(id) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = 'GetTenant-' + id;
-            const val = this.myCache.get(cacheKey);
-            if (val) {
-                return val;
+            try {
+                const cacheKey = 'GetTenant-' + id;
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Id', sql.Int, id);
+                const recordSet = yield request.execute('GetTenant');
+                if (recordSet.recordset.length > 0) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else
+                    return 0;
             }
-            yield this.createPool();
-            const request = yield this.pool.request();
-            request.input('Id', sql.Int, id);
-            const recordSet = yield request.execute('GetTenant');
-            if (recordSet.recordset.length > 0) {
-                this.myCache.set(cacheKey, recordSet.recordset);
-                // console.log(`==> getTenant is successfull for id:${id} `);
-                return recordSet.recordset;
-            }
-            else
+            catch (ex) {
+                console.log(`[E]  getTenant id: ${id} Error: ${ex}`);
                 return 0;
+            }
         });
     }
     getJiraTenant(id) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'getJiraTenant-' + id;
-            const val = this.myCache.get(cacheKey);
-            if (val) {
-                console.log('getJiraTenant hitting the cache');
-                return val;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    console.log('getJiraTenant hitting the cache');
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Id', sql.Char, id);
+                const recordSet = yield request.execute('GetJiraTenant');
+                if (recordSet.recordset.length > 0) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else
+                    return 0;
             }
-            yield this.createPool();
-            const request = yield this.pool.request();
-            request.input('Id', sql.Char, id);
-            const recordSet = yield request.execute('GetJiraTenant');
-            if (recordSet.recordset.length > 0) {
-                this.myCache.set(cacheKey, recordSet.recordset);
-                // console.log(`==> getJiraTenant is successfull for id:${id} `);
-                return recordSet.recordset;
-            }
-            else
+            catch (ex) {
+                console.log(`[E] ]  ${cacheKey}  Error: ${ex}`);
                 return 0;
+            }
         });
     }
     //GetPR4Repo
@@ -452,24 +518,30 @@ class SQLRepository {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();
             const cacheKey = 'GetPR4Repo -' + org + repo;
-            if (bustTheCache) {
-                this.myCache.del(cacheKey);
-            }
-            else {
-                const val = this.myCache.get(cacheKey);
-                if (val) {
-                    return val;
+            try {
+                if (bustTheCache) {
+                    this.myCache.del(cacheKey);
+                }
+                else {
+                    const val = this.myCache.get(cacheKey);
+                    if (val) {
+                        return val;
+                    }
+                }
+                const request = yield this.pool.request();
+                request.input('org', sql.VarChar(this.ORG_LEN), org);
+                request.input('repo', sql.VarChar(this.REPO_LEN), repo);
+                const recordSet = yield request.execute('GetPR4Repo');
+                if (recordSet.recordset.length > 0) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else {
+                    return 0;
                 }
             }
-            const request = yield this.pool.request();
-            request.input('org', sql.VarChar(this.ORG_LEN), org);
-            request.input('repo', sql.VarChar(this.REPO_LEN), repo);
-            const recordSet = yield request.execute('GetPR4Repo');
-            if (recordSet.recordset.length > 0) {
-                this.myCache.set(cacheKey, recordSet.recordset);
-                return recordSet.recordset;
-            }
-            else {
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
                 return 0;
             }
         });
@@ -477,16 +549,22 @@ class SQLRepository {
     //saveOrgChart
     saveOrgChart(userId, org, orgChart) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.createPool();
-            const request = yield this.pool.request();
-            request.input('org', sql.VarChar(this.ORG_LEN), org);
-            request.input('userId', sql.VarChar(this.LOGIN_LEN), userId);
-            request.input('orgChart', sql.VarChar, orgChart);
-            const recordSet = yield request.execute('SaveOrgChart');
-            if (recordSet.recordset.length > 0) {
-                return recordSet.recordset;
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('org', sql.VarChar(this.ORG_LEN), org);
+                request.input('userId', sql.VarChar(this.LOGIN_LEN), userId);
+                request.input('orgChart', sql.VarChar, orgChart);
+                const recordSet = yield request.execute('SaveOrgChart');
+                if (recordSet.recordset.length > 0) {
+                    return recordSet.recordset;
+                }
+                else {
+                    return 0;
+                }
             }
-            else {
+            catch (ex) {
+                console.log(`[E]  SaveOrgChart:  Error: ${ex}`);
                 return 0;
             }
         });
@@ -496,23 +574,29 @@ class SQLRepository {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();
             const cacheKey = 'getOrgChart -' + org;
-            if (bustTheCache) {
-                this.myCache.del(cacheKey);
-            }
-            else {
-                const val = this.myCache.get(cacheKey);
-                if (val) {
-                    return val;
+            try {
+                if (bustTheCache) {
+                    this.myCache.del(cacheKey);
+                }
+                else {
+                    const val = this.myCache.get(cacheKey);
+                    if (val) {
+                        return val;
+                    }
+                }
+                const request = yield this.pool.request();
+                request.input('org', sql.VarChar(this.ORG_LEN), org);
+                const recordSet = yield request.execute('getOrgChart');
+                if (recordSet.recordset.length > 0) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else {
+                    return 0;
                 }
             }
-            const request = yield this.pool.request();
-            request.input('org', sql.VarChar(this.ORG_LEN), org);
-            const recordSet = yield request.execute('getOrgChart');
-            if (recordSet.recordset.length > 0) {
-                this.myCache.set(cacheKey, recordSet.recordset);
-                return recordSet.recordset;
-            }
-            else {
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
                 return 0;
             }
         });
@@ -543,23 +627,29 @@ class SQLRepository {
     getTopDev4LastXDays(org, day = 1) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'getTopDev4LastXDays' + org + day;
-            const val = this.myCache.get(cacheKey);
-            if (val) {
-                return val;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!org) {
+                    throw new Error('tenant cannot be null');
+                }
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                request.input('Day', sql.Int, day);
+                const recordSet = yield request.execute('TopDevForLastXDays');
+                if (recordSet.recordset) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else {
+                    return;
+                }
             }
-            yield this.createPool();
-            const request = yield this.pool.request();
-            if (!org) {
-                throw new Error('tenant cannot be null');
-            }
-            request.input('Org', sql.VarChar(this.ORG_LEN), org);
-            request.input('Day', sql.Int, day);
-            const recordSet = yield request.execute('TopDevForLastXDays');
-            if (recordSet.recordset) {
-                this.myCache.set(cacheKey, recordSet.recordset);
-                return recordSet.recordset;
-            }
-            else {
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
                 return;
             }
         });
@@ -567,100 +657,133 @@ class SQLRepository {
     getGitDev4Org(org) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'getGitDev4Org' + org;
-            const val = this.myCache.get(cacheKey);
-            if (val) {
-                return val;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!org) {
+                    throw new Error('tenant cannot be null');
+                }
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                const recordSet = yield request.execute('GitDev4Org');
+                if (recordSet.recordset) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else {
+                    return;
+                }
             }
-            yield this.createPool();
-            const request = yield this.pool.request();
-            if (!org) {
-                throw new Error('tenant cannot be null');
-            }
-            request.input('Org', sql.VarChar(this.ORG_LEN), org);
-            const recordSet = yield request.execute('GitDev4Org');
-            if (recordSet.recordset) {
-                this.myCache.set(cacheKey, recordSet.recordset);
-                return recordSet.recordset;
-            }
-            else {
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
                 return;
             }
         });
     }
     getPR4Id(org, id = 1) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.createPool();
-            const request = yield this.pool.request();
-            if (!org) {
-                throw new Error('tenant cannot be null');
+            const cacheKey = `getPR4Id: org:  ${org} id ${id}`;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!org) {
+                    throw new Error('tenant cannot be null');
+                }
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                request.input('Id', sql.Int, id);
+                const recordSet = yield request.execute('GetPR4Id');
+                if (recordSet.recordset) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                return recordSet;
             }
-            request.input('Org', sql.VarChar(this.ORG_LEN), org);
-            request.input('Id', sql.Int, id);
-            const recordSet = yield request.execute('GetPR4Id');
-            return recordSet.recordset;
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return null;
+            }
         });
     }
     getPRCount4LastXDays(org, login, day = 1) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();
             const cacheKey = 'PRCount4LastXDays' + org + login + day.toString();
-            const val = this.myCache.get(cacheKey);
-            if (val) {
-                return val;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                const request = yield this.pool.request();
+                if (!org) {
+                    throw new Error('org cannot be null');
+                }
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                request.input('Login', sql.VarChar(this.LOGIN_LEN), login);
+                request.input('Day', sql.Int, day);
+                const recordSet = yield request.execute('PRCount4LastXDays');
+                if (recordSet.recordset.length > 0) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                }
+                return recordSet.recordset;
             }
-            const request = yield this.pool.request();
-            if (!org) {
-                throw new Error('org cannot be null');
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return null;
             }
-            request.input('Org', sql.VarChar(this.ORG_LEN), org);
-            request.input('Login', sql.VarChar(this.LOGIN_LEN), login);
-            request.input('Day', sql.Int, day);
-            const recordSet = yield request.execute('PRCount4LastXDays');
-            if (recordSet.recordset.length > 0) {
-                this.myCache.set(cacheKey, recordSet.recordset);
-            }
-            return recordSet.recordset;
         });
     }
     getPR4Dev(org, day = 1, login, action, pageSize) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!org) {
-                console.log(`==> Exiting getPRDev org cannot be null`);
+                console.log(`[i] Exiting getPRDev org cannot be null`);
                 return;
             }
-            //login can be null, it is a special case, in that case data come for all the devs - count
-            const cacheKey = 'PullRequest4Dev' + org + day.toString() + login;
-            //  console.log(`getPR4Dev: org:${org} day: ${day} login: ${login} action: ${action} pageSize: ${pageSize}`);
-            const val = this.myCache.get(cacheKey);
-            if (val) {
-                return val;
-            }
-            console.log('** getPRDev Cache miss **');
-            yield this.createPool();
-            const request = yield this.pool.request();
-            if (pageSize === 0)
-                pageSize = 10;
-            request.input('Org', sql.VarChar(this.ORG_LEN), org);
             if (util_1.isNullOrUndefined(login) || login === '') {
-                request.input('Login', sql.VarChar(this.LOGIN_LEN), 'null');
+                login = 'null';
             }
-            else {
-                request.input('Login', sql.VarChar(this.LOGIN_LEN), login);
+            const cacheKey = 'getPR4Dev' + org + day.toString() + login + action;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (pageSize === 0)
+                    pageSize = 10;
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                if (util_1.isNullOrUndefined(login) || login === '') {
+                    request.input('Login', sql.VarChar(this.LOGIN_LEN), 'null');
+                }
+                else {
+                    request.input('Login', sql.VarChar(this.LOGIN_LEN), login);
+                }
+                if (util_1.isNullOrUndefined(action) || action === '') {
+                    request.input('Action', sql.VarChar(this.ACTION_LEN), 'null');
+                }
+                else {
+                    request.input('Action', sql.VarChar(this.ACTION_LEN), action);
+                }
+                request.input('Day', sql.Int, day);
+                request.input('pageSize', sql.Int, pageSize);
+                const recordSet = yield request.execute('PR4Devs');
+                // console.log(`getPR4Dev records found: ${recordSet.recordset.length}`);
+                if (recordSet.recordset.length > 0) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                }
+                return recordSet.recordset;
             }
-            if (util_1.isNullOrUndefined(action) || action === '') {
-                request.input('Action', sql.VarChar(this.ACTION_LEN), 'null');
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return null;
             }
-            else {
-                request.input('Action', sql.VarChar(this.ACTION_LEN), action);
-            }
-            request.input('Day', sql.Int, day);
-            request.input('pageSize', sql.Int, pageSize);
-            const recordSet = yield request.execute('PR4Devs');
-            // console.log(`getPR4Dev records found: ${recordSet.recordset.length}`);
-            if (recordSet.recordset.length > 0) {
-                this.myCache.set(cacheKey, recordSet.recordset);
-            }
-            return recordSet.recordset;
         });
     }
     /*
@@ -682,43 +805,55 @@ class SQLRepository {
     getTopRepo4XDays(org, day = 1) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'getTopRepo4XDays' + org + day.toString();
-            const val = this.myCache.get(cacheKey);
-            if (val) {
-                return val;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!org) {
+                    throw new Error('org cannot be null');
+                }
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                request.input('Day', sql.Int, day);
+                const recordSet = yield request.execute('GetTopRepos4XDays');
+                if (recordSet) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                }
+                return recordSet.recordset;
             }
-            yield this.createPool();
-            const request = yield this.pool.request();
-            if (!org) {
-                throw new Error('org cannot be null');
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return null;
             }
-            request.input('Org', sql.VarChar(this.ORG_LEN), org);
-            request.input('Day', sql.Int, day);
-            const recordSet = yield request.execute('GetTopRepos4XDays');
-            if (recordSet) {
-                this.myCache.set(cacheKey, recordSet.recordset);
-            }
-            return recordSet.recordset;
         });
     }
     getPR4LastXDays(org, day = 1) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'getPR4LastXDays' + org + day.toString();
-            const val = this.myCache.get(cacheKey);
-            if (val) {
-                return val;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!org) {
+                    throw new Error('org cannot be null');
+                }
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                request.input('Day', sql.Int, day);
+                const recordSet = yield request.execute('PR4LastXDays');
+                if (recordSet) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                }
+                return recordSet.recordset;
             }
-            yield this.createPool();
-            const request = yield this.pool.request();
-            if (!org) {
-                throw new Error('org cannot be null');
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return null;
             }
-            request.input('Org', sql.VarChar(this.ORG_LEN), org);
-            request.input('Day', sql.Int, day);
-            const recordSet = yield request.execute('PR4LastXDays');
-            if (recordSet) {
-                this.myCache.set(cacheKey, recordSet.recordset);
-            }
-            return recordSet.recordset;
         });
     }
     getItem(query, page, pageSize) {
@@ -763,14 +898,13 @@ class SQLRepository {
                 return s;
             }
             catch (err) {
-                console.log(err);
+                console.log(`[E]  ${err}`);
             }
         });
     }
     saveJiraTenant(tenant) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                // console.log('==> inside saveTenant');
                 yield this.createPool();
                 const request = yield this.pool.request();
                 if (!tenant.Photo) {
@@ -791,19 +925,18 @@ class SQLRepository {
                 request.input('Photo', sql.Char(500), tenant.Photo);
                 request.input('AccessibleResources', sql.Char(8000), JSON.stringify(tenant.AccessibleResources));
                 const recordSet = yield request.execute('SaveJiraTenant');
-                console.log('==> saveJiraTenant done successfully');
                 return recordSet.rowsAffected[0];
             }
             catch (ex) {
-                console.log(`==> ${ex}`);
-                return ex;
+                console.log(`[E]  ${ex}`);
+                return 0;
             }
         });
     }
     saveMSR(srId, userId, org, statusDetails, reviewer, status, links, manager, managerComment, managerStatus) {
         return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'saveMSR' + srId;
             try {
-                const cacheKey = 'getMSR4Id' + srId;
                 this.myCache.del(cacheKey);
                 const request = yield this.pool.request();
                 request.input('SRId', sql.Int, srId);
@@ -817,19 +950,18 @@ class SQLRepository {
                 request.input('ManagerComment', sql.VarChar(4000), managerComment);
                 request.input('ManagerStatus', sql.Int, managerStatus);
                 const recordSet = yield request.execute('SaveMSR');
-                console.log('==> saveMSR done successfully');
                 return recordSet.rowsAffected[0];
             }
             catch (ex) {
-                console.log(`==> ${ex}`);
-                return ex;
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return 0;
             }
         });
     }
     getSR4Id(srId, bustTheCache) {
         return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getMSR4Id' + srId;
             try {
-                const cacheKey = 'getMSR4Id' + srId;
                 if (!bustTheCache) {
                     const val = this.myCache.get(cacheKey);
                     if (val) {
@@ -845,15 +977,15 @@ class SQLRepository {
                 return recordSet.recordset;
             }
             catch (ex) {
-                console.log(`==> ${ex}`);
-                return ex;
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return null;
             }
         });
     }
     getSR4User(userId, bustTheCache) {
         return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getSR4User' + userId;
             try {
-                const cacheKey = 'getMSR4User' + userId;
                 if (!bustTheCache) {
                     const val = this.myCache.get(cacheKey);
                     if (val) {
@@ -869,15 +1001,15 @@ class SQLRepository {
                 return recordSet.recordset;
             }
             catch (ex) {
-                console.log(`==> ${ex}`);
-                return ex;
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return null;
             }
         });
     }
     GetSR4User4Review(userId, status, userFilter = null, dateFilter = null, bustTheCache) {
         return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'GetSR4User4Review' + userId + status;
             try {
-                const cacheKey = 'GetSR4User4Review' + userId + status;
                 userFilter = userFilter.trim();
                 dateFilter = dateFilter.trim();
                 const request = yield this.pool.request();
@@ -892,15 +1024,15 @@ class SQLRepository {
                 return recordSet.recordset;
             }
             catch (ex) {
-                console.log(`==> ${ex}`);
-                return ex;
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return null;
             }
         });
     }
+    /* save */
     saveTenant(tenant) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                // console.log('==> inside saveTenant');
                 yield this.createPool();
                 const request = yield this.pool.request();
                 if (!tenant.Photo) {
@@ -919,11 +1051,10 @@ class SQLRepository {
                 request.input('RefreshToken', sql.VarChar(4000), tenant.RefreshToken);
                 request.input('Photo', sql.VarChar(1000), tenant.Photo);
                 const recordSet = yield request.execute('SaveTenant');
-                console.log('==> saveTenant done successfully');
                 return recordSet.rowsAffected[0];
             }
             catch (ex) {
-                console.log(`==> ${ex}`);
+                console.log(`[E]  saveTenant ${tenant} ${ex}`);
                 return ex;
             }
         });
@@ -957,13 +1088,13 @@ class SQLRepository {
                 const request = yield this.pool.request();
                 const nodes = pr.data.viewer.organization.repository.pullRequests.nodes;
                 if (nodes === undefined) {
-                    console.log(`==> No PR found for org: ${org} Repo: ${repo}`);
+                    console.log(`[i] No PR found for org: ${org} Repo: ${repo}`);
                 }
                 if (nodes.length === 0) {
-                    console.log(`==> No PR found for org: ${org} Repo: ${repo}`);
+                    console.log(`[i] No PR found for org: ${org} Repo: ${repo}`);
                 }
                 if (nodes.length > 0) {
-                    console.log(`==> ${nodes.length} PR found for org: ${org} Repo: ${repo}`);
+                    console.log(`[i] ${nodes.length} PR found for org: ${org} Repo: ${repo}`);
                 }
                 //nodes.forEach(async (elm: any) => {
                 for (const elm of nodes) {
@@ -1012,11 +1143,12 @@ class SQLRepository {
                         return x.rowsAffected[0];
                     }
                     catch (ex) {
-                        console.log(`==> Error! While saving PR for org:${org} repo: ${repo} - ${ex}`);
+                        console.log(`[E]  Error! While saving PR for org:${org} repo: ${repo} - ${ex}`);
                     }
                 }
             }
             catch (ex) {
+                console.log(`[E]  savePR4Repo ${org} ${repo}`);
                 return false;
             }
             return true;
@@ -1038,7 +1170,8 @@ class SQLRepository {
                 return orgs.length;
             }
             catch (ex) {
-                return ex;
+                console.log(`[E]  saveOrg: ${tenantId} ${orgs} ${ex}`);
+                return 0;
             }
         });
     }
@@ -1056,7 +1189,6 @@ class SQLRepository {
                 for (const d of devs) {
                     let dev = d;
                     // const createdAt = String(dev.createdAt).substr(0, 10);
-                    //console.log(`==> SaveDev = org: ${org} dev - Name: ${dev.name} \t| Email: ${dev.email} \t| login: ${dev.login} \t| ${dev.avatarUrl}`);
                     request.input('TenantId', sql.Char, tenantId);
                     request.input('Org', sql.VarChar(this.ORG_LEN), org); //
                     request.input('accountId', sql.VarChar(100), dev.accountId); //rsarosh@hotmail.com
@@ -1064,11 +1196,10 @@ class SQLRepository {
                     request.input('avatarUrls', sql.Text, JSON.stringify(dev.avatarUrls)); //rsarosh
                     request.input('self', sql.VarChar(500), dev.self);
                     yield request.execute('SaveJiraUsers');
-                    //return recordSet.rowsAffected[0];
                 }
-                console.log(`saved ${devs.length} Jira Dev for org: ${org}`);
             }
             catch (ex) {
+                console.log(`[E]  saveJiraUsers: ${tenantId} ${org} ${ex}`);
                 return ex;
             }
         });
@@ -1086,7 +1217,6 @@ class SQLRepository {
                 const request = yield this.pool.request();
                 for (const d of devs) {
                     let dev = d;
-                    //console.log(`==> SaveDev = org: ${org} dev - Name: ${dev.name} \t| Email: ${dev.email} \t| login: ${dev.login} \t| ${dev.avatarUrl}`);
                     request.input('Org', sql.VarChar(this.ORG_LEN), org); //
                     request.input('email', sql.VarChar(200), dev.email); //rsarosh@hotmail.com
                     request.input('name', sql.VarChar(200), dev.name); //Rafat Sarosh
@@ -1099,7 +1229,8 @@ class SQLRepository {
                 return devs.length;
             }
             catch (ex) {
-                return ex;
+                console.log(`[E]  saveDevs:  ${org} ${ex}`);
+                return 0;
             }
         });
     }
@@ -1130,7 +1261,8 @@ class SQLRepository {
                 }
             }
             catch (ex) {
-                return ex;
+                console.log(`[E]  saveRepo: ${tenantId} ${org} ${ex}`);
+                return 0;
             }
         });
     }
@@ -1155,15 +1287,15 @@ class SQLRepository {
             pr.PullId = _.get(obj.body, 'pull_request.url');
         }
         catch (err) {
-            console.log(`==> ${err}`);
+            console.log(`[E]  shredObject ${err}`);
         }
         return pr;
     }
     //UserRole
     getUserRole(loginId, org, bustTheCache) {
         return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getUserRole' + loginId + org;
             try {
-                const cacheKey = 'getUserRole' + loginId + org;
                 if (!bustTheCache) {
                     const val = this.myCache.get(cacheKey);
                     if (val) {
@@ -1180,15 +1312,15 @@ class SQLRepository {
                 return recordSet.recordset;
             }
             catch (ex) {
-                console.log(`==> ${ex}`);
+                console.log(`[E]  ${cacheKey} ${ex}`);
                 return ex;
             }
         });
     }
     getRole4Org(org, bustTheCache) {
         return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getRole4Org' + org;
             try {
-                const cacheKey = 'getRole4Org' + org;
                 if (!bustTheCache) {
                     const val = this.myCache.get(cacheKey);
                     if (val) {
@@ -1204,15 +1336,15 @@ class SQLRepository {
                 return recordSet.recordset;
             }
             catch (ex) {
-                console.log(`==> ${ex}`);
+                console.log(`[E]  ${cacheKey} ${ex}`);
                 return ex;
             }
         });
     }
     isUserAdmin(loginId, org, bustTheCache) {
         return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'isUserAdmin' + loginId + org;
             try {
-                const cacheKey = 'isUserAdmin' + loginId + org;
                 if (!bustTheCache) {
                     const val = this.myCache.get(cacheKey);
                     if (val) {
@@ -1229,15 +1361,15 @@ class SQLRepository {
                 return recordSet.returnValue;
             }
             catch (ex) {
-                console.log(`==> ${ex}`);
+                console.log(`[E]  ${cacheKey} ${ex}`);
                 return ex;
             }
         });
     }
     isUserMSRAdmin(loginId, org, bustTheCache) {
         return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'isUserMSRAdmin' + loginId + org;
             try {
-                const cacheKey = 'isUserMSRAdmin' + loginId + org;
                 if (!bustTheCache) {
                     const val = this.myCache.get(cacheKey);
                     if (val) {
@@ -1254,7 +1386,7 @@ class SQLRepository {
                 return recordSet.recordset;
             }
             catch (ex) {
-                console.log(`==> ${ex}`);
+                console.log(`[E]  ${cacheKey} ${ex}`);
                 return ex;
             }
         });
@@ -1263,15 +1395,15 @@ class SQLRepository {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 if (!role) {
-                    console.log(`saveUserRole => role cannot be null`);
+                    console.log(`saveUserRole [E]  role cannot be null`);
                     return;
                 }
                 if (!login) {
-                    console.log(`saveUserRole => login cannot be null`);
+                    console.log(`saveUserRole [E]  login cannot be null`);
                     return;
                 }
                 if (!org) {
-                    console.log(`saveUserRole => org cannot be null`);
+                    console.log(`saveUserRole [E]  org cannot be null`);
                     return;
                 }
                 yield this.createPool();
@@ -1283,7 +1415,7 @@ class SQLRepository {
                 return recordSet.rowsAffected[0];
             }
             catch (ex) {
-                console.log(ex);
+                console.log(`[E]  saveUserRole: ${login} ${org} ${ex}`);
                 return ex;
             }
         });
@@ -1292,15 +1424,15 @@ class SQLRepository {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 if (!role) {
-                    console.log(`saveUserRole => role cannot be null`);
+                    console.log(`saveUserRole [E]  role cannot be null`);
                     return;
                 }
                 if (!login) {
-                    console.log(`saveUserRole => login cannot be null`);
+                    console.log(`saveUserRole [E]  login cannot be null`);
                     return;
                 }
                 if (!org) {
-                    console.log(`saveUserRole => org cannot be null`);
+                    console.log(`saveUserRole [E]  org cannot be null`);
                     return;
                 }
                 yield this.createPool();
@@ -1312,7 +1444,7 @@ class SQLRepository {
                 return recordSet.rowsAffected[0];
             }
             catch (ex) {
-                console.log(ex);
+                console.log(`[E]  deleteUserRole: ${login} ${org} ${ex}`);
                 return ex;
             }
         });
