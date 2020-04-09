@@ -94,7 +94,7 @@ class SQLRepository {
       //   }));
     }
 
-    this.createPool().catch(ex =>  {
+    this.createPool().catch(ex => {
       console.log(`[E] create pool failed: ${ex}`);
     });
   }
@@ -109,7 +109,7 @@ class SQLRepository {
       this.sqlConfigSetting.encrypt = true;
       // this.sqlConfigSetting.options = '{ trustedConnection: true} ';
       // this.sqlConfigSetting.driver = 'msnodesqlv8';
-      await new sql.ConnectionPool(this.sqlConfigSetting).connect().then((pool: any) =>  {
+      await new sql.ConnectionPool(this.sqlConfigSetting).connect().then((pool: any) => {
         this.pool = pool;
       });
     }
@@ -650,6 +650,41 @@ class SQLRepository {
     } catch (ex) {
       console.log(`[E]  ${cacheKey}  Error: ${ex}`);
       return;
+    }
+  }
+
+  async GetRepoParticipation4Login(org: string, login: string, days: number = 30, bustTheCache: boolean = false) {
+    const cacheKey = `GetRepoParticipation4Login: org: ${login} ${org} ${days}`;
+    try {
+
+      if (bustTheCache) {
+        this.myCache.del(cacheKey);
+      } else {
+        const val = this.myCache.get(cacheKey);
+        if (val) {
+          return val;
+        }
+      }
+
+      await this.createPool();
+      const request = await this.pool.request();
+      if (!org) {
+        throw new Error('tenant cannot be null');
+      }
+      request.input('org', sql.VarChar(this.ORG_LEN), org);
+      request.input('login', sql.VarChar(this.LOGIN_LEN), login);
+      request.input('days', sql.Int, days);
+
+      const recordSet = await request.execute('GetRepoParticipation4Login');
+
+      if (recordSet.recordset) {
+        this.myCache.set(cacheKey, recordSet.recordset);
+        return recordSet.recordset;
+      }
+      return recordSet;
+    } catch (ex) {
+      console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+      return null;
     }
   }
 

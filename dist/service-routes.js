@@ -501,6 +501,18 @@ router.get('/GetRepoCollectionByName', validateToken, (req, res) => {
         return res.json(err);
     });
 });
+//GetRepoParticipation4Login
+router.get('/GetRepoParticipation4Login', validateToken, (req, res) => {
+    sqlRepositoy
+        .GetRepoParticipation4Login(req.query.org, req.query.login, req.query.days, Boolean(req.query.bustTheCache === 'true'))
+        .then(result => {
+        return res.json(result);
+    })
+        .catch(err => {
+        console.log(`GetRepoParticipation4Login: ${err}`);
+        return res.json(err);
+    });
+});
 router.get('/SetupWebHook', validateToken, (req, res) => {
     gitRepository
         .setupWebHook(getTenant(req), req.query.org)

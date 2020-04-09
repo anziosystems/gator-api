@@ -683,6 +683,40 @@ class SQLRepository {
             }
         });
     }
+    GetRepoParticipation4Login(org, login, days = 30, bustTheCache = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = `GetRepoParticipation4Login: org: ${login} ${org} ${days}`;
+            try {
+                if (bustTheCache) {
+                    this.myCache.del(cacheKey);
+                }
+                else {
+                    const val = this.myCache.get(cacheKey);
+                    if (val) {
+                        return val;
+                    }
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!org) {
+                    throw new Error('tenant cannot be null');
+                }
+                request.input('org', sql.VarChar(this.ORG_LEN), org);
+                request.input('login', sql.VarChar(this.LOGIN_LEN), login);
+                request.input('days', sql.Int, days);
+                const recordSet = yield request.execute('GetRepoParticipation4Login');
+                if (recordSet.recordset) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                return recordSet;
+            }
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return null;
+            }
+        });
+    }
     getPR4Id(org, id = 1) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = `getPR4Id: org:  ${org} id ${id}`;

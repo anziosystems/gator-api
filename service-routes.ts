@@ -512,6 +512,21 @@ router.get('/GetRepoCollectionByName', validateToken, (req: any, res: any) => {
     });
 });
 
+
+//GetRepoParticipation4Login
+router.get('/GetRepoParticipation4Login', validateToken, (req: any, res: any) => {
+  sqlRepositoy
+    .GetRepoParticipation4Login(req.query.org, req.query.login, req.query.days, Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`GetRepoParticipation4Login: ${err}`);
+      return res.json(err);
+    });
+});
+
+
 router.get('/SetupWebHook', validateToken, (req: any, res: any) => {
   gitRepository
     .setupWebHook(getTenant(req), req.query.org)
@@ -524,6 +539,7 @@ router.get('/SetupWebHook', validateToken, (req: any, res: any) => {
       return res.json(err);
     });
 });
+
 
 router.post('/saveOrgChart', validateToken, (req: any, res: any) => {
   if (!req.query.day) {
