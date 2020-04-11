@@ -330,7 +330,7 @@ class GitRepository {
                 });
             }
             catch (ex) {
-                console.log('==> setupWebHook' + ex);
+                console.log('[E] setupWebHook' + ex);
                 return result;
             }
         });

@@ -17,6 +17,13 @@ const NodeCache = require('node-cache');
 const dotenv = require('dotenv');
 dotenv.config();
 const CryptoJS = require('crypto-js');
+class ErrorObj {
+    constructor(code, message) {
+        this.code = code;
+        this.message = message;
+    }
+}
+exports.ErrorObj = ErrorObj;
 class PullRequest {
 }
 class Tenant {
@@ -156,11 +163,11 @@ class SQLRepository {
                 // console.log (cacheKey);
                 const val = this.myCache.get(cacheKey);
                 if (val) {
-                    console.log('jira Token from cache');
+                    //console.log('jira Token from cache');
                     return val;
                 }
                 else {
-                    console.log('jira Token from DB');
+                    //console.log('jira Token from DB');
                 }
                 yield this.createPool();
                 const request = yield this.pool.request();

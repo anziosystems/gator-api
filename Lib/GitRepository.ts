@@ -314,7 +314,7 @@ class GitRepository {
         //see up there are two awaits. and git exception is about hook already present
       });
     } catch (ex) {
-      console.log('==> setupWebHook' + ex);
+      console.log('[E] setupWebHook' + ex);
       return result;
     }
   }

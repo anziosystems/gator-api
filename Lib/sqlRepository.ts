@@ -8,6 +8,15 @@ const dotenv = require('dotenv');
 dotenv.config();
 const CryptoJS = require('crypto-js');
 
+class ErrorObj {
+  code: number;
+  message: string;
+  constructor(code: number, message: string) {
+    this.code = code;
+    this.message = message;
+  }
+}
+
 class PullRequest {
   Org: string;
   Title: string;
@@ -185,10 +194,10 @@ class SQLRepository {
       // console.log (cacheKey);
       const val = this.myCache.get(cacheKey);
       if (val) {
-        console.log('jira Token from cache');
+        //console.log('jira Token from cache');
         return val;
       } else {
-        console.log('jira Token from DB');
+        //console.log('jira Token from DB');
       }
       await this.createPool();
       const request = await this.pool.request();
@@ -656,7 +665,6 @@ class SQLRepository {
   async GetRepoParticipation4Login(org: string, login: string, days: number = 30, bustTheCache: boolean = false) {
     const cacheKey = `GetRepoParticipation4Login: org: ${login} ${org} ${days}`;
     try {
-
       if (bustTheCache) {
         this.myCache.del(cacheKey);
       } else {
@@ -1428,4 +1436,4 @@ class SQLRepository {
   }
 }
 
-export {SQLRepository, Tenant, JiraTenant};
+export {SQLRepository, Tenant, JiraTenant, ErrorObj};
