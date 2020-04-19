@@ -1,4 +1,7 @@
 //https://www.youtube.com/watch?v=or1_A4sJ-oY
+
+//NOTE - Token has User
+
 const router = require('express').Router();
 const passport = require('passport');
 //NOTE - DONT F*** REMOVE THIS unreferenced variable - welcome to JS land - IF below line is removed then passport strategy will not work
@@ -15,13 +18,14 @@ router.get('/login', () => {
   return 'login is called';
 });
 
-//http://localhost:3000/lsauth
+//https://localhost:3000/auth/lsauth
 router.get(
   '/lsauth',
   passport.authenticate('openidconnect', {
     successReturnToOrRedirect: '/',
     scope: 'profile',
-  }));
+  }),
+);
 
 router.get('/github', passport.authenticate('github'), () => {
   //This function will never be called.
@@ -39,10 +43,11 @@ router.get('/logout', (req: any, res: any) => {
   res.send('logging.out');
 });
 
+//Redirects
+
 router.get('/lsauth/redirect', passport.authenticate('openidconnect'), (req: any, res: any) => {
-  console.log(` in lsauth/redirect`);
   const token = jwt.sign(req.user, process.env.Session_Key);
-  res.redirect(callbackURL + '?token=' + token);
+  res.redirect(callbackURL + '?OrgToken=' + token);
 });
 
 //callback for github to call

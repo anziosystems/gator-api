@@ -125,8 +125,8 @@ class SQLRepository {
   }
 
   //return 0 if not a valid tenant or the token more than 7 days old
-  async checkToken(tenantId: number) {
-    const cacheKey = 'CheckToken: ' + tenantId;
+  async checkUser(userId: number) {
+    const cacheKey = 'CheckUser: ' + userId;
     try {
       const val = this.myCache.get(cacheKey);
       if (val) {
@@ -134,7 +134,7 @@ class SQLRepository {
       }
       await this.createPool();
       const request = await this.pool.request();
-      request.input('Id', sql.Int, tenantId);
+      request.input('Id', sql.Int, userId);
       const recordSet = await request.execute('CheckTenant');
       if (recordSet) {
         this.myCache.set(cacheKey, recordSet.recordset[0].Result === 1);
@@ -146,8 +146,8 @@ class SQLRepository {
     }
   }
 
-  async getGitLoggedInUSerDetails(tenantId: number, bustTheCache: Boolean = false) {
-    const cacheKey = 'getGitLoggedInUSerDetails: ' + tenantId;
+  async getLoggedInUSerDetails(userId: number, bustTheCache: Boolean = false) {
+    const cacheKey = 'getLoggedInUSerDetails: ' + userId;
     try {
       if (!bustTheCache) {
         const val = this.myCache.get(cacheKey);
@@ -157,8 +157,8 @@ class SQLRepository {
       }
       await this.createPool();
       const request = await this.pool.request();
-      request.input('TenantId', sql.Int, tenantId);
-      const recordSet = await request.execute('getGitLoggedInUSerDetails');
+      request.input('UserId', sql.Int, userId);
+      const recordSet = await request.execute('getLoggedInUSerDetails');
       if (recordSet) {
         this.myCache.set(cacheKey, recordSet.recordset[0]);
         return recordSet.recordset[0];
@@ -169,13 +169,12 @@ class SQLRepository {
     }
   }
 
-  dropTokenFromCache(tenantId: string) {
-    let cacheKey = 'CheckToken: ' + tenantId;
-    console.log('dropTokenFromCache: ' + cacheKey);
-    this.myCache.del(cacheKey);
-    cacheKey = 'GetTenant-' + tenantId;
-    this.myCache.del(cacheKey);
-  }
+  // dropTokenFromCache(tenantId: string) {
+  //   let cacheKey = 'checkUser: ' + tenantId;
+  //   this.myCache.del(cacheKey);
+  //   cacheKey = 'GetUser-' + tenantId;
+  //   this.myCache.del(cacheKey);
+  // }
 
   dropJiraTokenFromCache(tenantId: string) {
     let cacheKey = 'CheckJiraToken: ' + tenantId;
@@ -450,7 +449,9 @@ class SQLRepository {
     }
   }
 
-  //No one calls this yet, the SP is called directly from another SP GetTenant. Leaving for future use.
+  //No one calls this yet, the SP is called directly from another SP GetUser. 
+  //Leaving for future use.
+
   async setActiveTenant(id: number) {
     try {
       await this.createPool();
@@ -468,9 +469,9 @@ class SQLRepository {
 
   //Token will return UserName, DisplayName, ProfileURL, AuthToken, LastUpdated and Photo (URL)
 
-  async getTenant(id: number) {
+  async getUser(id: number) {
     try {
-      const cacheKey = 'GetTenant-' + id;
+      const cacheKey = 'getUser-' + id;
       const val = this.myCache.get(cacheKey);
       if (val) {
         return val;
@@ -478,13 +479,13 @@ class SQLRepository {
       await this.createPool();
       const request = await this.pool.request();
       request.input('Id', sql.Int, id);
-      const recordSet = await request.execute('GetTenant');
+      const recordSet = await request.execute('GetUser');
       if (recordSet.recordset.length > 0) {
         this.myCache.set(cacheKey, recordSet.recordset);
         return recordSet.recordset;
       } else return 0;
     } catch (ex) {
-      console.log(`[E]  getTenant id: ${id} Error: ${ex}`);
+      console.log(`[E]  getUser id: ${id} Error: ${ex}`);
       return 0;
     }
   }
@@ -590,13 +591,13 @@ class SQLRepository {
     }
   }
 
-  async getToken(id: number) {
-    const cacheKey = 'GetTenant -' + id; //cacheKey is GetTenant because i am reading there cache value. This is different from norm
+  async getUserId(id: number) {
+    const cacheKey = 'getUser -' + id; //cacheKey is getUser because i am reading there cache value. This is different from norm
     const val = this.myCache.get(cacheKey);
     if (val) {
       return this.decrypt(val.recordset[0].Auth_Token, id.toString());
     }
-    const recordSet = await this.getTenant(id);
+    const recordSet = await this.getUser(id);
     if (recordSet) return this.decrypt(recordSet[0].Auth_Token, id.toString());
     else return;
   }
@@ -1154,21 +1155,41 @@ class SQLRepository {
   }
 
   /* return number of orgs */
+  async saveOrg(tenantId: string, org: string) {
+    try {
+      await this.createPool();
+      const request = await this.pool.request();
+      request.input('TenantId', sql.Int, Number(tenantId));
+      request.input('Org', sql.VarChar(this.ORG_LEN), org);
+      request.input('DisplayName', sql.VarChar(this.ORG_LEN), org);
+      await request.execute('SaveOrg');
+      return org.length;
+    } catch (ex) {
+      console.log(`[E]  saveOrg: ${tenantId} ${org} ${ex}`);
+      return 0;
+    }
+  }
 
-  async saveOrg(tenantId: string, orgs: string[]) {
+  async saveOrgs(tenantId: string, orgs: string[]) {
     try {
       await this.createPool();
       const request = await this.pool.request();
       for (const o of orgs) {
         const org: any = o;
         request.input('TenantId', sql.Int, Number(tenantId));
-        request.input('Org', sql.VarChar(this.ORG_LEN), org.url.substr('https://github.com/'.length));
-        request.input('DisplayName', sql.VarChar(this.ORG_LEN), org.name);
+        if (org.url) {
+          request.input('Org', sql.VarChar(this.ORG_LEN), org.url.substr('https://github.com/'.length));
+          request.input('DisplayName', sql.VarChar(this.ORG_LEN), org.name);
+        } else {
+          request.input('Org', sql.VarChar(this.ORG_LEN), org);
+          request.input('DisplayName', sql.VarChar(this.ORG_LEN), org);
+        }
+
         await request.execute('SaveOrg');
       }
       return orgs.length;
     } catch (ex) {
-      console.log(`[E]  saveOrg: ${tenantId} ${orgs} ${ex}`);
+      console.log(`[E]  saveOrgs: ${tenantId} ${orgs} ${ex}`);
       return 0;
     }
   }

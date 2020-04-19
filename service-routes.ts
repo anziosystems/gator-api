@@ -21,10 +21,10 @@ const verifyOptions = {
   algorithm: ['RS256'],
 };
 
-async function isTokenValid(tenantId: number): Promise<boolean> {
+async function isUserValid(userId: number): Promise<boolean> {
   try {
     //Return  false if there is no tenant, true if tenant exist
-    return await sqlRepositoy.checkToken(tenantId).then(r => {
+    return await sqlRepositoy.checkUser(userId).then(r => {
       if (r) {
         return true;
       } else {
@@ -51,9 +51,9 @@ async function isJiraTokenValid(tenantId: string): Promise<boolean> {
   }
 }
 
-function validateToken(req: any, res: any, next: any) {
-  const tenantId = getTenant(req); //GetTenantId from req
-  isTokenValid(tenantId)
+function validateUser(req: any, res: any, next: any) {
+  const userId = getUser(req);  
+  isUserValid(userId)
     .then(val => {
       if (!val) {
         return res.json({val: false, code: 404, message: 'Auth Failed'});
@@ -62,12 +62,12 @@ function validateToken(req: any, res: any, next: any) {
       }
     })
     .catch(ex => {
-      console.log(`validateToken ${ex}`);
+      console.log(`validateUser ${ex}`);
     });
 }
 
 function validateJiraToken(req: any, res: any, next: any) {
-  const tenantId = getJiraTenant(req); //GetTenantId from req
+  const tenantId = getJiraTenant(req);  
   // console.log(`==> validateJiraToken: ${tenantId}`);
   isJiraTokenValid(tenantId)
     .then(val => {
@@ -82,7 +82,7 @@ function validateJiraToken(req: any, res: any, next: any) {
     });
 }
 
-function getTenant(req: any) {
+function getUser(req: any) {
   try {
     const token = req.headers['authorization']; //it is tenantId in header
     //
@@ -92,7 +92,7 @@ function getTenant(req: any) {
       return;
     }
   } catch (ex) {
-    console.log(`==> getTenant ${ex}`);
+    console.log(`==> getUser ${ex}`);
     return;
   }
 }
@@ -188,10 +188,10 @@ router.get('/GetJiraIssues', validateJiraToken, (req: any, res: any) => {
     });
 });
 
-router.get('/GetOrg', validateToken, async (req: any, res: any) => {
+router.get('/GetOrg', validateUser, async (req: any, res: any) => {
   // console.log(`calling getOrg bustTheCashe: ${req.query.bustTheCache} GetfromGit: ${req.query.getFromGit}`);
   await gitRepository
-    .getOrg(getTenant(req), Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true'))
+    .getOrg(getUser(req), Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true'))
     .then(result => {
       try {
         if (!result) {
@@ -208,14 +208,14 @@ router.get('/GetOrg', validateToken, async (req: any, res: any) => {
     });
 });
 
-router.get('/getGitLoggedInUSerDetails', validateToken, (req: any, res: any) => {
+router.get('/getLoggedInUSerDetails', validateUser, (req: any, res: any) => {
   sqlRepositoy
-    .getGitLoggedInUSerDetails(getTenant(req), Boolean(req.query.bustTheCache === 'true'))
+    .getLoggedInUSerDetails(getUser(req), Boolean(req.query.bustTheCache === 'true'))
     .then(result => {
       return res.json(result);
     })
     .catch(err => {
-      console.log(`getGitLoggedInUSerDetails: ${err}`);
+      console.log(`getLoggedInUSerDetails: ${err}`);
       return res.json(err);
     });
 });
@@ -230,7 +230,7 @@ returns {
 }
 
 */
-router.get('/GetGraphData4XDays', validateToken, (req: any, res: any) => {
+router.get('/GetGraphData4XDays', validateUser, (req: any, res: any) => {
   sqlRepositoy
     .GetGraphData4XDays(req.query.org, req.query.day, req.query.login, Boolean(req.query.bustTheCache === 'true'))
     .then(result => {
@@ -242,8 +242,8 @@ router.get('/GetGraphData4XDays', validateToken, (req: any, res: any) => {
     });
 });
 
-router.get('/GetHookStatus', validateToken, (req: any, res: any) => {
-  const tenantId = getTenant(req);
+router.get('/GetHookStatus', validateUser, (req: any, res: any) => {
+  const tenantId = getUser(req);
   gitRepository
     .GetHookStatus(tenantId, req.query.org)
     .then(result => {
@@ -286,7 +286,7 @@ router.get('/GetHookStatus', validateToken, (req: any, res: any) => {
     });
 });
 
-router.get('/GetRepositoryPR', validateToken, (req: any, res: any) => {
+router.get('/GetRepositoryPR', validateUser, (req: any, res: any) => {
   sqlRepositoy
     .getRepoPR(req.query.org, req.query.repo, req.query.day, req.query.pageSize)
     .then(result => {
@@ -298,7 +298,7 @@ router.get('/GetRepositoryPR', validateToken, (req: any, res: any) => {
     });
 });
 
-router.get('/TopDevForLastXDays', validateToken, (req: any, res: any) => {
+router.get('/TopDevForLastXDays', validateUser, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
@@ -313,7 +313,7 @@ router.get('/TopDevForLastXDays', validateToken, (req: any, res: any) => {
     });
 });
 
-router.get('/GitDev4Org', validateToken, (req: any, res: any) => {
+router.get('/GitDev4Org', validateUser, (req: any, res: any) => {
   sqlRepositoy
     .getGitDev4Org(req.query.org)
     .then(result => {
@@ -343,7 +343,7 @@ returns
 ]
 
 */
-router.get('/PullRequestCountForLastXDays', validateToken, (req: any, res: any) => {
+router.get('/PullRequestCountForLastXDays', validateUser, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
@@ -358,12 +358,12 @@ router.get('/PullRequestCountForLastXDays', validateToken, (req: any, res: any) 
     });
 });
 
-router.get('/PullRequestForLastXDays', validateToken, (req: any, res: any) => {
+router.get('/PullRequestForLastXDays', validateUser, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
   sqlRepositoy
-    .getPR4LastXDays(getTenant(req), req.query.day)
+    .getPR4LastXDays(getUser(req), req.query.day)
     .then(result => {
       return res.json(result);
     })
@@ -373,7 +373,7 @@ router.get('/PullRequestForLastXDays', validateToken, (req: any, res: any) => {
     });
 });
 
-router.get('/GetTopRespositories4XDays', validateToken, (req: any, res: any) => {
+router.get('/GetTopRespositories4XDays', validateUser, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
@@ -388,7 +388,7 @@ router.get('/GetTopRespositories4XDays', validateToken, (req: any, res: any) => 
     });
 });
 
-router.get('/PullRequest4Dev', validateToken, (req: any, res: any) => {
+router.get('/PullRequest4Dev', validateUser, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
@@ -403,7 +403,7 @@ router.get('/PullRequest4Dev', validateToken, (req: any, res: any) => {
     });
 });
 
-router.post('/SaveMSR', validateToken, (req: any, res: any) => {
+router.post('/SaveMSR', validateUser, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
@@ -418,7 +418,7 @@ router.post('/SaveMSR', validateToken, (req: any, res: any) => {
     });
 });
 
-router.get('/getSR4User', validateToken, (req: any, res: any) => {
+router.get('/getSR4User', validateUser, (req: any, res: any) => {
   sqlRepositoy
     .getSR4User(req.query.userid, Boolean(req.query.bustTheCache === 'true'))
     .then(result => {
@@ -430,7 +430,7 @@ router.get('/getSR4User', validateToken, (req: any, res: any) => {
     });
 });
 
-router.get('/GetSR4User4Review', validateToken, (req: any, res: any) => {
+router.get('/GetSR4User4Review', validateUser, (req: any, res: any) => {
   sqlRepositoy
     .GetSR4User4Review(req.query.userid, req.query.status, req.query.userFilter, req.query.dateFilter, Boolean(req.query.bustTheCache === 'true'))
     .then(result => {
@@ -442,7 +442,7 @@ router.get('/GetSR4User4Review', validateToken, (req: any, res: any) => {
     });
 });
 
-router.get('/GetSR4Id', validateToken, (req: any, res: any) => {
+router.get('/GetSR4Id', validateUser, (req: any, res: any) => {
   sqlRepositoy
     .getSR4Id(req.query.id, Boolean(req.query.bustTheCache === 'true'))
     .then(result => {
@@ -455,9 +455,9 @@ router.get('/GetSR4Id', validateToken, (req: any, res: any) => {
 });
 
 //    /GetOrg?tenantId='rsarosh@hotmail.com'&Org='LabShare'&bustTheCache=false&getFromGit = true
-router.get('/GetRepos', validateToken, (req: any, res: any) => {
+router.get('/GetRepos', validateUser, (req: any, res: any) => {
   gitRepository
-    .getRepos(getTenant(req), req.query.org, Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true'))
+    .getRepos(getUser(req), req.query.org, Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true'))
     .then(result => {
       if (result) {
         return res.json(result);
@@ -469,8 +469,8 @@ router.get('/GetRepos', validateToken, (req: any, res: any) => {
     });
 });
 
-router.get('/GetPRfromGit', validateToken, (req: any, res: any) => {
-  const tenantId = getTenant(req);
+router.get('/GetPRfromGit', validateUser, (req: any, res: any) => {
+  const tenantId = getUser(req);
   gitRepository
     .getRepos(tenantId, req.query.org, false, false)
     .then(result => {
@@ -487,9 +487,9 @@ router.get('/GetPRfromGit', validateToken, (req: any, res: any) => {
     });
 });
 
-router.get('/GetAllRepoCollection4TenantOrg', validateToken, (req: any, res: any) => {
+router.get('/GetAllRepoCollection4TenantOrg', validateUser, (req: any, res: any) => {
   sqlRepositoy
-    .getAllRepoCollection4TenantOrg(getTenant(req), req.query.org, Boolean(req.query.bustTheCache === 'true'))
+    .getAllRepoCollection4TenantOrg(getUser(req), req.query.org, Boolean(req.query.bustTheCache === 'true'))
     .then(result => {
       return res.json(result);
     })
@@ -500,7 +500,7 @@ router.get('/GetAllRepoCollection4TenantOrg', validateToken, (req: any, res: any
 });
 
 //collectionName
-router.get('/GetRepoCollectionByName', validateToken, (req: any, res: any) => {
+router.get('/GetRepoCollectionByName', validateUser, (req: any, res: any) => {
   sqlRepositoy
     .getAllRepoCollection4TenantOrg(req.query.collectionName, '', Boolean(req.query.bustTheCache === 'true'))
     .then(result => {
@@ -512,9 +512,8 @@ router.get('/GetRepoCollectionByName', validateToken, (req: any, res: any) => {
     });
 });
 
-
 //GetRepoParticipation4Login
-router.get('/GetRepoParticipation4Login', validateToken, (req: any, res: any) => {
+router.get('/GetRepoParticipation4Login', validateUser, (req: any, res: any) => {
   sqlRepositoy
     .GetRepoParticipation4Login(req.query.org, req.query.login, req.query.days, Boolean(req.query.bustTheCache === 'true'))
     .then(result => {
@@ -526,10 +525,9 @@ router.get('/GetRepoParticipation4Login', validateToken, (req: any, res: any) =>
     });
 });
 
-
-router.get('/SetupWebHook', validateToken, (req: any, res: any) => {
+router.get('/SetupWebHook', validateUser, (req: any, res: any) => {
   gitRepository
-    .setupWebHook(getTenant(req), req.query.org)
+    .setupWebHook(getUser(req), req.query.org)
     .then((result: any) => {
       console.log('==>Setupwebhook returning ' + result);
       return res.json({val: result});
@@ -540,13 +538,12 @@ router.get('/SetupWebHook', validateToken, (req: any, res: any) => {
     });
 });
 
-
-router.post('/saveOrgChart', validateToken, (req: any, res: any) => {
+router.post('/saveOrgChart', validateUser, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
-  let tenantId = getTenant(req); //GetTenantId from req
-  sqlRepositoy.getGitLoggedInUSerDetails(tenantId, false).then(result => {
+  let tenantId = getUser(req);  
+  sqlRepositoy.getLoggedInUSerDetails(tenantId, false).then(result => {
     sqlRepositoy.isUserAdmin(result.UserName, req.body.org, false).then(r => {
       //check r here, if tenant is an admin let the call go thru, else reject
       if (r === 1) {
@@ -566,7 +563,7 @@ router.post('/saveOrgChart', validateToken, (req: any, res: any) => {
   });
 });
 
-router.get('/getOrgChart', validateToken, (req: any, res: any) => {
+router.get('/getOrgChart', validateUser, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
@@ -581,7 +578,7 @@ router.get('/getOrgChart', validateToken, (req: any, res: any) => {
     });
 });
 
-router.get('/getUserRole', validateToken, (req: any, res: any) => {
+router.get('/getUserRole', validateUser, (req: any, res: any) => {
   sqlRepositoy
     .getUserRole(req.query.userid, req.query.org, Boolean(req.query.bustTheCache === 'true'))
     .then(result => {
@@ -593,7 +590,7 @@ router.get('/getUserRole', validateToken, (req: any, res: any) => {
     });
 });
 
-router.get('/getRole4Org', validateToken, (req: any, res: any) => {
+router.get('/getRole4Org', validateUser, (req: any, res: any) => {
   sqlRepositoy
     .getRole4Org(req.query.org, true)
     .then(result => {
@@ -605,12 +602,12 @@ router.get('/getRole4Org', validateToken, (req: any, res: any) => {
     });
 });
 
-router.post('/saveUserRole', validateToken, (req: any, res: any) => {
+router.post('/saveUserRole', validateUser, (req: any, res: any) => {
   //check the caller and reject the call if he is not already an admin
   //only Admin can add userroles
 
-  let tenantId = getTenant(req); //GetTenantId from req
-  sqlRepositoy.getGitLoggedInUSerDetails(tenantId, false).then(result => {
+  let tenantId = getUser(req);  
+  sqlRepositoy.getLoggedInUSerDetails(tenantId, false).then(result => {
     sqlRepositoy.isUserAdmin(result.UserName, req.body.org, false).then(r => {
       //check r here, if tenant is an admin let the call go thru, else reject
       if (r === 1) {
@@ -630,12 +627,12 @@ router.post('/saveUserRole', validateToken, (req: any, res: any) => {
   });
 });
 
-router.post('/deleteUserRole', validateToken, (req: any, res: any) => {
+router.post('/deleteUserRole', validateUser, (req: any, res: any) => {
   //check the caller and reject the call if he is not already an admin
   //only Admin can add userroles
 
-  let tenantId = getTenant(req); //GetTenantId from req
-  sqlRepositoy.getGitLoggedInUSerDetails(tenantId, false).then(result => {
+  let tenantId = getUser(req);  
+  sqlRepositoy.getLoggedInUSerDetails(tenantId, false).then(result => {
     sqlRepositoy.isUserAdmin(result.UserName, req.body.org, false).then(r => {
       //check r here, if tenant is an admin let the call go thru, else reject
       if (r === 1) {
@@ -655,7 +652,7 @@ router.post('/deleteUserRole', validateToken, (req: any, res: any) => {
   });
 });
 
-router.get('/isUserAdmin', validateToken, (req: any, res: any) => {
+router.get('/isUserAdmin', validateUser, (req: any, res: any) => {
   sqlRepositoy
     .isUserAdmin(req.query.userid, req.query.org, Boolean(req.query.bustTheCache === 'true'))
     .then(result => {
@@ -667,7 +664,7 @@ router.get('/isUserAdmin', validateToken, (req: any, res: any) => {
     });
 });
 
-router.get('/isUserMSRAdmin', validateToken, (req: any, res: any) => {
+router.get('/isUserMSRAdmin', validateUser, (req: any, res: any) => {
   sqlRepositoy
     .isUserMSRAdmin(req.query.userid, req.query.org, Boolean(req.query.bustTheCache === 'true'))
     .then(result => {

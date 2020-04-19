@@ -88,9 +88,9 @@ class SQLRepository {
         });
     }
     //return 0 if not a valid tenant or the token more than 7 days old
-    checkToken(tenantId) {
+    checkUser(userId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = 'CheckToken: ' + tenantId;
+            const cacheKey = 'CheckUser: ' + userId;
             try {
                 const val = this.myCache.get(cacheKey);
                 if (val) {
@@ -98,7 +98,7 @@ class SQLRepository {
                 }
                 yield this.createPool();
                 const request = yield this.pool.request();
-                request.input('Id', sql.Int, tenantId);
+                request.input('Id', sql.Int, userId);
                 const recordSet = yield request.execute('CheckTenant');
                 if (recordSet) {
                     this.myCache.set(cacheKey, recordSet.recordset[0].Result === 1);
@@ -113,9 +113,9 @@ class SQLRepository {
             }
         });
     }
-    getGitLoggedInUSerDetails(tenantId, bustTheCache = false) {
+    getLoggedInUSerDetails(userId, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = 'getGitLoggedInUSerDetails: ' + tenantId;
+            const cacheKey = 'getLoggedInUSerDetails: ' + userId;
             try {
                 if (!bustTheCache) {
                     const val = this.myCache.get(cacheKey);
@@ -125,8 +125,8 @@ class SQLRepository {
                 }
                 yield this.createPool();
                 const request = yield this.pool.request();
-                request.input('TenantId', sql.Int, tenantId);
-                const recordSet = yield request.execute('getGitLoggedInUSerDetails');
+                request.input('UserId', sql.Int, userId);
+                const recordSet = yield request.execute('getLoggedInUSerDetails');
                 if (recordSet) {
                     this.myCache.set(cacheKey, recordSet.recordset[0]);
                     return recordSet.recordset[0];
@@ -140,13 +140,12 @@ class SQLRepository {
             }
         });
     }
-    dropTokenFromCache(tenantId) {
-        let cacheKey = 'CheckToken: ' + tenantId;
-        console.log('dropTokenFromCache: ' + cacheKey);
-        this.myCache.del(cacheKey);
-        cacheKey = 'GetTenant-' + tenantId;
-        this.myCache.del(cacheKey);
-    }
+    // dropTokenFromCache(tenantId: string) {
+    //   let cacheKey = 'checkUser: ' + tenantId;
+    //   this.myCache.del(cacheKey);
+    //   cacheKey = 'GetUser-' + tenantId;
+    //   this.myCache.del(cacheKey);
+    // }
     dropJiraTokenFromCache(tenantId) {
         let cacheKey = 'CheckJiraToken: ' + tenantId;
         this.myCache.del(cacheKey);
@@ -448,7 +447,8 @@ class SQLRepository {
             }
         });
     }
-    //No one calls this yet, the SP is called directly from another SP GetTenant. Leaving for future use.
+    //No one calls this yet, the SP is called directly from another SP GetUser. 
+    //Leaving for future use.
     setActiveTenant(id) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -469,10 +469,10 @@ class SQLRepository {
         });
     }
     //Token will return UserName, DisplayName, ProfileURL, AuthToken, LastUpdated and Photo (URL)
-    getTenant(id) {
+    getUser(id) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const cacheKey = 'GetTenant-' + id;
+                const cacheKey = 'getUser-' + id;
                 const val = this.myCache.get(cacheKey);
                 if (val) {
                     return val;
@@ -480,7 +480,7 @@ class SQLRepository {
                 yield this.createPool();
                 const request = yield this.pool.request();
                 request.input('Id', sql.Int, id);
-                const recordSet = yield request.execute('GetTenant');
+                const recordSet = yield request.execute('GetUser');
                 if (recordSet.recordset.length > 0) {
                     this.myCache.set(cacheKey, recordSet.recordset);
                     return recordSet.recordset;
@@ -489,7 +489,7 @@ class SQLRepository {
                     return 0;
             }
             catch (ex) {
-                console.log(`[E]  getTenant id: ${id} Error: ${ex}`);
+                console.log(`[E]  getUser id: ${id} Error: ${ex}`);
                 return 0;
             }
         });
@@ -608,14 +608,14 @@ class SQLRepository {
             }
         });
     }
-    getToken(id) {
+    getUserId(id) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = 'GetTenant -' + id; //cacheKey is GetTenant because i am reading there cache value. This is different from norm
+            const cacheKey = 'getUser -' + id; //cacheKey is getUser because i am reading there cache value. This is different from norm
             const val = this.myCache.get(cacheKey);
             if (val) {
                 return this.decrypt(val.recordset[0].Auth_Token, id.toString());
             }
-            const recordSet = yield this.getTenant(id);
+            const recordSet = yield this.getUser(id);
             if (recordSet)
                 return this.decrypt(recordSet[0].Auth_Token, id.toString());
             else
@@ -1196,7 +1196,24 @@ class SQLRepository {
         });
     }
     /* return number of orgs */
-    saveOrg(tenantId, orgs) {
+    saveOrg(tenantId, org) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('TenantId', sql.Int, Number(tenantId));
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                request.input('DisplayName', sql.VarChar(this.ORG_LEN), org);
+                yield request.execute('SaveOrg');
+                return org.length;
+            }
+            catch (ex) {
+                console.log(`[E]  saveOrg: ${tenantId} ${org} ${ex}`);
+                return 0;
+            }
+        });
+    }
+    saveOrgs(tenantId, orgs) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 yield this.createPool();
@@ -1204,14 +1221,20 @@ class SQLRepository {
                 for (const o of orgs) {
                     const org = o;
                     request.input('TenantId', sql.Int, Number(tenantId));
-                    request.input('Org', sql.VarChar(this.ORG_LEN), org.url.substr('https://github.com/'.length));
-                    request.input('DisplayName', sql.VarChar(this.ORG_LEN), org.name);
+                    if (org.url) {
+                        request.input('Org', sql.VarChar(this.ORG_LEN), org.url.substr('https://github.com/'.length));
+                        request.input('DisplayName', sql.VarChar(this.ORG_LEN), org.name);
+                    }
+                    else {
+                        request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                        request.input('DisplayName', sql.VarChar(this.ORG_LEN), org);
+                    }
                     yield request.execute('SaveOrg');
                 }
                 return orgs.length;
             }
             catch (ex) {
-                console.log(`[E]  saveOrg: ${tenantId} ${orgs} ${ex}`);
+                console.log(`[E]  saveOrgs: ${tenantId} ${orgs} ${ex}`);
                 return 0;
             }
         });

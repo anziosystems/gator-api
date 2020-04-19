@@ -232,7 +232,7 @@ class GitRepository {
 
   async makeGitRequestHeader(tenantId: string, graphQL: string = '', gUri = 'https://api.github.com/graphql', method = 'POST') {
     try {
-      const token = 'Bearer ' + (await this.sqlRepository.getToken(Number(tenantId)));
+      const token = 'Bearer ' + (await this.sqlRepository.getUserId(Number(tenantId)));
       const header = {
         method: method,
         uri: gUri,
@@ -254,7 +254,7 @@ class GitRepository {
 
   async makeGitRequestHeaderLight(tenantId: string) {
     try {
-      const token = 'Bearer ' + (await this.sqlRepository.getToken(Number(tenantId)));
+      const token = 'Bearer ' + (await this.sqlRepository.getUserId(Number(tenantId)));
       const header = {
         headers: {
           'Content-Type': 'application/json',
@@ -353,7 +353,7 @@ class GitRepository {
               // eslint-disable-next-line @typescript-eslint/no-floating-promises
               this.sqlRepository.saveStatus(tenantId, 'GET-ORG-SUCCESS');
               const orgs: string[] = JSON.parse(response.body).data.viewer.organizations.nodes;
-              await this.sqlRepository.saveOrg(tenantId, orgs);
+              await this.sqlRepository.saveOrgs(tenantId, orgs);
               await this.UpdateDev4Org(tenantId, orgs);
               const result = await this.sqlRepository.getOrg(tenantId);
               resolve(result);
@@ -435,7 +435,7 @@ class GitRepository {
       return x.RepoName;
     });
     console.log('Total repos:', repos.length);
-    const names = names2.slice (1,5); //REMOVE AFTER TESTING
+    const names = names2.slice(1, 5); //REMOVE AFTER TESTING
     names.sort(function(a: any, b: any) {
       return a.toLowerCase().localeCompare(b.toLowerCase());
     });
@@ -520,7 +520,7 @@ class GitRepository {
       }
     }
 
-    const rows: any = []
+    const rows: any = [];
     const rowNames = Object.keys(result[names[0]]);
     /*
     result => 

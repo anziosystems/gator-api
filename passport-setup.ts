@@ -206,42 +206,75 @@ profile.accessibleResources[0]
 //Client Secret: d66f4b78-8029-11ea-9ca6-0242ac120003
 /**
  * Configure Passport middleware
+ * Ls-Auth settings:
+ * Application Type: Web App
+ * callback Users: https://localhost:3000/auth/lsauth/redirect
+ * Response Types: code
+ * Grant Types: Authorization_code, client_credentials
+ * Token endpoint Auth Method: client_secret_post
+ * Make provider on
  */
 
-// Configure the OIDC Strategy for Passport login
-// with credentials obtained from the OIDC server
 passport.use(
   new OidcStrategy(
     {
-      issuer: `https://a.labshare.org/_api/auth/AxelInfo`,
+      issuer: `https://a.labshare.org/_api/auth/AxleInfo`,
       clientID: `oKU4JSoI3TbvdfYOVwwCR`, //process.env.OIDC_CLIENT_ID,
       clientSecret: `d024ef66-81c9-11ea-9ca6-0242ac120003`, // process.env.OIDC_CLIENT_SECRET,
       authorizationURL: `https://a.labshare.org/_api/auth/AxleInfo/authorize`,
       userInfoURL: `https://a.labshare.org/_api/auth/AxleInfo/me`,
       tokenURL: `https://a.labshare.org/_api/auth/AxleInfo/oidc/token`,
-      callbackURL: 'https://local.mylocal.org:3001/auth/lsauth/redirect',
+      callbackURL: 'https://localhost:3000/auth/lsauth/redirect',
       passReqToCallback: true,
     },
-    function(req: any, issuer: string, userId: string, profile: string, accessToken: string, refreshToken: string, params: any, cb: any) {
-      console.log('issuer:', issuer);
-      console.log('userId:', userId);
-      console.log('accessToken:', accessToken);
-      console.log('refreshToken:', refreshToken);
-      console.log('params:', params);
-
+    function(req: any, issuer: string, userId: string, profile: any, accessToken: string, refreshToken: string, params: any, done: any) {
+      // console.log('issuer:', issuer);
+      // console.log('userId:', userId);
+      // console.log('accessToken:', accessToken);
+      // console.log('refreshToken:', refreshToken);
+      // console.log('params:', params);
+      // console.log('profile:', JSON.stringify(profile));
       // Store the Access Token and ID Token in the request session
       req.session.accessToken = accessToken;
       req.session.idToken = params.id_token;
 
-      return cb(null, profile);
+      /*
+      profile: {"id":"8584","displayName":"Rafat Sarosh","name":{"familyName":"Sarosh","givenName":"Rafat"},
+              "_raw":"{\"sub\":\"8584\",\"family_name\":\"Sarosh\",\"given_name\":\"Rafat\",\"name\":\"Rafat Sarosh\",
+              \"username\":\"rafat.sarosh@axleinfo.com\",\"roles\":[],\"role\":\"user\"}",
+              "_json":{"sub":"8584","family_name":"Sarosh","given_name":"Rafat","name":"Rafat Sarosh",
+              "username":"rafat.sarosh@axleinfo.com","roles":[],"role":"user"}}
+      */
+
+      const tenant = new Tenant();
+      tenant.AuthToken = accessToken;
+      if (!refreshToken) refreshToken = '';
+
+      tenant.RefreshToken = refreshToken;
+      tenant.UserName = profile._json.username; //email name to keep it unique
+      tenant.DisplayName = profile.displayName;
+      tenant.Id = profile.id;
+      tenant.Photo = '';
+      tenant.Email = profile._json.username;
+      tenant.ProfileUrl = profile.profileUrl;
+      const sqlRepositoy = new SQLRepository(null);
+      sqlRepositoy
+        .saveTenant(tenant)
+        .then(result => {
+          if (result.message) {
+            //if error then pass the error message
+            return done(result, profile.id);
+          }
+          let domain = profile._json.username.split('@');
+          sqlRepositoy.saveOrg(profile.id, domain[1]);
+          console.log('Profile is saved - ' + domain[1]);
+          return done(null, String(profile.id.trim()));
+        })
+        .catch(err => {
+          console.log(`saveTenant Error: ${err}`);
+        });
+
+      // return cb(null, profile);
     },
   ),
 );
-
-// passport.serializeUser(function (user, done) {
-//   done(null, user);
-// });
-
-// passport.deserializeUser(function (obj, done) {
-//   done(null, obj);
-// });

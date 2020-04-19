@@ -50,10 +50,11 @@ passport.serializeUser((user: any, done: any) => {
 
 passport.deserializeUser(function(id: any, done: any) {
   try {
+    // console.log (`==> Inside DeserializeUser - id: ${JSON.stringify(id)}`)
     console.log(`==> Inside DeserializeUser - id: ${id}`);
     const sqlRepositoy = new SQLRepository(null);
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    sqlRepositoy.getTenant(id).then(result => {
+    sqlRepositoy.getUser(id).then(result => {
       if (result) {
         console.log('==> inside deserialize - user.id: ' + result[0].Id);
         //do something with Tenant details
@@ -87,37 +88,9 @@ app.get('/success', (req: any, res: any) => {
   res.render('success');
 });
 
-// const OIDC_BASE_URI = process.env.OIDC_BASE_URI;
-// const callbackURL = process.env.OIDC_REDIRECT_URI;
-// var issuer;
-// var authorizationURL;
-// var userInfoURL;
-// var tokenURL;
-// var endSessionURL;
-
-// // Get OIDC endpoints from well known configuration endpoint
-// request(`${OIDC_BASE_URI}/.well-known/openid-configuration`,
-//   { json: true },
-//   (err, res, body) => {
-//     if (err) { throw Error(err); }
-//     issuer = body.issuer;
-//     console.log(`issuer: ${issuer}`);
-//     authorizationURL = body.authorization_endpoint;
-//     console.log(`authorization_endpoint: ${authorizationURL}`);
-//     userInfoURL = body.userinfo_endpoint;
-//     console.log(`user_info_endpoint: ${userInfoURL}`);
-//     tokenURL = body.token_endpoint;
-//     console.log(`tokenURL: ${tokenURL}`);
-//     endSessionURL = body.end_session_endpoint;
-//     console.log(`end_session_endpoint: ${endSessionURL}`);
-//     // configure the Passport authentication middleware
-//     configPassport();
-//     // configure the Express routes
-//     configExpress();
-//   }
-// );
 
 // commenting it for https
+
 // const port = process.env.PORT || 3000;
 // app.listen(port, () => {
 //   console.log('listenting for request on port 3000');
@@ -128,7 +101,7 @@ var http = require('http');
 var https = require('https');
 var fs = require('fs');
 
-var port = process.env.PORT || '3001';
+var port = process.env.PORT || '3000';
 app.set('port', port);
 
 /**
@@ -183,8 +156,14 @@ function onError(error: any) {
 
 /**
  * Event listener for HTTP server "listening" event.
+ * 
+ * For https to work on your local machine you have to change host file and add an entry
+ * 
+ * 127.0.0.1 localhost
+ * 
+ * copy the host file from C:\Windows\System32\drivers\etc to desktop, edit it and then copy back
  */
 
 function onListening() {
-  console.log(`Listening on port ${port}`);
+  console.log(`----- I am ready on port ${port} -----`);
 }

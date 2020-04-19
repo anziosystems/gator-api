@@ -245,7 +245,7 @@ class GitRepository {
     makeGitRequestHeader(tenantId, graphQL = '', gUri = 'https://api.github.com/graphql', method = 'POST') {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const token = 'Bearer ' + (yield this.sqlRepository.getToken(Number(tenantId)));
+                const token = 'Bearer ' + (yield this.sqlRepository.getUserId(Number(tenantId)));
                 const header = {
                     method: method,
                     uri: gUri,
@@ -268,7 +268,7 @@ class GitRepository {
     makeGitRequestHeaderLight(tenantId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const token = 'Bearer ' + (yield this.sqlRepository.getToken(Number(tenantId)));
+                const token = 'Bearer ' + (yield this.sqlRepository.getUserId(Number(tenantId)));
                 const header = {
                     headers: {
                         'Content-Type': 'application/json',
@@ -370,7 +370,7 @@ class GitRepository {
                                 // eslint-disable-next-line @typescript-eslint/no-floating-promises
                                 this.sqlRepository.saveStatus(tenantId, 'GET-ORG-SUCCESS');
                                 const orgs = JSON.parse(response.body).data.viewer.organizations.nodes;
-                                yield this.sqlRepository.saveOrg(tenantId, orgs);
+                                yield this.sqlRepository.saveOrgs(tenantId, orgs);
                                 yield this.UpdateDev4Org(tenantId, orgs);
                                 const result = yield this.sqlRepository.getOrg(tenantId);
                                 resolve(result);

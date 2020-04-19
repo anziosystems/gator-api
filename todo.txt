@@ -1,0 +1,4 @@
+Drop getGitLoggedInUSerDetails. It is replaced by getLoggedInUSerDetails SP.
+Drop Tenant table it is replaced by User Table
+Drop CheckTenant it is replaced by CheckUSer
+Drop GetTenant it is replaced by GetUser
