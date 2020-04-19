@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const request = require('request');
 const app = express();
 const authRoutes = require('./auth-routes');
 const serviceRoutes = require('./service-routes');
@@ -86,8 +87,104 @@ app.get('/success', (req: any, res: any) => {
   res.render('success');
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log('listenting for request on port 3000');
-  console.log('===================================================');
+// const OIDC_BASE_URI = process.env.OIDC_BASE_URI;
+// const callbackURL = process.env.OIDC_REDIRECT_URI;
+// var issuer;
+// var authorizationURL;
+// var userInfoURL;
+// var tokenURL;
+// var endSessionURL;
+
+// // Get OIDC endpoints from well known configuration endpoint
+// request(`${OIDC_BASE_URI}/.well-known/openid-configuration`,
+//   { json: true },
+//   (err, res, body) => {
+//     if (err) { throw Error(err); }
+//     issuer = body.issuer;
+//     console.log(`issuer: ${issuer}`);
+//     authorizationURL = body.authorization_endpoint;
+//     console.log(`authorization_endpoint: ${authorizationURL}`);
+//     userInfoURL = body.userinfo_endpoint;
+//     console.log(`user_info_endpoint: ${userInfoURL}`);
+//     tokenURL = body.token_endpoint;
+//     console.log(`tokenURL: ${tokenURL}`);
+//     endSessionURL = body.end_session_endpoint;
+//     console.log(`end_session_endpoint: ${endSessionURL}`);
+//     // configure the Passport authentication middleware
+//     configPassport();
+//     // configure the Express routes
+//     configExpress();
+//   }
+// );
+
+// commenting it for https
+// const port = process.env.PORT || 3000;
+// app.listen(port, () => {
+//   console.log('listenting for request on port 3000');
+//   console.log('===================================================');
+// });
+
+var http = require('http');
+var https = require('https');
+var fs = require('fs');
+
+var port = process.env.PORT || '3001';
+app.set('port', port);
+
+/**
+ * Create HTTPS server using TLS cert.
+ * NOTE: TLS is required for OIDC callbacks.
+ * Listen on provided port, on all network interfaces.
+ */
+var server;
+var protocol = process.env.PROTOCOL || 'http';
+
+if (protocol.toLocaleLowerCase() === 'http') {
+  server = http.createServer(app);
+} else {
+  // For HTTPS read in the key file and cert file.
+  server = https.createServer(
+    {
+      key: fs.readFileSync(process.env.TLS_KEY_FILE),
+      cert: fs.readFileSync(process.env.TLS_CERT_FILE),
+    },
+    app,
+  );
+}
+server.listen(port, function() {
+  console.log(`Listening on port ${port}! Go to ${protocol}://${process.env.HOST_NAME}:${port}/`);
 });
+server.on('error', onError);
+server.on('listening', onListening);
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error: any) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(`Port ${port} requires elevated privileges`);
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(`Port ${port} is already in use`);
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  console.log(`Listening on port ${port}`);
+}

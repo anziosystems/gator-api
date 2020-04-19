@@ -9,7 +9,15 @@ dotenv.config();
 //var callbackURL = 'http://localhost:8080/callback';
 const callbackURL = process.env.CALL_BACK_URL; //'https://gator-ui.azurewebsites.net/callback';
 //This method is not called any more, it is here for the test
-router.get('/login', () => { });
+router.get('/login', () => {
+    console.log('login is called.');
+    return 'login is called';
+});
+//http://localhost:3000/lsauth
+router.get('/lsauth', passport.authenticate('openidconnect', {
+    successReturnToOrRedirect: '/',
+    scope: 'profile',
+}));
 router.get('/github', passport.authenticate('github'), () => {
     //This function will never be called.
 });
@@ -22,9 +30,15 @@ router.get('/bitbucket', passport.authenticate('bitbucket'), () => {
 router.get('/logout', (req, res) => {
     res.send('logging.out');
 });
+router.get('/lsauth/redirect', passport.authenticate('openidconnect'), (req, res) => {
+    console.log(` in lsauth/redirect`);
+    const token = jwt.sign(req.user, process.env.Session_Key);
+    res.redirect(callbackURL + '?token=' + token);
+});
 //callback for github to call
 //in the setting of application call back is defined as /auth/github/redirect
-//remember auth/ is automatically placed in front of this, because in app.ts we have defined app.use('/auth', authRoutes);
+//remember auth/ is automatically placed in front of this, because in app.ts we have defined
+// app.use('/auth', authRoutes);
 //this is callbacked with authorization Code, this code is taken by passport and made another call to get the access code
 //which you can see in passport-setup.ts file
 router.get('/github/redirect', passport.authenticate('github'), (req, res) => {

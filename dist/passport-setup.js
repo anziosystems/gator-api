@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const passport = require("passport");
+var OidcStrategy = require('passport-openidconnect').Strategy;
 const GitHubStrategy = require('passport-github').Strategy;
 const sqlRepository_1 = require("./Lib/sqlRepository");
 const dotenv = require('dotenv');
@@ -176,4 +177,38 @@ profile.accessibleResources[0]
         console.log(`saveJiraTenant Error: ${err}`);
     });
 }));
+//Labshare for AxleInfo
+//ClientId: Dw61UVtyPmyFKWPm6tLqh
+//Client Secret: d66f4b78-8029-11ea-9ca6-0242ac120003
+/**
+ * Configure Passport middleware
+ */
+// Configure the OIDC Strategy for Passport login
+// with credentials obtained from the OIDC server
+passport.use(new OidcStrategy({
+    issuer: `https://a.labshare.org/_api/auth/AxelInfo`,
+    clientID: `oKU4JSoI3TbvdfYOVwwCR`,
+    clientSecret: `d024ef66-81c9-11ea-9ca6-0242ac120003`,
+    authorizationURL: `https://a.labshare.org/_api/auth/AxleInfo/authorize`,
+    userInfoURL: `https://a.labshare.org/_api/auth/AxleInfo/me`,
+    tokenURL: `https://a.labshare.org/_api/auth/AxleInfo/oidc/token`,
+    callbackURL: 'https://local.mylocal.org:3001/auth/lsauth/redirect',
+    passReqToCallback: true,
+}, function (req, issuer, userId, profile, accessToken, refreshToken, params, cb) {
+    console.log('issuer:', issuer);
+    console.log('userId:', userId);
+    console.log('accessToken:', accessToken);
+    console.log('refreshToken:', refreshToken);
+    console.log('params:', params);
+    // Store the Access Token and ID Token in the request session
+    req.session.accessToken = accessToken;
+    req.session.idToken = params.id_token;
+    return cb(null, profile);
+}));
+// passport.serializeUser(function (user, done) {
+//   done(null, user);
+// });
+// passport.deserializeUser(function (obj, done) {
+//   done(null, obj);
+// });
 //# sourceMappingURL=passport-setup.js.map
