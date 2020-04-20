@@ -156,7 +156,7 @@ class GitRepository {
         }
       });
       //git call has put the org in SQL, now lets get it from (cache).
-      return await this.sqlRepository.GetOrg4Tenant(tenantId, org);
+      return await this.sqlRepository.GetOrgDetail4UserId_Org(tenantId, org);
     } catch (ex) {
       console.log(ex);
     }
@@ -338,7 +338,7 @@ class GitRepository {
 
     if (!getFromGit) {
       //Get from local store
-      const result = await this.sqlRepository.getOrg(tenantId);
+      const result = await this.sqlRepository.getOrg4UserId(tenantId);
       if (result) return result;
     }
     //Lets go to git
@@ -355,7 +355,7 @@ class GitRepository {
               const orgs: string[] = JSON.parse(response.body).data.viewer.organizations.nodes;
               await this.sqlRepository.saveOrgs(tenantId, orgs);
               await this.UpdateDev4Org(tenantId, orgs);
-              const result = await this.sqlRepository.getOrg(tenantId);
+              const result = await this.sqlRepository.getOrg4UserId(tenantId);
               resolve(result);
             } else {
               // eslint-disable-next-line @typescript-eslint/no-floating-promises

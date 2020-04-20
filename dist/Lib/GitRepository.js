@@ -164,7 +164,7 @@ class GitRepository {
                     }
                 }));
                 //git call has put the org in SQL, now lets get it from (cache).
-                return yield this.sqlRepository.GetOrg4Tenant(tenantId, org);
+                return yield this.sqlRepository.GetOrgDetail4UserId_Org(tenantId, org);
             }
             catch (ex) {
                 console.log(ex);
@@ -354,7 +354,7 @@ class GitRepository {
             }
             if (!getFromGit) {
                 //Get from local store
-                const result = yield this.sqlRepository.getOrg(tenantId);
+                const result = yield this.sqlRepository.getOrg4UserId(tenantId);
                 if (result)
                     return result;
             }
@@ -372,7 +372,7 @@ class GitRepository {
                                 const orgs = JSON.parse(response.body).data.viewer.organizations.nodes;
                                 yield this.sqlRepository.saveOrgs(tenantId, orgs);
                                 yield this.UpdateDev4Org(tenantId, orgs);
-                                const result = yield this.sqlRepository.getOrg(tenantId);
+                                const result = yield this.sqlRepository.getOrg4UserId(tenantId);
                                 resolve(result);
                             }
                             else {

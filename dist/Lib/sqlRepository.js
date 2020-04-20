@@ -241,9 +241,9 @@ class SQLRepository {
             }
         });
     }
-    GetOrg4Tenant(tenantId, org, bustTheCache = false) {
+    GetOrgDetail4UserId_Org(userId, org, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = `GetOrg4Tenant- tenantId: ${tenantId} org: ${org}`;
+            const cacheKey = `GetOrgDetail4UserId_Org: ${userId} org: ${org}`;
             try {
                 if (bustTheCache) {
                     this.myCache.del(cacheKey);
@@ -255,8 +255,8 @@ class SQLRepository {
                 yield this.createPool();
                 const request = yield this.pool.request();
                 request.input('org', sql.VarChar(this.ORG_LEN), org);
-                request.input('TenantId', sql.Int, Number(tenantId));
-                const recordSet = yield request.execute('GetOrg4Tenant');
+                request.input('UserId', sql.Int, Number(userId));
+                const recordSet = yield request.execute('GetOrgDetail4UserId_Org');
                 if (recordSet) {
                     this.myCache.set(cacheKey, recordSet.recordset);
                 }
@@ -354,9 +354,9 @@ class SQLRepository {
             }
         });
     }
-    getOrg(tenantId, bustTheCache = false) {
+    getOrg4UserId(userId, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = 'GetOrg' + tenantId;
+            const cacheKey = 'GetOrg' + userId;
             try {
                 if (bustTheCache) {
                     this.myCache.del(cacheKey);
@@ -367,8 +367,8 @@ class SQLRepository {
                 }
                 yield this.createPool();
                 const request = yield this.pool.request();
-                request.input('TenantId', sql.Int, Number(tenantId));
-                const recordSet = yield request.execute('GetOrg');
+                request.input('UserId', sql.Int, Number(userId));
+                const recordSet = yield request.execute('GetOrg4UserId');
                 if (recordSet.recordset) {
                     this.myCache.set(cacheKey, recordSet.recordset);
                 }
@@ -1196,31 +1196,31 @@ class SQLRepository {
         });
     }
     /* return number of orgs */
-    saveOrg(tenantId, org) {
+    saveUserOrg(userId, org) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 yield this.createPool();
                 const request = yield this.pool.request();
-                request.input('TenantId', sql.Int, Number(tenantId));
+                request.input('UserId', sql.Int, Number(userId));
                 request.input('Org', sql.VarChar(this.ORG_LEN), org);
                 request.input('DisplayName', sql.VarChar(this.ORG_LEN), org);
-                yield request.execute('SaveOrg');
+                yield request.execute('SaveUserOrg');
                 return org.length;
             }
             catch (ex) {
-                console.log(`[E]  saveOrg: ${tenantId} ${org} ${ex}`);
+                console.log(`[E]  saveUserOrg: ${userId} ${org} ${ex}`);
                 return 0;
             }
         });
     }
-    saveOrgs(tenantId, orgs) {
+    saveOrgs(userId, orgs) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 yield this.createPool();
                 const request = yield this.pool.request();
                 for (const o of orgs) {
                     const org = o;
-                    request.input('TenantId', sql.Int, Number(tenantId));
+                    request.input('UserId', sql.Int, Number(userId));
                     if (org.url) {
                         request.input('Org', sql.VarChar(this.ORG_LEN), org.url.substr('https://github.com/'.length));
                         request.input('DisplayName', sql.VarChar(this.ORG_LEN), org.name);
@@ -1229,12 +1229,12 @@ class SQLRepository {
                         request.input('Org', sql.VarChar(this.ORG_LEN), org);
                         request.input('DisplayName', sql.VarChar(this.ORG_LEN), org);
                     }
-                    yield request.execute('SaveOrg');
+                    yield request.execute('SaveUserOrg');
                 }
                 return orgs.length;
             }
             catch (ex) {
-                console.log(`[E]  saveOrgs: ${tenantId} ${orgs} ${ex}`);
+                console.log(`[E]  saveOrgs: ${userId} ${orgs} ${ex}`);
                 return 0;
             }
         });

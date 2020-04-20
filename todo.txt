@@ -2,3 +2,9 @@ Drop getGitLoggedInUSerDetails. It is replaced by getLoggedInUSerDetails SP.
 Drop Tenant table it is replaced by User Table
 Drop CheckTenant it is replaced by CheckUSer
 Drop GetTenant it is replaced by GetUser
+Drop TenantOrg it is replaced by UserOrg
+Drop GetOrg SP it is replaced by GetOrg4UserId
+Drop [GetOrg4Tenant] it is replaced by GetOrgDetail4UserId_Org
+Drop SaveOrg it is replaced by SaveUserOrg
+Drop ActiveTenant it is replaced by ActiveUser
+Drop ActiveTenant SP it is replaced by SaveActiveUser

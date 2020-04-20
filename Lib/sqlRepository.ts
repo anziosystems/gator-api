@@ -260,8 +260,8 @@ class SQLRepository {
     }
   }
 
-  async GetOrg4Tenant(tenantId: string, org: string, bustTheCache: Boolean = false) {
-    const cacheKey = `GetOrg4Tenant- tenantId: ${tenantId} org: ${org}`;
+  async GetOrgDetail4UserId_Org(userId: string, org: string, bustTheCache: Boolean = false) {
+    const cacheKey = `GetOrgDetail4UserId_Org: ${userId} org: ${org}`;
     try {
       if (bustTheCache) {
         this.myCache.del(cacheKey);
@@ -273,8 +273,8 @@ class SQLRepository {
       await this.createPool();
       const request = await this.pool.request();
       request.input('org', sql.VarChar(this.ORG_LEN), org);
-      request.input('TenantId', sql.Int, Number(tenantId));
-      const recordSet = await request.execute('GetOrg4Tenant');
+      request.input('UserId', sql.Int, Number(userId));
+      const recordSet = await request.execute('GetOrgDetail4UserId_Org');
       if (recordSet) {
         this.myCache.set(cacheKey, recordSet.recordset);
       }
@@ -365,8 +365,8 @@ class SQLRepository {
     }
   }
 
-  async getOrg(tenantId: string, bustTheCache: Boolean = false) {
-    const cacheKey = 'GetOrg' + tenantId;
+  async getOrg4UserId(userId: string, bustTheCache: Boolean = false) {
+    const cacheKey = 'GetOrg' + userId;
     try {
       if (bustTheCache) {
         this.myCache.del(cacheKey);
@@ -377,8 +377,8 @@ class SQLRepository {
       }
       await this.createPool();
       const request = await this.pool.request();
-      request.input('TenantId', sql.Int, Number(tenantId));
-      const recordSet = await request.execute('GetOrg');
+      request.input('UserId', sql.Int, Number(userId));
+      const recordSet = await request.execute('GetOrg4UserId');
       if (recordSet.recordset) {
         this.myCache.set(cacheKey, recordSet.recordset);
       }
@@ -1155,28 +1155,28 @@ class SQLRepository {
   }
 
   /* return number of orgs */
-  async saveOrg(tenantId: string, org: string) {
+  async saveUserOrg(userId: string, org: string) {
     try {
       await this.createPool();
       const request = await this.pool.request();
-      request.input('TenantId', sql.Int, Number(tenantId));
+      request.input('UserId', sql.Int, Number(userId));
       request.input('Org', sql.VarChar(this.ORG_LEN), org);
       request.input('DisplayName', sql.VarChar(this.ORG_LEN), org);
-      await request.execute('SaveOrg');
+      await request.execute('SaveUserOrg');
       return org.length;
     } catch (ex) {
-      console.log(`[E]  saveOrg: ${tenantId} ${org} ${ex}`);
+      console.log(`[E]  saveUserOrg: ${userId} ${org} ${ex}`);
       return 0;
     }
   }
 
-  async saveOrgs(tenantId: string, orgs: string[]) {
+  async saveOrgs(userId: string, orgs: string[]) {
     try {
       await this.createPool();
       const request = await this.pool.request();
       for (const o of orgs) {
         const org: any = o;
-        request.input('TenantId', sql.Int, Number(tenantId));
+        request.input('UserId', sql.Int, Number(userId));
         if (org.url) {
           request.input('Org', sql.VarChar(this.ORG_LEN), org.url.substr('https://github.com/'.length));
           request.input('DisplayName', sql.VarChar(this.ORG_LEN), org.name);
@@ -1185,11 +1185,11 @@ class SQLRepository {
           request.input('DisplayName', sql.VarChar(this.ORG_LEN), org);
         }
 
-        await request.execute('SaveOrg');
+        await request.execute('SaveUserOrg');
       }
       return orgs.length;
     } catch (ex) {
-      console.log(`[E]  saveOrgs: ${tenantId} ${orgs} ${ex}`);
+      console.log(`[E]  saveOrgs: ${userId} ${orgs} ${ex}`);
       return 0;
     }
   }
