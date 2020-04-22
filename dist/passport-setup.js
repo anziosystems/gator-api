@@ -18,18 +18,18 @@ passport.use(new AtlassianStrategy({
     response_type: 'code',
 }, (accessToken, refreshToken, profile, done) => {
     // optionally save profile data to db
-    const tenant = new sqlRepository_1.JiraTenant();
-    tenant.AuthToken = accessToken;
+    const jiraUser = new sqlRepository_1.JiraUser();
+    jiraUser.AuthToken = accessToken;
     // console.log(`==> Jira Toeken:  ${accessToken}  Name: ${profile.displayName}`);
     if (!refreshToken)
         refreshToken = '';
-    tenant.RefreshToken = refreshToken;
-    tenant.UserName = profile.displayName;
-    tenant.DisplayName = profile.displayName;
-    tenant.Id = String(profile.id).trim();
-    tenant.Photo = profile.photo;
-    tenant.Email = profile.email;
-    tenant.AccessibleResources = profile.accessibleResources;
+    jiraUser.RefreshToken = refreshToken;
+    jiraUser.UserName = profile.displayName;
+    jiraUser.DisplayName = profile.displayName;
+    jiraUser.Id = String(profile.id).trim();
+    jiraUser.Photo = profile.photo;
+    jiraUser.Email = profile.email;
+    jiraUser.AccessibleResources = profile.accessibleResources;
     // console.log (`==> ${JSON.stringify(profile.accessibleResources)}`);
     /*
 console.log (`==> accessibleResources id: ${profile.accessibleResources[0].id} url: ${profile.accessibleResources[0].url} name: ${profile.accessibleResources[0].name}`);
@@ -55,7 +55,7 @@ profile.accessibleResources[0]
     //Token is kept decrypted in DB - Catch it here for Postman
     const sqlRepositoy = new sqlRepository_1.SQLRepository(null);
     sqlRepositoy
-        .saveJiraTenant(tenant)
+        .saveJiraUser(jiraUser)
         .then(result => {
         if (result.message) {
             //if error then pass the error message
@@ -79,28 +79,28 @@ passport.use(new GitHubStrategy({
     //Callback with the accessToken
     // console.log('==> accessToken: ' + accessToken);
     // console.log('==> refreshToken:' + refreshToken);
-    const tenant = new sqlRepository_1.Tenant();
-    tenant.AuthToken = accessToken;
+    const user = new sqlRepository_1.GUser();
+    user.AuthToken = accessToken;
     if (!refreshToken)
         refreshToken = '';
-    tenant.RefreshToken = refreshToken;
-    tenant.UserName = profile.username;
-    tenant.DisplayName = profile.displayName;
-    tenant.Id = profile.id;
-    tenant.Photo = '';
-    tenant.Email = '';
+    user.RefreshToken = refreshToken;
+    user.UserName = profile.username;
+    user.DisplayName = profile.displayName;
+    user.Id = profile.id;
+    user.Photo = '';
+    user.Email = '';
     if (Array.isArray(profile.photos)) {
         if (profile.photos.length > 0) {
             if (profile.photos[0]) {
-                tenant.Photo = profile.photos[0].value;
+                user.Photo = profile.photos[0].value;
             }
         }
     }
-    tenant.ProfileUrl = profile.profileUrl;
+    user.ProfileUrl = profile.profileUrl;
     if (Array.isArray(profile.emails)) {
         if (profile.emails.length > 0) {
             if (profile.emails[0]) {
-                tenant.Email = profile.emails[0].value;
+                user.Email = profile.emails[0].value;
             }
         }
     }
@@ -108,7 +108,7 @@ passport.use(new GitHubStrategy({
     //Id	    Email	              UserName	DisplayName	  ProfileUrl	                LastUpdated	            Auth_Token	                                                                                Refresh_Token	Photo
     //1040817	rsarosh@hotmail.com	rsarosh	  Rafat Sarosh	https://github.com/rsarosh	2020-01-26 18:35:16.507	U2FsdGVkX1/Ew4QHRzEs4lDzjSwL3stUR3aJxDUzIaaSTA/CTrQbEUTgnNQDZ/mwLrSfcTb89v7b5S+8VqPgVw==		              https://avatars1.githubusercontent.com/u/1040817?v=4
     sqlRepositoy
-        .saveTenant(tenant)
+        .saveLoggedInUser(user)
         .then(result => {
         if (result.message) {
             //if error then pass the error message
@@ -127,18 +127,18 @@ passport.use(new BitbucketStrategy({
     callbackURL: process.env.CALL_BACK_BITBUCKET_OATH_URL,
 }, (accessToken, refreshToken, profile, done) => {
     // optionally save profile data to db
-    const tenant = new sqlRepository_1.JiraTenant();
-    tenant.AuthToken = accessToken;
+    const jiraUser = new sqlRepository_1.JiraUser();
+    jiraUser.AuthToken = accessToken;
     // console.log(`==> Jira Toeken:  ${accessToken}  Name: ${profile.displayName}`);
     if (!refreshToken)
         refreshToken = '';
-    tenant.RefreshToken = refreshToken;
-    tenant.UserName = profile.displayName;
-    tenant.DisplayName = profile.displayName;
-    tenant.Id = String(profile.id).trim();
-    tenant.Photo = profile.photo;
-    tenant.Email = profile.email;
-    tenant.AccessibleResources = profile.accessibleResources;
+    jiraUser.RefreshToken = refreshToken;
+    jiraUser.UserName = profile.displayName;
+    jiraUser.DisplayName = profile.displayName;
+    jiraUser.Id = String(profile.id).trim();
+    jiraUser.Photo = profile.photo;
+    jiraUser.Email = profile.email;
+    jiraUser.AccessibleResources = profile.accessibleResources;
     // console.log (`==> ${JSON.stringify(profile.accessibleResources)}`);
     /*
 console.log (`==> accessibleResources id: ${profile.accessibleResources[0].id} url: ${profile.accessibleResources[0].url} name: ${profile.accessibleResources[0].name}`);
@@ -164,7 +164,7 @@ profile.accessibleResources[0]
     //Token is kept decrypted in DB - Catch it here for Postman
     const sqlRepositoy = new sqlRepository_1.SQLRepository(null);
     sqlRepositoy
-        .saveJiraTenant(tenant)
+        .saveJiraUser(jiraUser)
         .then(result => {
         if (result.message) {
             //if error then pass the error message
@@ -174,7 +174,7 @@ profile.accessibleResources[0]
         return done(null, String(profile.id).trim());
     })
         .catch(err => {
-        console.log(`saveJiraTenant Error: ${err}`);
+        console.log(`saveJiraUser - Bitbucket Error: ${err}`);
     });
 }));
 //Labshare for AxleInfo
@@ -216,20 +216,21 @@ passport.use(new OidcStrategy({
             "_json":{"sub":"8584","family_name":"Sarosh","given_name":"Rafat","name":"Rafat Sarosh",
             "username":"rafat.sarosh@axleinfo.com","roles":[],"role":"user"}}
     */
-    const tenant = new sqlRepository_1.Tenant();
-    tenant.AuthToken = accessToken;
+    const user = new sqlRepository_1.GUser();
+    user.AuthToken = accessToken;
+    console.log(accessToken);
     if (!refreshToken)
         refreshToken = '';
-    tenant.RefreshToken = refreshToken;
-    tenant.UserName = profile._json.username; //email name to keep it unique
-    tenant.DisplayName = profile.displayName;
-    tenant.Id = profile.id;
-    tenant.Photo = '';
-    tenant.Email = profile._json.username;
-    tenant.ProfileUrl = profile.profileUrl;
+    user.RefreshToken = refreshToken;
+    user.UserName = profile._json.username; //email name to keep it unique
+    user.DisplayName = profile.displayName;
+    user.Id = profile.id;
+    user.Photo = '';
+    user.Email = profile._json.username;
+    user.ProfileUrl = profile.profileUrl;
     const sqlRepositoy = new sqlRepository_1.SQLRepository(null);
     sqlRepositoy
-        .saveTenant(tenant)
+        .saveLoggedInUser(user)
         .then(result => {
         if (result.message) {
             //if error then pass the error message
@@ -241,7 +242,7 @@ passport.use(new OidcStrategy({
         return done(null, String(profile.id.trim()));
     })
         .catch(err => {
-        console.log(`saveTenant Error: ${err}`);
+        console.log(`saveLoggedInUser Error: ${err}`);
     });
     // return cb(null, profile);
 }));

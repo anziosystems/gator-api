@@ -5,13 +5,13 @@ import {expect} from 'chai';
 // import {doesNotReject} from 'assert';
 // import {Observable, of, Subject} from 'rxjs';
 // import * as jsonBadData from './data/Sample.data.json';
-import {SQLRepository, Tenant} from '../Lib/sqlRepository';
+import {SQLRepository, GUser} from '../Lib/sqlRepository';
 import {GitRepository} from '../Lib/GitRepository';
 
 describe('SaveTenant', () => {
   it('should return rowsAffected', async () => {
     const sqlRepositoy = new SQLRepository(null);
-    const tenant = new Tenant();
+    const tenant = new GUser();
     tenant.AuthToken = 'XXXX';
     tenant.RefreshToken = 'XXXX';
     tenant.UserName = 'Rafat';
@@ -21,7 +21,7 @@ describe('SaveTenant', () => {
     tenant.Id = 999;
     tenant.Email = 'rsarosh@hotmail.com';
 
-    await sqlRepositoy.saveTenant(tenant).then(result => {
+    await sqlRepositoy.saveLoggedInUser(tenant).then(result => {
       expect(result).to.greaterThan(0);
     });
   });

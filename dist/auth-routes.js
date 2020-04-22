@@ -9,6 +9,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 //var callbackURL = 'http://localhost:8080/callback';
 const callbackURL = process.env.CALL_BACK_URL; //'https://gator-ui.azurewebsites.net/callback';
+const callbackURL_LSUATH = process.env.CALL_BACK_LSAUTH_URL;
 //This method is not called any more, it is here for the test
 router.get('/login', () => {
     console.log('login is called.');
@@ -31,10 +32,9 @@ router.get('/bitbucket', passport.authenticate('bitbucket'), () => {
 router.get('/logout', (req, res) => {
     res.send('logging.out');
 });
-//Redirects
 router.get('/lsauth/redirect', passport.authenticate('openidconnect'), (req, res) => {
     const token = jwt.sign(req.user, process.env.Session_Key);
-    res.redirect(callbackURL + '?OrgToken=' + token);
+    res.redirect(callbackURL_LSUATH + '?OrgToken=' + token);
 });
 //callback for github to call
 //in the setting of application call back is defined as /auth/github/redirect

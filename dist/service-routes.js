@@ -29,7 +29,7 @@ const verifyOptions = {
 function isUserValid(userId) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            //Return  false if there is no tenant, true if tenant exist
+            //Return  false if there is no user, true if user exist
             return yield sqlRepositoy.checkUser(userId).then(r => {
                 if (r) {
                     return true;
@@ -47,7 +47,7 @@ function isUserValid(userId) {
 function isJiraTokenValid(tenantId) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            //Return  false if there is no tenant, true if tenant exist
+            //Return  false if there is no user, true if user exist
             return yield sqlRepositoy.checkJiraToken(tenantId).then(r => {
                 if (r) {
                     return true;
@@ -77,10 +77,9 @@ function validateUser(req, res, next) {
         console.log(`validateUser ${ex}`);
     });
 }
-function validateJiraToken(req, res, next) {
-    const tenantId = getJiraTenant(req);
-    // console.log(`==> validateJiraToken: ${tenantId}`);
-    isJiraTokenValid(tenantId)
+function validateJiraUser(req, res, next) {
+    const userId = getJiraUser(req);
+    isJiraTokenValid(userId)
         .then(val => {
         if (!val) {
             return res.json({ val: false, code: 404, message: 'Jira Auth Failed' });
@@ -95,7 +94,7 @@ function validateJiraToken(req, res, next) {
 }
 function getUser(req) {
     try {
-        const token = req.headers['authorization']; //it is tenantId in header
+        const token = req.headers['authorization']; //it is UserId in header
         //
         const result = jwt.verify(token, process.env.Session_Key, verifyOptions);
         if (result)
@@ -105,12 +104,12 @@ function getUser(req) {
         }
     }
     catch (ex) {
-        console.log(`==> getUser ${ex}`);
+        console.log(`[E] getUser ${ex}`);
         return;
     }
 }
 //token has the tenantId - It always come in authorization header as a token
-function getJiraTenant(req) {
+function getJiraUser(req) {
     try {
         const token = req.headers['authorization'].trim(); //it is tenantId in header
         // console.log(` ==> GetJiraTenant raw token from the call ${token}`);
@@ -124,7 +123,7 @@ function getJiraTenant(req) {
         }
     }
     catch (ex) {
-        console.log(`==> getJiraTenant ${ex}`);
+        console.log(`==> getJiraUser ${ex}`);
         return;
     }
 }
@@ -141,9 +140,9 @@ function getJiraTenant(req) {
 //   }
 // }
 //header must have JiraTenant
-router.get('/GetJiraOrgs', validateJiraToken, (req, res) => {
+router.get('/GetJiraOrgs', validateJiraUser, (req, res) => {
     jiraRepository
-        .getJiraOrgs(getJiraTenant(req), Boolean(req.query.bustTheCache === 'true'))
+        .getJiraOrgs(getJiraUser(req), Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         /*
         result
@@ -159,9 +158,9 @@ router.get('/GetJiraOrgs', validateJiraToken, (req, res) => {
     });
 });
 //
-router.get('/GetJiraUsers', validateJiraToken, (req, res) => {
+router.get('/GetJiraUsers', validateJiraUser, (req, res) => {
     jiraRepository
-        .getJiraUsers(getJiraTenant(req), req.query.org, Boolean(req.query.bustTheCache === 'true'))
+        .getJiraUsers(getJiraUser(req), req.query.org, Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         /*
       JSON.parse(result)
@@ -178,9 +177,9 @@ router.get('/GetJiraUsers', validateJiraToken, (req, res) => {
     });
 });
 //header must have JiraTenant
-router.get('/GetJiraIssues', validateJiraToken, (req, res) => {
+router.get('/GetJiraIssues', validateJiraUser, (req, res) => {
     jiraRepository
-        .getJiraIssues(getJiraTenant(req), //tenant
+        .getJiraIssues(getJiraUser(req), //user
     req.query.org, //org
     req.query.userid, //'557058:f39310b9-d30a-41a3-8011-6a6ae5eeed07', //userId
     '"In Progress" OR status="To Do"', //status
@@ -195,7 +194,7 @@ router.get('/GetJiraIssues', validateJiraToken, (req, res) => {
     });
 });
 router.get('/GetOrg', validateUser, (req, res) => __awaiter(this, void 0, void 0, function* () {
-    // console.log(`calling getOrg bustTheCashe: ${req.query.bustTheCache} GetfromGit: ${req.query.getFromGit}`);
+    //TODO: just get from SQL after LSAuth implementatiopn
     yield gitRepository
         .getOrg(getUser(req), Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true'))
         .then(result => {
@@ -532,7 +531,7 @@ router.post('/saveOrgChart', validateUser, (req, res) => {
     let tenantId = getUser(req);
     sqlRepositoy.getLoggedInUSerDetails(tenantId, false).then(result => {
         sqlRepositoy.isUserAdmin(result.UserName, req.body.org, false).then(r => {
-            //check r here, if tenant is an admin let the call go thru, else reject
+            //check r here, if user is an admin let the call go thru, else reject
             if (r === 1) {
                 sqlRepositoy
                     .saveOrgChart(req.body.userId, req.body.org, req.body.orgChart)

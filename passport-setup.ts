@@ -1,7 +1,7 @@
 import * as passport from 'passport';
 var OidcStrategy = require('passport-openidconnect').Strategy;
 const GitHubStrategy = require('passport-github').Strategy;
-import {SQLRepository, Tenant, JiraTenant} from './Lib/sqlRepository';
+import {SQLRepository, GUser, JiraUser} from './Lib/sqlRepository';
 const dotenv = require('dotenv');
 dotenv.config();
 const AtlassianStrategy = require('passport-atlassian-oauth2');
@@ -20,18 +20,18 @@ passport.use(
     },
     (accessToken: any, refreshToken: any, profile: any, done: any) => {
       // optionally save profile data to db
-      const tenant = new JiraTenant();
-      tenant.AuthToken = accessToken;
+      const jiraUser = new JiraUser();
+      jiraUser.AuthToken = accessToken;
       // console.log(`==> Jira Toeken:  ${accessToken}  Name: ${profile.displayName}`);
       if (!refreshToken) refreshToken = '';
 
-      tenant.RefreshToken = refreshToken;
-      tenant.UserName = profile.displayName;
-      tenant.DisplayName = profile.displayName;
-      tenant.Id = String(profile.id).trim();
-      tenant.Photo = profile.photo;
-      tenant.Email = profile.email;
-      tenant.AccessibleResources = profile.accessibleResources;
+      jiraUser.RefreshToken = refreshToken;
+      jiraUser.UserName = profile.displayName;
+      jiraUser.DisplayName = profile.displayName;
+      jiraUser.Id = String(profile.id).trim();
+      jiraUser.Photo = profile.photo;
+      jiraUser.Email = profile.email;
+      jiraUser.AccessibleResources = profile.accessibleResources;
       // console.log (`==> ${JSON.stringify(profile.accessibleResources)}`);
 
       /*
@@ -58,7 +58,7 @@ passport.use(
       //Token is kept decrypted in DB - Catch it here for Postman
       const sqlRepositoy = new SQLRepository(null);
       sqlRepositoy
-        .saveJiraTenant(tenant)
+        .saveJiraUser(jiraUser)
         .then(result => {
           if (result.message) {
             //if error then pass the error message
@@ -89,30 +89,30 @@ passport.use(
       // console.log('==> accessToken: ' + accessToken);
       // console.log('==> refreshToken:' + refreshToken);
 
-      const tenant = new Tenant();
-      tenant.AuthToken = accessToken;
+      const user = new GUser();
+      user.AuthToken = accessToken;
       if (!refreshToken) refreshToken = '';
 
-      tenant.RefreshToken = refreshToken;
-      tenant.UserName = profile.username;
-      tenant.DisplayName = profile.displayName;
-      tenant.Id = profile.id;
-      tenant.Photo = '';
-      tenant.Email = '';
+      user.RefreshToken = refreshToken;
+      user.UserName = profile.username;
+      user.DisplayName = profile.displayName;
+      user.Id = profile.id;
+      user.Photo = '';
+      user.Email = '';
 
       if (Array.isArray(profile.photos)) {
         if (profile.photos.length > 0) {
           if (profile.photos[0]) {
-            tenant.Photo = profile.photos[0].value;
+            user.Photo = profile.photos[0].value;
           }
         }
       }
 
-      tenant.ProfileUrl = profile.profileUrl;
+      user.ProfileUrl = profile.profileUrl;
       if (Array.isArray(profile.emails)) {
         if (profile.emails.length > 0) {
           if (profile.emails[0]) {
-            tenant.Email = profile.emails[0].value;
+            user.Email = profile.emails[0].value;
           }
         }
       }
@@ -121,7 +121,7 @@ passport.use(
       //Id	    Email	              UserName	DisplayName	  ProfileUrl	                LastUpdated	            Auth_Token	                                                                                Refresh_Token	Photo
       //1040817	rsarosh@hotmail.com	rsarosh	  Rafat Sarosh	https://github.com/rsarosh	2020-01-26 18:35:16.507	U2FsdGVkX1/Ew4QHRzEs4lDzjSwL3stUR3aJxDUzIaaSTA/CTrQbEUTgnNQDZ/mwLrSfcTb89v7b5S+8VqPgVw==		              https://avatars1.githubusercontent.com/u/1040817?v=4
       sqlRepositoy
-        .saveTenant(tenant)
+        .saveLoggedInUser(user)
         .then(result => {
           if (result.message) {
             //if error then pass the error message
@@ -147,18 +147,18 @@ passport.use(
     },
     (accessToken: any, refreshToken: any, profile: any, done: any) => {
       // optionally save profile data to db
-      const tenant = new JiraTenant();
-      tenant.AuthToken = accessToken;
+      const jiraUser = new JiraUser();
+      jiraUser.AuthToken = accessToken;
       // console.log(`==> Jira Toeken:  ${accessToken}  Name: ${profile.displayName}`);
       if (!refreshToken) refreshToken = '';
 
-      tenant.RefreshToken = refreshToken;
-      tenant.UserName = profile.displayName;
-      tenant.DisplayName = profile.displayName;
-      tenant.Id = String(profile.id).trim();
-      tenant.Photo = profile.photo;
-      tenant.Email = profile.email;
-      tenant.AccessibleResources = profile.accessibleResources;
+      jiraUser.RefreshToken = refreshToken;
+      jiraUser.UserName = profile.displayName;
+      jiraUser.DisplayName = profile.displayName;
+      jiraUser.Id = String(profile.id).trim();
+      jiraUser.Photo = profile.photo;
+      jiraUser.Email = profile.email;
+      jiraUser.AccessibleResources = profile.accessibleResources;
       // console.log (`==> ${JSON.stringify(profile.accessibleResources)}`);
 
       /*
@@ -185,7 +185,7 @@ profile.accessibleResources[0]
       //Token is kept decrypted in DB - Catch it here for Postman
       const sqlRepositoy = new SQLRepository(null);
       sqlRepositoy
-        .saveJiraTenant(tenant)
+        .saveJiraUser(jiraUser)
         .then(result => {
           if (result.message) {
             //if error then pass the error message
@@ -195,7 +195,7 @@ profile.accessibleResources[0]
           return done(null, String(profile.id).trim());
         })
         .catch(err => {
-          console.log(`saveJiraTenant Error: ${err}`);
+          console.log(`saveJiraUser - Bitbucket Error: ${err}`);
         });
     },
   ),
@@ -246,20 +246,21 @@ passport.use(
               "username":"rafat.sarosh@axleinfo.com","roles":[],"role":"user"}}
       */
 
-      const tenant = new Tenant();
-      tenant.AuthToken = accessToken;
+      const user = new GUser();
+      user.AuthToken = accessToken;
+      console.log(accessToken);
       if (!refreshToken) refreshToken = '';
 
-      tenant.RefreshToken = refreshToken;
-      tenant.UserName = profile._json.username; //email name to keep it unique
-      tenant.DisplayName = profile.displayName;
-      tenant.Id = profile.id;
-      tenant.Photo = '';
-      tenant.Email = profile._json.username;
-      tenant.ProfileUrl = profile.profileUrl;
+      user.RefreshToken = refreshToken;
+      user.UserName = profile._json.username; //email name to keep it unique
+      user.DisplayName = profile.displayName;
+      user.Id = profile.id;
+      user.Photo = '';
+      user.Email = profile._json.username;
+      user.ProfileUrl = profile.profileUrl;
       const sqlRepositoy = new SQLRepository(null);
       sqlRepositoy
-        .saveTenant(tenant)
+        .saveLoggedInUser(user)
         .then(result => {
           if (result.message) {
             //if error then pass the error message
@@ -271,7 +272,7 @@ passport.use(
           return done(null, String(profile.id.trim()));
         })
         .catch(err => {
-          console.log(`saveTenant Error: ${err}`);
+          console.log(`saveLoggedInUser Error: ${err}`);
         });
 
       // return cb(null, profile);

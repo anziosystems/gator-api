@@ -38,7 +38,7 @@ class PullRequest {
   PullId: string;
 }
 
-class Tenant {
+class GUser {
   Id: number;
   Email: string;
   UserName: string;
@@ -49,7 +49,7 @@ class Tenant {
   Photo: string;
 }
 
-class JiraTenant {
+class JiraUser {
   Id: string;
   Email: string;
   UserName: string;
@@ -124,7 +124,7 @@ class SQLRepository {
     }
   }
 
-  //return 0 if not a valid tenant or the token more than 7 days old
+  //return 0 if not a valid user or the token more than 7 days old
   async checkUser(userId: number) {
     const cacheKey = 'CheckUser: ' + userId;
     try {
@@ -184,7 +184,7 @@ class SQLRepository {
     this.myCache.del(cacheKey);
   }
 
-  //return 0 if not a valid tenant or the token more than 7 days old
+  //return 0 if not a valid user or the token more than 7 days old
   async checkJiraToken(tenantId: string) {
     const cacheKey = 'CheckJiraToken: ' + tenantId;
     try {
@@ -366,7 +366,7 @@ class SQLRepository {
   }
 
   async getOrg4UserId(userId: string, bustTheCache: Boolean = false) {
-    const cacheKey = 'GetOrg' + userId;
+    const cacheKey = 'getOrg4UserId' + userId;
     try {
       if (bustTheCache) {
         this.myCache.del(cacheKey);
@@ -449,7 +449,7 @@ class SQLRepository {
     }
   }
 
-  //No one calls this yet, the SP is called directly from another SP GetUser. 
+  //No one calls this yet, the SP is called directly from another SP GetUser.
   //Leaving for future use.
 
   async setActiveTenant(id: number) {
@@ -595,11 +595,14 @@ class SQLRepository {
     const cacheKey = 'getUser -' + id; //cacheKey is getUser because i am reading there cache value. This is different from norm
     const val = this.myCache.get(cacheKey);
     if (val) {
-      return this.decrypt(val.recordset[0].Auth_Token, id.toString());
+      // return this.decrypt(val.recordset[0].Auth_Token, id.toString());
+      return val.recordset[0].Auth_Token, id.toString();
     }
     const recordSet = await this.getUser(id);
-    if (recordSet) return this.decrypt(recordSet[0].Auth_Token, id.toString());
-    else return;
+    if (recordSet) {
+      //return this.decrypt(recordSet[0].Auth_Token, id.toString());
+      return recordSet[0].Auth_Token, id.toString();
+    } else return;
   }
 
   async getJiraToken(id: string) {
@@ -647,7 +650,7 @@ class SQLRepository {
       await this.createPool();
       const request = await this.pool.request();
       if (!org) {
-        throw new Error('tenant cannot be null');
+        throw new Error('org cannot be null');
       }
       request.input('Org', sql.VarChar(this.ORG_LEN), org);
       const recordSet = await request.execute('GitDev4Org');
@@ -678,7 +681,7 @@ class SQLRepository {
       await this.createPool();
       const request = await this.pool.request();
       if (!org) {
-        throw new Error('tenant cannot be null');
+        throw new Error('org cannot be null');
       }
       request.input('org', sql.VarChar(this.ORG_LEN), org);
       request.input('login', sql.VarChar(this.LOGIN_LEN), login);
@@ -707,7 +710,7 @@ class SQLRepository {
       await this.createPool();
       const request = await this.pool.request();
       if (!org) {
-        throw new Error('tenant cannot be null');
+        throw new Error('org cannot be null');
       }
       request.input('Org', sql.VarChar(this.ORG_LEN), org);
       request.input('Id', sql.Int, id);
@@ -909,27 +912,27 @@ class SQLRepository {
     }
   }
 
-  async saveJiraTenant(tenant: JiraTenant) {
+  async saveJiraUser(user: JiraUser) {
     try {
       await this.createPool();
       const request = await this.pool.request();
-      if (!tenant.Photo) {
-        tenant.Photo = '';
+      if (!user.Photo) {
+        user.Photo = '';
       }
-      if (!tenant.DisplayName) {
-        tenant.DisplayName = '';
+      if (!user.DisplayName) {
+        user.DisplayName = '';
       }
       //Token is kept decrypted in DB
-      const token = tenant.AuthToken; //No Encryption for Jira
-      request.input('Id', sql.Char, tenant.Id);
-      request.input('email', sql.VarChar(200), tenant.Email);
-      request.input('UserName', sql.VarChar(200), tenant.UserName);
-      request.input('DisplayName', sql.VarChar(200), tenant.DisplayName);
-      request.input('ProfileUrl', sql.Char(500), tenant.ProfileUrl);
+      const token = user.AuthToken; //No Encryption for Jira
+      request.input('Id', sql.Char, user.Id);
+      request.input('email', sql.VarChar(200), user.Email);
+      request.input('UserName', sql.VarChar(200), user.UserName);
+      request.input('DisplayName', sql.VarChar(200), user.DisplayName);
+      request.input('ProfileUrl', sql.Char(500), user.ProfileUrl);
       request.input('AuthToken', sql.VARCHAR(4000), token);
-      request.input('RefreshToken', sql.VARCHAR(4000), tenant.RefreshToken);
-      request.input('Photo', sql.Char(500), tenant.Photo);
-      request.input('AccessibleResources', sql.Char(8000), JSON.stringify(tenant.AccessibleResources));
+      request.input('RefreshToken', sql.VARCHAR(4000), user.RefreshToken);
+      request.input('Photo', sql.Char(500), user.Photo);
+      request.input('AccessibleResources', sql.Char(8000), JSON.stringify(user.AccessibleResources));
       const recordSet = await request.execute('SaveJiraTenant');
       return recordSet.rowsAffected[0];
     } catch (ex) {
@@ -1031,30 +1034,30 @@ class SQLRepository {
   }
 
   /* save */
-  async saveTenant(tenant: Tenant) {
+  async saveLoggedInUser(user: GUser) {
     try {
       await this.createPool();
       const request = await this.pool.request();
-      if (!tenant.Photo) {
-        tenant.Photo = '';
+      if (!user.Photo) {
+        user.Photo = '';
       }
-      if (!tenant.DisplayName) {
-        tenant.DisplayName = '';
+      if (!user.DisplayName) {
+        user.DisplayName = '';
       }
 
-      const token = this.encrypt(tenant.AuthToken, tenant.Id.toString());
-      request.input('Id', sql.Int, tenant.Id);
-      request.input('email', sql.VarChar(200), tenant.Email);
-      request.input('UserName', sql.VarChar(200), tenant.UserName);
-      request.input('DisplayName', sql.VarChar(200), tenant.DisplayName);
-      request.input('ProfileUrl', sql.VarChar(1000), tenant.ProfileUrl);
-      request.input('AuthToken', sql.VarChar(4000), token);
-      request.input('RefreshToken', sql.VarChar(4000), tenant.RefreshToken);
-      request.input('Photo', sql.VarChar(1000), tenant.Photo);
+      // const token = this.encrypt(user.AuthToken, user.Id.toString());
+      request.input('Id', sql.Int, user.Id);
+      request.input('email', sql.VarChar(200), user.Email);
+      request.input('UserName', sql.VarChar(200), user.UserName);
+      request.input('DisplayName', sql.VarChar(200), user.DisplayName);
+      request.input('ProfileUrl', sql.VarChar(1000), user.ProfileUrl);
+      request.input('AuthToken', sql.VarChar(4000), user.AuthToken);
+      request.input('RefreshToken', sql.VarChar(4000), user.RefreshToken);
+      request.input('Photo', sql.VarChar(1000), user.Photo);
       const recordSet = await request.execute('SaveTenant');
       return recordSet.rowsAffected[0];
     } catch (ex) {
-      console.log(`[E]  saveTenant ${tenant} ${ex}`);
+      console.log(`[E]  saveLoggedInUSer ${user} ${ex}`);
       return ex;
     }
   }
@@ -1457,4 +1460,4 @@ class SQLRepository {
   }
 }
 
-export {SQLRepository, Tenant, JiraTenant, ErrorObj};
+export {SQLRepository, GUser, JiraUser, ErrorObj};
