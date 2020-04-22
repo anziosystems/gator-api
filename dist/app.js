@@ -77,38 +77,42 @@ app.get('/success', (req, res) => {
     res.render('success');
 });
 // commenting it for https
-// const port = process.env.PORT || 3000;
-// app.listen(port, () => {
-//   console.log('listenting for request on port 3000');
-//   console.log('===================================================');
-// });
-var http = require('http');
-var https = require('https');
-var fs = require('fs');
-var port = process.env.PORT || '3000';
-app.set('port', port);
-/**
- * Create HTTPS server using TLS cert.
- * NOTE: TLS is required for OIDC callbacks.
- * Listen on provided port, on all network interfaces.
- */
-var server;
-var protocol = process.env.PROTOCOL || 'http';
-if (protocol.toLocaleLowerCase() === 'http') {
-    server = http.createServer(app);
+if (process.env.ENV === 'PROD') {
+    const port = process.env.PORT || 3000;
+    app.listen(port, () => {
+        console.log('listenting for request on port 3000');
+        console.log('===================================================');
+    });
 }
 else {
-    // For HTTPS read in the key file and cert file.
-    server = https.createServer({
-        key: fs.readFileSync(process.env.TLS_KEY_FILE),
-        cert: fs.readFileSync(process.env.TLS_CERT_FILE),
-    }, app);
+    var http = require('http');
+    var https = require('https');
+    var fs = require('fs');
+    var port = process.env.PORT || '3000';
+    app.set('port', port);
+    /**
+     * Create HTTPS server using TLS cert.
+     * NOTE: TLS is required for OIDC callbacks.
+     * Listen on provided port, on all network interfaces.
+     */
+    var server;
+    var protocol = process.env.PROTOCOL || 'http';
+    if (protocol.toLocaleLowerCase() === 'http') {
+        server = http.createServer(app);
+    }
+    else {
+        // For HTTPS read in the key file and cert file.
+        server = https.createServer({
+            key: fs.readFileSync(process.env.TLS_KEY_FILE),
+            cert: fs.readFileSync(process.env.TLS_CERT_FILE),
+        }, app);
+    }
+    server.listen(port, function () {
+        console.log(`Listening on port ${port}! Go to ${protocol}://${process.env.HOST_NAME}:${port}/`);
+    });
+    server.on('error', onError);
+    server.on('listening', onListening);
 }
-server.listen(port, function () {
-    console.log(`Listening on port ${port}! Go to ${protocol}://${process.env.HOST_NAME}:${port}/`);
-});
-server.on('error', onError);
-server.on('listening', onListening);
 /**
  * Event listener for HTTP server "error" event.
  */
@@ -140,6 +144,6 @@ function onError(error) {
  * copy the host file from C:\Windows\System32\drivers\etc to desktop, edit it and then copy back
  */
 function onListening() {
-    console.log(`----- I am ready on port ${port} -----`);
+    console.log(`----- local server ready on port ${port} -----`);
 }
 //# sourceMappingURL=app.js.map
