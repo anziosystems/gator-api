@@ -4,7 +4,7 @@
   "description": "API Service for Gator",
   "main": "./dist/app.js",
   "engines": {
-    "node": "10.15.2",
+    "node": "^12.1.0",
     "npm": "6.4.1"
   },
   "scripts": {
@@ -50,9 +50,8 @@
     "lodash": "^4.17.15",
     "mocha": "^6.1.4",
     "mssql": "^5.0.5",
-    "node": "10.15.2",
+    "node": "^12.1.0",
     "node-cache": "^4.2.0",
-    "npm": "6.4.1",
     "passport": "^0.4.1",
     "passport-atlassian-oauth2": "^1.0.1",
     "passport-bitbucket": "^2.0.0",
