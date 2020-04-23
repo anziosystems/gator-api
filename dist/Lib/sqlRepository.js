@@ -241,6 +241,7 @@ class SQLRepository {
             }
         });
     }
+    //No caller
     GetOrgDetail4UserId_Org(userId, org, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = `GetOrgDetail4UserId_Org: ${userId} org: ${org}`;
@@ -354,6 +355,7 @@ class SQLRepository {
             }
         });
     }
+    //returbs   // [{"Org":"LabShare","DisplayName":"LabShare",OrgType: git ot Org}
     getOrg4UserId(userId, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'getOrg4UserId' + userId;
