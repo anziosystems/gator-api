@@ -114,6 +114,8 @@ class GitRepository {
     }
   }
 
+  // This functions fills the Dev names for the git Org, but no one care the return value 
+  //of this function.
   async getDevsFromGit(userId: string, org: any, endCursor = '') {
     let graphQL = '';
     //url:"https://github.com/ncats" name: "National Center ..."
@@ -155,8 +157,6 @@ class GitRepository {
              org - ${orgName} - ${body}`);
         }
       });
-      //git call has put the org in SQL, now lets get it from (cache).
-      return await this.sqlRepository.GetOrgDetail4UserId_Org(userId, org);
     } catch (ex) {
       console.log(ex);
     }
@@ -328,20 +328,12 @@ class GitRepository {
   /* This should be the model function for how to call git queries 
   Promise wrapper await etc
   */
-  async getOrg(userId: string, bustTheCache: Boolean = false, getFromGit: Boolean = false) {
-    //Lets check in our local sql tables first
-    const cacheKey = 'getOrg4UserId' + userId;
 
-    if (bustTheCache) {
-      this.sqlRepository.myCache.del(cacheKey);
-    }
-
-    if (!getFromGit) {
-      //Get from local store
-      const result = await this.sqlRepository.getOrg4UserId(userId);
-      if (result) return result;
-    }
-    
+  //Get the org list from the git and then calls updatedev4Org to update dev names in the DB for each org
+  //Save the org in DB and then return org list reading from table
+  // [{"Org":"LabShare","DisplayName":"LabShare",OrgType: git ot Org},
+      
+  async getOrgFromGit(userId: string, getFromGit: Boolean = false) {
     //Lets go to git
     const graphQL = `{\"query\": \"query { viewer {name organizations(last: 100) { nodes { name url }} }}\",\"variables\":{}}`;
     /* Without this promise wrap this code will not work */
@@ -361,23 +353,23 @@ class GitRepository {
             } else {
               // eslint-disable-next-line @typescript-eslint/no-floating-promises
               this.sqlRepository.saveStatus(userId, 'GET-ORG-FAIL', `status: ${response.statusCode}`);
-              console.log('getOrg: error: ' + response.statusCode);
-              console.log('getOrg: error: ' + body);
+              console.log('getOrgFromGit: error: ' + response.statusCode);
+              console.log('getOrgFromGit: error: ' + body);
               reject(null);
             }
           } else {
-            console.log(`getOrg no results returned:  ${error}`);
+            console.log(`getOrgFromGit no results returned:  ${error}`);
             reject(error);
           }
         });
       } catch (ex) {
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
         this.sqlRepository.saveStatus(userId, 'GET-ORG-FAIL', ex);
-        console.log('getOrg' + ex);
+        console.log('getOrgFromGit' + ex);
         reject();
       }
     }).catch(ex => {
-      console.log(`getOrg:  ${ex}`);
+      console.log(`getOrgFromGit:  ${ex}`);
     });
   }
 

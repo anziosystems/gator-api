@@ -260,6 +260,7 @@ class SQLRepository {
     }
   }
 
+  //No caller
   async GetOrgDetail4UserId_Org(userId: string, org: string, bustTheCache: Boolean = false) {
     const cacheKey = `GetOrgDetail4UserId_Org: ${userId} org: ${org}`;
     try {
@@ -365,6 +366,7 @@ class SQLRepository {
     }
   }
 
+  //returbs   // [{"Org":"LabShare","DisplayName":"LabShare",OrgType: git ot Org}
   async getOrg4UserId(userId: string, bustTheCache: Boolean = false) {
     const cacheKey = 'getOrg4UserId' + userId;
     try {

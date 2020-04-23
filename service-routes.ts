@@ -11,6 +11,7 @@ req.headers['JiraToken'];  //This is JiraTenant Id
 import {SQLRepository} from './Lib/sqlRepository';
 import {GitRepository} from './Lib/GitRepository';
 import {JiraRepository} from './Lib/JiraRepository';
+import { stringify } from 'querystring';
 
 const sqlRepositoy = new SQLRepository(null);
 const gitRepository = new GitRepository();
@@ -187,25 +188,39 @@ router.get('/GetJiraIssues', validateJiraUser, (req: any, res: any) => {
     });
 });
 
+//Returns all the org, git org and master org
 router.get('/GetOrg', validateUser, async (req: any, res: any) => {
   //TODO: just get from SQL after LSAuth implementatiopn
-  await gitRepository
-    .getOrg(getUser(req), Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true'))
-    .then(result => {
-      try {
-        if (!result) {
-          console.log(`getOrg is null`);
-          return res.json(null);
-        }
+  const user = getUser(req);
+  await sqlRepositoy.getOrg4UserId (user, Boolean(req.query.getFromGit === 'true')).then ( result =>
+    {
+      if (result) {
         return res.json(result);
-      } catch (ex) {
-        console.log('GetOrg: ' + ex);
+      } else {
+        //No Org in SQL - Lets try Git
+        gitRepository
+        .getOrgFromGit(user, true)
+        .then(result => {
+          try {
+            if (!result) {
+              console.log(`getOrgFromGit is null`);
+              return res.json(null);
+            }
+            return res.json(result);
+          } catch (ex) {
+            console.log('GetOrg: ' + ex);
+          }
+          })
+          .catch(ex => {
+            console.log(`GetOrg Error: ${ex}`);
+          });
       }
-    })
-    .catch(ex => {
-      console.log(`GetOrg Error: ${ex}`);
-    });
-});
+    })});
+
+ 
+
+
+
 
 router.get('/getLoggedInUSerDetails', validateUser, (req: any, res: any) => {
   sqlRepositoy
