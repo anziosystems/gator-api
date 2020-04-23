@@ -7,3 +7,4 @@ dist/gator-api.zip
 dist/Test/
 dist/app.zip
 .env
+.prod-env
