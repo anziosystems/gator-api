@@ -103,7 +103,7 @@ class LSAuthRepository {
             }
             const _uri = `admin/tenants/${tenantId}/users`;
             if (domain[1] === 'axleinfo.com') {
-                _user.identityIssuer = `https://sts.windows.net/${tenantId}/`;
+                _user.identityIssuer = `https://sts.windows.net/{tenantid}/`; //BUG!! in LSAuth {TenantId} string use the value not the string
             }
             if (domain[1] === `gmail.com`) {
                 _user.identityIssuer = `https://accounts.google.com`; //accounts.axleinfo.com
