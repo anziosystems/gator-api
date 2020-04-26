@@ -134,7 +134,6 @@ class JiraRepository {
         },
         body: body,
       };
-
       return header;
     } catch (ex) {
       console.log(`[E] MakeJiraRequest: Error: ${ex} - tenantId: ${jiraTenantId}`);

@@ -4,6 +4,7 @@ const passport = require("passport");
 var OidcStrategy = require('passport-openidconnect').Strategy;
 const GitHubStrategy = require('passport-github').Strategy;
 const sqlRepository_1 = require("./Lib/sqlRepository");
+const LabShareRepository_1 = require("./Lib/LabShareRepository");
 const dotenv = require('dotenv');
 dotenv.config();
 const AtlassianStrategy = require('passport-atlassian-oauth2');
@@ -237,8 +238,25 @@ passport.use(new OidcStrategy({
             return done(result, profile.id);
         }
         let domain = profile._json.username.split('@');
-        sqlRepositoy.saveUserOrg(profile.id, domain[1]);
-        console.log('Profile is saved - ' + domain[1]);
+        sqlRepositoy.saveUserOrg(profile.id, domain[1]).then(res => {
+            if (res) {
+                console.log('Profile is saved - ' + domain[1]);
+            }
+            const LSA = new LabShareRepository_1.LSAuthRepository();
+            try {
+                LSA.addUser(user).then(r => {
+                    if (r === 200) {
+                        console.log('User Added to LSAuth');
+                    }
+                    else {
+                        console.log('[E] user is NOT added');
+                    }
+                });
+            }
+            catch (ex) {
+                console.log(`[E] passport - oidc ${ex}`);
+            }
+        });
         return done(null, String(profile.id.trim()));
     })
         .catch(err => {

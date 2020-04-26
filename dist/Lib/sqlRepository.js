@@ -465,7 +465,7 @@ class SQLRepository {
                     return 0;
             }
             catch (ex) {
-                console.log(`[E]  setActiveTenant id: ${id} Error: ${ex}`);
+                console.log(`[E] setActiveTenant id: ${id} Error: ${ex}`);
                 return 0;
             }
         });
@@ -491,7 +491,7 @@ class SQLRepository {
                     return 0;
             }
             catch (ex) {
-                console.log(`[E]  getUser id: ${id} Error: ${ex}`);
+                console.log(`[E] getUser id: ${id} Error: ${ex}`);
                 return 0;
             }
         });
@@ -610,18 +610,18 @@ class SQLRepository {
             }
         });
     }
-    getUserId(id) {
+    getToken4User(id) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'getUser -' + id; //cacheKey is getUser because i am reading there cache value. This is different from norm
             const val = this.myCache.get(cacheKey);
             if (val) {
                 // return this.decrypt(val.recordset[0].Auth_Token, id.toString());
-                return val.recordset[0].Auth_Token, id.toString();
+                return val.recordset[0].Auth_Token;
             }
             const recordSet = yield this.getUser(id);
             if (recordSet) {
                 //return this.decrypt(recordSet[0].Auth_Token, id.toString());
-                return recordSet[0].Auth_Token, id.toString();
+                return recordSet[0].Auth_Token;
             }
             else
                 return;

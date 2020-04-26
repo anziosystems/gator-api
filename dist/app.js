@@ -77,43 +77,42 @@ app.get('/success', (req, res) => {
     res.render('success');
 });
 // commenting it for https
-//if (process.env.ENV === 'PROD') {
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-    console.log('listenting for request on port 3000');
-    console.log('===================================================');
-});
-// } else {
-//   var http = require('http');
-//   var https = require('https');
-//   var fs = require('fs');
-//   var port = process.env.PORT || '3000';
-//   app.set('port', port);
-//   /**
-//    * Create HTTPS server using TLS cert.
-//    * NOTE: TLS is required for OIDC callbacks.
-//    * Listen on provided port, on all network interfaces.
-//    */
-//   var server;
-//   var protocol = process.env.PROTOCOL || 'http';
-//   if (protocol.toLocaleLowerCase() === 'http') {
-//     server = http.createServer(app);
-//   } else {
-//     // For HTTPS read in the key file and cert file.
-//     server = https.createServer(
-//       {
-//         key: fs.readFileSync(process.env.TLS_KEY_FILE),
-//         cert: fs.readFileSync(process.env.TLS_CERT_FILE),
-//       },
-//       app,
-//     );
-//   }
-//   server.listen(port, function() {
-//     console.log(`Listening on port ${port}! Go to ${protocol}://${process.env.HOST_NAME}:${port}/`);
-//   });
-//   server.on('error', onError);
-//   server.on('listening', onListening);
-// }
+if (process.env.ENV === 'PROD') {
+    const port = process.env.PORT || 3000;
+    app.listen(port, () => {
+        console.log('listenting for prod request on port 3000');
+        console.log('===================================================');
+    });
+}
+else {
+    var http = require('http');
+    var https = require('https');
+    var fs = require('fs');
+    var port = process.env.PORT || '3000';
+    app.set('port', port);
+    /**
+     * Create HTTPS server using TLS cert.
+     * NOTE: TLS is required for OIDC callbacks.
+     * Listen on provided port, on all network interfaces.
+     */
+    var server;
+    var protocol = process.env.PROTOCOL || 'http';
+    if (protocol.toLocaleLowerCase() === 'http') {
+        server = http.createServer(app);
+    }
+    else {
+        // For HTTPS read in the key file and cert file.
+        server = https.createServer({
+            key: fs.readFileSync(process.env.TLS_KEY_FILE),
+            cert: fs.readFileSync(process.env.TLS_CERT_FILE),
+        }, app);
+    }
+    server.listen(port, function () {
+        console.log(`Listening on local  port ${port}! Go to ${protocol}://${process.env.HOST_NAME}:${port}/`);
+    });
+    server.on('error', onError);
+    server.on('listening', onListening);
+}
 /**
  * Event listener for HTTP server "error" event.
  */

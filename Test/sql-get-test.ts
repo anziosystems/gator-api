@@ -40,7 +40,7 @@ describe('GetRepos', () => {
 });
 
 //getGitHygiene
-describe.only('getGitHygiene', () => {
+describe('getGitHygiene', () => {
   it('should return rowsAffected', async () => {
     const gitRepository = new GitRepository();
     await gitRepository.getGitHygiene('1040817', 'LabShare').then(result => {

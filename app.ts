@@ -93,7 +93,7 @@ app.get('/success', (req: any, res: any) => {
 if (process.env.ENV === 'PROD') {
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.log('listenting for request on port 3000');
+  console.log('listenting for prod request on port 3000');
   console.log('===================================================');
 });
 } else {
@@ -125,7 +125,7 @@ app.listen(port, () => {
     );
   }
   server.listen(port, function() {
-    console.log(`Listening on port ${port}! Go to ${protocol}://${process.env.HOST_NAME}:${port}/`);
+    console.log(`Listening on local  port ${port}! Go to ${protocol}://${process.env.HOST_NAME}:${port}/`);
   });
   server.on('error', onError);
   server.on('listening', onListening);
