@@ -143,4 +143,29 @@ class LSAuthRepository {
 //Add to groups
 //https://a.labshare.org/_api/auth/admin/tenants/29/groups/46/users/rel/8673
 
+/*
+
+[
+    {
+        "id": 45,
+        "name": "admins",
+        "tenantId": 29,
+        "description": "Tenant administrator user group"
+    },
+    {
+        "id": 46,
+        "name": "msr-read-group",
+        "tenantId": 29,
+        "description": "msr group"
+    },
+    {
+        "id": 47,
+        "name": "Manage Users Group",
+        "tenantId": 29,
+        "description": "Members get permissions to manage users in Auth"
+    }
+]
+
+*/
+
 export {LSAuthRepository};
