@@ -272,18 +272,18 @@ passport.use(
             if (res) {
               console.log('Profile is saved - ' + domain[1]);
             }
-            const LSA = new LSAuthRepository();
-            try {
-              LSA.addUser(user).then(r => {
-                if (r === 200) {
-                  console.log('User Added to LSAuth');
-                } else {
-                  console.log('[E] user is NOT added');
-                }
-              });
-            } catch (ex) {
-              console.log(`[E] passport - oidc ${ex}`);
-            }
+            // const LSA = new LSAuthRepository();
+            // try {
+            //   LSA.addUser(user).then(r => {
+            //     if (r === 200) {
+            //       console.log('User Added to LSAuth');
+            //     } else {
+            //       console.log('[E] user is NOT added');
+            //     }
+            //   });
+            // } catch (ex) {
+            //   console.log(`[E] passport - oidc ${ex}`);
+            // }
           });
 
           return done(null, String(profile.id.trim()));

@@ -12,7 +12,7 @@ import {SQLRepository} from './Lib/sqlRepository';
 import {GitRepository} from './Lib/GitRepository';
 import {JiraRepository} from './Lib/JiraRepository';
 import { stringify } from 'querystring';
-import { isNumber } from 'util';
+import { isNumber, isString } from 'util';
 
 const sqlRepositoy = new SQLRepository(null);
 const gitRepository = new GitRepository();
@@ -86,6 +86,7 @@ function validateJiraUser(req: any, res: any, next: any) {
 function getUserId(req: any) {
   try {
     const token = req.headers['authorization']; //it is UserId in header
+    console.log (token);
     /* 
     family_name:"Sarosh"
     given_name:"Rafat"
@@ -99,7 +100,7 @@ function getUserId(req: any) {
     id:"8584"
     */
     const result = jwt.verify(token, process.env.Session_Key, verifyOptions);
-    if (isNumber (result)) {
+    if (typeof (result) === 'number' || typeof (result) === 'string') {
         return result;
     } else {
         return result.id; //Org header has the full user object

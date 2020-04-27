@@ -19,7 +19,6 @@ req.headers['JiraToken'];  //This is JiraTenant Id
 const sqlRepository_1 = require("./Lib/sqlRepository");
 const GitRepository_1 = require("./Lib/GitRepository");
 const JiraRepository_1 = require("./Lib/JiraRepository");
-const util_1 = require("util");
 const sqlRepositoy = new sqlRepository_1.SQLRepository(null);
 const gitRepository = new GitRepository_1.GitRepository();
 const jiraRepository = new JiraRepository_1.JiraRepository();
@@ -96,6 +95,7 @@ function validateJiraUser(req, res, next) {
 function getUserId(req) {
     try {
         const token = req.headers['authorization']; //it is UserId in header
+        console.log(token);
         /*
         family_name:"Sarosh"
         given_name:"Rafat"
@@ -109,7 +109,7 @@ function getUserId(req) {
         id:"8584"
         */
         const result = jwt.verify(token, process.env.Session_Key, verifyOptions);
-        if (util_1.isNumber(result)) {
+        if (typeof (result) === 'number' || typeof (result) === 'string') {
             return result;
         }
         else {
