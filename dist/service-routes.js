@@ -74,11 +74,15 @@ function validateUser(req, res, next) {
         }
     })
         .catch(ex => {
-        console.log(`validateUser ${ex}`);
+        console.log(`[E] validateUser ${ex}`);
     });
 }
 function validateJiraUser(req, res, next) {
     const userId = getJiraUser(req);
+    if (!userId) {
+        console.log(`[E] validateJiraUser - No userId found in token`);
+        return;
+    }
     isJiraTokenValid(userId)
         .then(val => {
         if (!val) {
@@ -89,13 +93,16 @@ function validateJiraUser(req, res, next) {
         }
     })
         .catch(ex => {
-        console.log(`validateJiraToken ${ex}`);
+        console.log(`[E] validateJiraToken ${ex}`);
     });
 }
 function getUserId(req) {
     try {
         const token = req.headers['authorization']; //it is UserId in header
-        console.log(token);
+        if (!token) {
+            console.log(`[E] getUserId - No token found in authorization header`);
+            return;
+        }
         /*
         family_name:"Sarosh"
         given_name:"Rafat"
@@ -117,15 +124,23 @@ function getUserId(req) {
         }
     }
     catch (ex) {
-        console.log(`[E] getUser ${ex.message}`);
+        console.log(`[E] getUserId ${ex.message}`);
         return;
     }
 }
 //token has the tenantId - It always come in authorization header as a token
 function getJiraUser(req) {
     try {
+        if (!req.headers['authorization']) {
+            console.log(`[E] gitJiraUser No Authorization header`);
+            return;
+        }
         const token = req.headers['authorization'].trim(); //it is tenantId in header
         // console.log(` ==> GetJiraTenant raw token from the call ${token}`);
+        if (!token) {
+            console.log(`[E] gitJiraUser No Token found in Authorization header`);
+            return;
+        }
         const result = jwt.verify(token, process.env.Session_Key, verifyOptions);
         if (result) {
             // console.log(` ==> GetJiraTenant - unencrypted token ${result}`);
@@ -136,7 +151,7 @@ function getJiraUser(req) {
         }
     }
     catch (ex) {
-        console.log(`==> getJiraUser ${ex}`);
+        console.log(`[E] getJiraUser ${ex}`);
         return;
     }
 }
@@ -221,17 +236,17 @@ router.get('/GetOrg', validateUser, (req, res) => __awaiter(this, void 0, void 0
                 .then(result => {
                 try {
                     if (!result) {
-                        console.log(`getOrgFromGit is null`);
+                        console.log(`[E] getOrgFromGit is null`);
                         return res.json(null);
                     }
                     return res.json(result);
                 }
                 catch (ex) {
-                    console.log('GetOrg: ' + ex);
+                    console.log('[E] GetOrg: ' + ex);
                 }
             })
                 .catch(ex => {
-                console.log(`GetOrg Error: ${ex}`);
+                console.log(`[E] GetOrg Error: ${ex}`);
             });
         }
     });
@@ -339,7 +354,7 @@ router.get('/TopDevForLastXDays', validateUser, (req, res) => {
 });
 router.get('/GitDev4Org', validateUser, (req, res) => {
     sqlRepositoy
-        .getGitDev4Org(req.query.org)
+        .GetUser4Org(req.query.org)
         .then(result => {
         return res.json(result);
     })

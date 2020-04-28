@@ -135,7 +135,7 @@ class SQLRepository {
       await this.createPool();
       const request = await this.pool.request();
       request.input('Id', sql.Int, userId);
-      const recordSet = await request.execute('CheckTenant');
+      const recordSet = await request.execute('CheckUser');
       if (recordSet) {
         this.myCache.set(cacheKey, recordSet.recordset[0].Result === 1);
         return recordSet.recordset[0].Result === 1;
@@ -186,6 +186,10 @@ class SQLRepository {
 
   //return 0 if not a valid user or the token more than 7 days old
   async checkJiraToken(tenantId: string) {
+    if (!tenantId) {
+      console.log(`[E] checkJiraToken tenantId is empty.`);
+      return ;
+    }
     const cacheKey = 'CheckJiraToken: ' + tenantId;
     try {
       tenantId = tenantId.trim();
@@ -656,6 +660,33 @@ class SQLRepository {
       }
       request.input('Org', sql.VarChar(this.ORG_LEN), org);
       const recordSet = await request.execute('GitDev4Org');
+      if (recordSet.recordset) {
+        this.myCache.set(cacheKey, recordSet.recordset);
+        return recordSet.recordset;
+      } else {
+        return;
+      }
+    } catch (ex) {
+      console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+      return;
+    }
+  }
+
+  async GetUser4Org(org: string) {
+    const cacheKey = 'getGitDev4Org' + org;
+    try {
+      const val = this.myCache.get(cacheKey);
+      if (val) {
+        return val;
+      }
+
+      await this.createPool();
+      const request = await this.pool.request();
+      if (!org) {
+        throw new Error('org cannot be null');
+      }
+      request.input('Org', sql.VarChar(this.ORG_LEN), org);
+      const recordSet = await request.execute('GetUser4Org');
       if (recordSet.recordset) {
         this.myCache.set(cacheKey, recordSet.recordset);
         return recordSet.recordset;

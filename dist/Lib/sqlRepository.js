@@ -99,7 +99,7 @@ class SQLRepository {
                 yield this.createPool();
                 const request = yield this.pool.request();
                 request.input('Id', sql.Int, userId);
-                const recordSet = yield request.execute('CheckTenant');
+                const recordSet = yield request.execute('CheckUser');
                 if (recordSet) {
                     this.myCache.set(cacheKey, recordSet.recordset[0].Result === 1);
                     return recordSet.recordset[0].Result === 1;
@@ -156,6 +156,10 @@ class SQLRepository {
     //return 0 if not a valid user or the token more than 7 days old
     checkJiraToken(tenantId) {
         return __awaiter(this, void 0, void 0, function* () {
+            if (!tenantId) {
+                console.log(`[E] checkJiraToken tenantId is empty.`);
+                return;
+            }
             const cacheKey = 'CheckJiraToken: ' + tenantId;
             try {
                 tenantId = tenantId.trim();
@@ -681,6 +685,35 @@ class SQLRepository {
                 }
                 request.input('Org', sql.VarChar(this.ORG_LEN), org);
                 const recordSet = yield request.execute('GitDev4Org');
+                if (recordSet.recordset) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else {
+                    return;
+                }
+            }
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return;
+            }
+        });
+    }
+    GetUser4Org(org) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getGitDev4Org' + org;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!org) {
+                    throw new Error('org cannot be null');
+                }
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                const recordSet = yield request.execute('GetUser4Org');
                 if (recordSet.recordset) {
                     this.myCache.set(cacheKey, recordSet.recordset);
                     return recordSet.recordset;
