@@ -1201,14 +1201,15 @@ class SQLRepository {
         });
     }
     /* return number of orgs */
-    saveUserOrg(userId, org) {
+    saveUserOrg(userId, org, orgType = 'git') {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 yield this.createPool();
                 const request = yield this.pool.request();
                 request.input('UserId', sql.Int, Number(userId));
-                request.input('Org', sql.VarChar(this.ORG_LEN), org);
-                request.input('DisplayName', sql.VarChar(this.ORG_LEN), org);
+                request.input('Org', sql.VarChar(this.ORG_LEN), org.trim());
+                request.input('DisplayName', sql.VarChar(this.ORG_LEN), org.trim());
+                request.input('OrgType', sql.VarChar(5), orgType.trim());
                 yield request.execute('SaveUserOrg');
                 return org.length;
             }
