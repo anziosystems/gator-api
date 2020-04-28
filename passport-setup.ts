@@ -220,12 +220,12 @@ passport.use(
   new OidcStrategy(
     {
       issuer: `https://a.labshare.org/_api/auth/AxleInfo`,
-      clientID: `oKU4JSoI3TbvdfYOVwwCR`, //process.env.OIDC_CLIENT_ID,
-      clientSecret: `d024ef66-81c9-11ea-9ca6-0242ac120003`, // process.env.OIDC_CLIENT_SECRET,
+      clientID: process.env.OIDC_CLIENT_ID,
+      clientSecret: process.env.OIDC_CLIENT_SECRET,
       authorizationURL: `https://a.labshare.org/_api/auth/AxleInfo/authorize`,
       userInfoURL: `https://a.labshare.org/_api/auth/AxleInfo/me`,
       tokenURL: `https://a.labshare.org/_api/auth/AxleInfo/oidc/token`,
-      callbackURL: 'https://localhost:3000/auth/lsauth/redirect',
+      callbackURL: process.env.OIDC_REDIRECT_URI,
       passReqToCallback: true,
     },
     function(req: any, issuer: string, userId: string, profile: any, accessToken: string, refreshToken: string, params: any, done: any) {
