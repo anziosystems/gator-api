@@ -1160,13 +1160,14 @@ class SQLRepository {
   }
 
   /* return number of orgs */
-  async saveUserOrg(userId: string, org: string) {
+  async saveUserOrg(userId: string, org: string, orgType: string = 'git') {
     try {
       await this.createPool();
       const request = await this.pool.request();
       request.input('UserId', sql.Int, Number(userId));
-      request.input('Org', sql.VarChar(this.ORG_LEN), org);
-      request.input('DisplayName', sql.VarChar(this.ORG_LEN), org);
+      request.input('Org', sql.VarChar(this.ORG_LEN), org.trim());
+      request.input('DisplayName', sql.VarChar(this.ORG_LEN), org.trim());
+      request.input('OrgType', sql.VarChar(5), orgType.trim());
       await request.execute('SaveUserOrg');
       return org.length;
     } catch (ex) {
