@@ -268,7 +268,7 @@ passport.use(
             return done(result, profile.id);
           }
           let domain = profile._json.username.split('@');
-          sqlRepositoy.saveUserOrg(profile.id, domain[1]).then(res => {
+          sqlRepositoy.saveUserOrg(profile.id, domain[1], 'org').then(res => {
             if (res) {
               console.log('Profile is saved - ' + domain[1]);
             }
