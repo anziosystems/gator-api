@@ -38,7 +38,7 @@ exports.JiraUser = JiraUser;
 class SQLRepository {
     constructor(obj) {
         this.sqlConfigSetting = {};
-        this.CACHE_DURATION_SEC = 6000; //50 min
+        this.CACHE_DURATION_SEC = process.env.CACHE_DURATION_SEC; //50 min
         this.MESSAGE_LEN = 2000;
         this.TENANT_LEN = 50;
         this.ORG_LEN = 200;

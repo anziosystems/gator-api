@@ -70,7 +70,7 @@ class SQLRepository {
   pool: any;
   myCache: any;
   sqlConfigSetting: any = {};
-  CACHE_DURATION_SEC = 6000; //50 min
+  CACHE_DURATION_SEC = process.env.CACHE_DURATION_SEC; //50 min
   MESSAGE_LEN = 2000;
   TENANT_LEN = 50;
   ORG_LEN = 200;
