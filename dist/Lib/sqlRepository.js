@@ -670,6 +670,7 @@ class SQLRepository {
             }
         });
     }
+    //No one calls this
     getGitDev4Org(org) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'getGitDev4Org' + org;
@@ -714,6 +715,92 @@ class SQLRepository {
                 }
                 request.input('Org', sql.VarChar(this.ORG_LEN), org);
                 const recordSet = yield request.execute('GetUser4Org');
+                if (recordSet.recordset) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else {
+                    return;
+                }
+            }
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return;
+            }
+        });
+    }
+    getWatcher(org, gitOrg) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'GetWatcher' + org;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!org || !gitOrg) {
+                    throw new Error('org or GitOrg cannot be null');
+                }
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                request.input('GitOrg', sql.VarChar(this.ORG_LEN), gitOrg);
+                const recordSet = yield request.execute('GetWatcher');
+                if (recordSet.recordset) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else {
+                    return;
+                }
+            }
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return;
+            }
+        });
+    }
+    getKudos(org, gitOrg) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getKudos' + org + gitOrg;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!org || !gitOrg) {
+                    throw new Error('org or GitOrg cannot be null');
+                }
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                request.input('GitOrg', sql.VarChar(this.ORG_LEN), gitOrg);
+                const recordSet = yield request.execute('GetKudos');
+                if (recordSet.recordset) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else {
+                    return;
+                }
+            }
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return;
+            }
+        });
+    }
+    getKudos4User(target) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getKudos4User' + target;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Target', sql.VarChar(this.ORG_LEN), target);
+                const recordSet = yield request.execute('GetKudos4User');
                 if (recordSet.recordset) {
                     this.myCache.set(cacheKey, recordSet.recordset);
                     return recordSet.recordset;
@@ -818,6 +905,7 @@ class SQLRepository {
             }
         });
     }
+    //Going to ignore org 
     getPR4Dev(org, day = 1, login, action, pageSize) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!org) {
@@ -1014,9 +1102,7 @@ class SQLRepository {
     }
     saveMSR(srId, userId, org, statusDetails, reviewer, status, links, manager, managerComment, managerStatus) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = 'saveMSR' + srId;
             try {
-                this.myCache.del(cacheKey);
                 const request = yield this.pool.request();
                 request.input('SRId', sql.Int, srId);
                 request.input('UserId', sql.VarChar(100), userId);
@@ -1032,7 +1118,42 @@ class SQLRepository {
                 return recordSet.rowsAffected[0];
             }
             catch (ex) {
-                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                console.log(`[E] saveMSR  Error: ${ex}`);
+                return 0;
+            }
+        });
+    }
+    setWatcher(watcher, target, org, gitOrg) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const request = yield this.pool.request();
+                request.input('watcher', sql.VarChar(200), watcher);
+                request.input('target', sql.VarChar(200), target);
+                request.input('Org', sql.VarChar(200), org);
+                request.input('gitOrg', sql.VarChar(200), gitOrg);
+                const recordSet = yield request.execute('SetWatcher');
+                return recordSet.rowsAffected[0];
+            }
+            catch (ex) {
+                console.log(`[E]  setWatcher  Error: ${ex}`);
+                return 0;
+            }
+        });
+    }
+    setKudos(sender, target, org, gitOrg, kudos) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const request = yield this.pool.request();
+                request.input('sender', sql.VarChar(200), sender);
+                request.input('target', sql.VarChar(200), target);
+                request.input('Org', sql.VarChar(200), org);
+                request.input('gitOrg', sql.VarChar(200), gitOrg);
+                request.input('kudos', sql.VarChar(5000), kudos);
+                const recordSet = yield request.execute('setKudos');
+                return recordSet.rowsAffected[0];
+            }
+            catch (ex) {
+                console.log(`[E] setKudos  Error: ${ex}`);
                 return 0;
             }
         });

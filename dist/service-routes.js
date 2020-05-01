@@ -363,6 +363,39 @@ router.get('/GitDev4Org', validateUser, (req, res) => {
         return res.json(err);
     });
 });
+router.get('/GetWatcher', validateUser, (req, res) => {
+    sqlRepositoy
+        .getWatcher(req.query.org, req.query.gitorg)
+        .then(result => {
+        return res.json(result);
+    })
+        .catch(err => {
+        console.log(`GetWatcher: ${err}`);
+        return res.json(err);
+    });
+});
+router.get('/GetKudos', validateUser, (req, res) => {
+    sqlRepositoy
+        .getKudos(req.query.org, req.query.gitorg)
+        .then(result => {
+        return res.json(result);
+    })
+        .catch(err => {
+        console.log(`GetKudos: ${err}`);
+        return res.json(err);
+    });
+});
+router.get('/GetKudos4User', validateUser, (req, res) => {
+    sqlRepositoy
+        .getKudos4User(req.query.target)
+        .then(result => {
+        return res.json(result);
+    })
+        .catch(err => {
+        console.log(`GetKudos4User: ${err}`);
+        return res.json(err);
+    });
+});
 /*
 
 PullRequestCountForLastXDays
@@ -448,6 +481,34 @@ router.post('/SaveMSR', validateUser, (req, res) => {
     })
         .catch(err => {
         console.log(`SaveMSR: ${err}`);
+        return res.json(err);
+    });
+});
+router.post('/SetWatcher', validateUser, (req, res) => {
+    if (!req.query.day) {
+        req.query.day = '1';
+    }
+    sqlRepositoy
+        .setWatcher(req.body.watcher, req.body.target, req.body.org, req.body.gitorg)
+        .then(result => {
+        return res.json(result);
+    })
+        .catch(err => {
+        console.log(`SetWatcher: ${err}`);
+        return res.json(err);
+    });
+});
+router.post('/SetKudos', validateUser, (req, res) => {
+    if (!req.query.day) {
+        req.query.day = '1';
+    }
+    sqlRepositoy
+        .setKudos(req.body.sender, req.body.target, req.body.org, req.body.gitorg, req.body.kudos)
+        .then(result => {
+        return res.json(result);
+    })
+        .catch(err => {
+        console.log(`SetWatcher: ${err}`);
         return res.json(err);
     });
 });

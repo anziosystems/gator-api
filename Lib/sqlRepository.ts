@@ -645,6 +645,7 @@ class SQLRepository {
     }
   }
 
+  //No one calls this
   async getGitDev4Org(org: string) {
     const cacheKey = 'getGitDev4Org' + org;
     try {
@@ -698,6 +699,84 @@ class SQLRepository {
       return;
     }
   }
+
+  async getWatcher(org: string, gitOrg: string) {
+    const cacheKey = 'GetWatcher' + org;
+    try {
+      const val = this.myCache.get(cacheKey);
+      if (val) {
+        return val;
+      }
+      await this.createPool();
+      const request = await this.pool.request();
+      if (!org || !gitOrg)  {
+        throw new Error('org or GitOrg cannot be null');
+      }
+      request.input('Org', sql.VarChar(this.ORG_LEN), org);
+      request.input('GitOrg', sql.VarChar(this.ORG_LEN), gitOrg);
+      const recordSet = await request.execute('GetWatcher');
+      if (recordSet.recordset) {
+        this.myCache.set(cacheKey, recordSet.recordset);
+        return recordSet.recordset;
+      } else {
+        return;
+      }
+    } catch (ex) {
+      console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+      return;
+    }
+  }
+
+  async getKudos(org: string, gitOrg: string) {
+    const cacheKey = 'getKudos' + org + gitOrg
+    try {
+      const val = this.myCache.get(cacheKey);
+      if (val) {
+        return val;
+      }
+      await this.createPool();
+      const request = await this.pool.request();
+      if (!org || !gitOrg)  {
+        throw new Error('org or GitOrg cannot be null');
+      }
+      request.input('Org', sql.VarChar(this.ORG_LEN), org);
+      request.input('GitOrg', sql.VarChar(this.ORG_LEN), gitOrg);
+      const recordSet = await request.execute('GetKudos');
+      if (recordSet.recordset) {
+        this.myCache.set(cacheKey, recordSet.recordset);
+        return recordSet.recordset;
+      } else {
+        return;
+      }
+    } catch (ex) {
+      console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+      return;
+    }
+  }
+
+  async getKudos4User(target: string) {
+    const cacheKey = 'getKudos4User' + target;
+    try {
+      const val = this.myCache.get(cacheKey);
+      if (val) {
+        return val;
+      }
+      await this.createPool();
+      const request = await this.pool.request();
+      request.input('Target', sql.VarChar(this.ORG_LEN), target);
+      const recordSet = await request.execute('GetKudos4User');
+      if (recordSet.recordset) {
+        this.myCache.set(cacheKey, recordSet.recordset);
+        return recordSet.recordset;
+      } else {
+        return;
+      }
+    } catch (ex) {
+      console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+      return;
+    }
+  }
+
 
   async GetRepoParticipation4Login(org: string, login: string, days: number = 30, bustTheCache: boolean = false) {
     const cacheKey = `GetRepoParticipation4Login: org: ${login} ${org} ${days}`;
@@ -786,6 +865,7 @@ class SQLRepository {
     }
   }
 
+  //Going to ignore org 
   async getPR4Dev(org: string, day = 1, login: string, action: string, pageSize: number) {
     if (!org) {
       console.log(`[i] Exiting getPRDev org cannot be null`);
@@ -975,9 +1055,7 @@ class SQLRepository {
   }
 
   async saveMSR(srId: number, userId: string, org: string, statusDetails: string, reviewer: string, status: number, links: string, manager: string, managerComment: string, managerStatus: number) {
-    const cacheKey = 'saveMSR' + srId;
     try {
-      this.myCache.del(cacheKey);
       const request = await this.pool.request();
       request.input('SRId', sql.Int, srId);
       request.input('UserId', sql.VarChar(100), userId);
@@ -993,7 +1071,43 @@ class SQLRepository {
       const recordSet = await request.execute('SaveMSR');
       return recordSet.rowsAffected[0];
     } catch (ex) {
-      console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+      console.log(`[E] saveMSR  Error: ${ex}`);
+      return 0;
+    }
+  }
+
+
+  async setWatcher(watcher: string, target: string, org: string, 
+    gitOrg: string) {
+    try {
+      const request = await this.pool.request();
+      request.input('watcher', sql.VarChar(200), watcher);
+      request.input('target', sql.VarChar(200), target);
+      request.input('Org', sql.VarChar(200), org);
+      request.input('gitOrg', sql.VarChar(200), gitOrg);
+     
+      const recordSet = await request.execute('SetWatcher');
+      return recordSet.rowsAffected[0];
+    } catch (ex) {
+      console.log(`[E]  setWatcher  Error: ${ex}`);
+      return 0;
+    }
+  }
+
+  async setKudos(sender: string, target: string, org: string, 
+    gitOrg: string, kudos: string) {
+    try {
+      const request = await this.pool.request();
+      request.input('sender', sql.VarChar(200), sender);
+      request.input('target', sql.VarChar(200), target);
+      request.input('Org', sql.VarChar(200), org);
+      request.input('gitOrg', sql.VarChar(200), gitOrg);
+      request.input('kudos', sql.VarChar(5000), kudos);
+     
+      const recordSet = await request.execute('setKudos');
+      return recordSet.rowsAffected[0];
+    } catch (ex) {
+      console.log(`[E] setKudos  Error: ${ex}`);
       return 0;
     }
   }
