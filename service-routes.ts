@@ -691,6 +691,23 @@ router.get('/getOrgChart', validateUser, (req: any, res: any) => {
     });
 });
 
+
+router.get('/getOrgTree', validateUser, (req: any, res: any) => {
+  if (!req.query.day) {
+    req.query.day = '1';
+  }
+  sqlRepositoy
+    .getOrgTree(req.query.org, req.query.userId ,Boolean(req.query.bustTheCache === 'true'))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`getOrgTree: ${err}`);
+      return res.json(err);
+    });
+});
+
+
 router.get('/getUserRole', validateUser, (req: any, res: any) => {
   sqlRepositoy
     .getUserRole(req.query.userid, req.query.org, Boolean(req.query.bustTheCache === 'true'))
@@ -788,5 +805,8 @@ router.get('/isUserMSRAdmin', validateUser, (req: any, res: any) => {
       return res.json(err);
     });
 });
+
+
+
 
 module.exports = router;

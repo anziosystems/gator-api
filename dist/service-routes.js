@@ -662,6 +662,20 @@ router.get('/getOrgChart', validateUser, (req, res) => {
         return res.json(err);
     });
 });
+router.get('/getOrgTree', validateUser, (req, res) => {
+    if (!req.query.day) {
+        req.query.day = '1';
+    }
+    sqlRepositoy
+        .getOrgTree(req.query.org, req.query.userId, Boolean(req.query.bustTheCache === 'true'))
+        .then(result => {
+        return res.json(result);
+    })
+        .catch(err => {
+        console.log(`getOrgTree: ${err}`);
+        return res.json(err);
+    });
+});
 router.get('/getUserRole', validateUser, (req, res) => {
     sqlRepositoy
         .getUserRole(req.query.userid, req.query.org, Boolean(req.query.bustTheCache === 'true'))

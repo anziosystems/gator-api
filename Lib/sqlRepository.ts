@@ -16,7 +16,24 @@ class ErrorObj {
     this.message = message;
   }
 }
+class Node {
+  parent: any;
+  child: any[];
+  constructor() {
+    this.child = new Array<any>();
+  }
+}
 
+class TNode {
+  label: string;
+  data: string;
+  expandedIcon: string;
+  collapsedIcon: string;
+  children: TNode[];
+  constructor() {
+    this.children = new Array<TNode>();
+  }
+}
 class PullRequest {
   Org: string;
   Title: string;
@@ -188,7 +205,7 @@ class SQLRepository {
   async checkJiraToken(tenantId: string) {
     if (!tenantId) {
       console.log(`[E] checkJiraToken tenantId is empty.`);
-      return ;
+      return;
     }
     const cacheKey = 'CheckJiraToken: ' + tenantId;
     try {
@@ -709,7 +726,7 @@ class SQLRepository {
       }
       await this.createPool();
       const request = await this.pool.request();
-      if (!org || !gitOrg)  {
+      if (!org || !gitOrg) {
         throw new Error('org or GitOrg cannot be null');
       }
       request.input('Org', sql.VarChar(this.ORG_LEN), org);
@@ -728,7 +745,7 @@ class SQLRepository {
   }
 
   async getKudos(org: string, gitOrg: string) {
-    const cacheKey = 'getKudos' + org + gitOrg
+    const cacheKey = 'getKudos' + org + gitOrg;
     try {
       const val = this.myCache.get(cacheKey);
       if (val) {
@@ -736,7 +753,7 @@ class SQLRepository {
       }
       await this.createPool();
       const request = await this.pool.request();
-      if (!org || !gitOrg)  {
+      if (!org || !gitOrg) {
         throw new Error('org or GitOrg cannot be null');
       }
       request.input('Org', sql.VarChar(this.ORG_LEN), org);
@@ -776,7 +793,6 @@ class SQLRepository {
       return;
     }
   }
-
 
   async GetRepoParticipation4Login(org: string, login: string, days: number = 30, bustTheCache: boolean = false) {
     const cacheKey = `GetRepoParticipation4Login: org: ${login} ${org} ${days}`;
@@ -865,7 +881,7 @@ class SQLRepository {
     }
   }
 
-  //Going to ignore org 
+  //Going to ignore org
   async getPR4Dev(org: string, day = 1, login: string, action: string, pageSize: number) {
     if (!org) {
       console.log(`[i] Exiting getPRDev org cannot be null`);
@@ -1076,16 +1092,14 @@ class SQLRepository {
     }
   }
 
-
-  async setWatcher(watcher: string, target: string, org: string, 
-    gitOrg: string) {
+  async setWatcher(watcher: string, target: string, org: string, gitOrg: string) {
     try {
       const request = await this.pool.request();
       request.input('watcher', sql.VarChar(200), watcher);
       request.input('target', sql.VarChar(200), target);
       request.input('Org', sql.VarChar(200), org);
       request.input('gitOrg', sql.VarChar(200), gitOrg);
-     
+
       const recordSet = await request.execute('SetWatcher');
       return recordSet.rowsAffected[0];
     } catch (ex) {
@@ -1094,8 +1108,7 @@ class SQLRepository {
     }
   }
 
-  async setKudos(sender: string, target: string, org: string, 
-    gitOrg: string, kudos: string) {
+  async setKudos(sender: string, target: string, org: string, gitOrg: string, kudos: string) {
     try {
       const request = await this.pool.request();
       request.input('sender', sql.VarChar(200), sender);
@@ -1103,7 +1116,7 @@ class SQLRepository {
       request.input('Org', sql.VarChar(200), org);
       request.input('gitOrg', sql.VarChar(200), gitOrg);
       request.input('kudos', sql.VarChar(5000), kudos);
-     
+
       const recordSet = await request.execute('setKudos');
       return recordSet.rowsAffected[0];
     } catch (ex) {
@@ -1605,6 +1618,117 @@ class SQLRepository {
       console.log(`[E]  deleteUserRole: ${login} ${org} ${ex}`);
       return ex;
     }
+  }
+
+  async getOrgTree(currentOrg: string, userId: string, bustTheCache: boolean) {
+    const cacheKey = 'getOrgTree' + currentOrg + userId;
+    if (!bustTheCache) {
+      const val = this.myCache.get(cacheKey);
+      if (val) {
+        return val;
+      }
+    }
+    /*
+    { key: 1, name: "Eng Management" }
+    { key: 2, name: "Rafat Sarosh", userid: 'rsarosh' , parent: 1 }
+  */
+    let _nodes: Map<number, Node> = new Map<number, Node>();
+    let _obj: {nodeDataArray: any[]};
+    return new Promise((done, fail) => {
+      try {
+        this.getOrgChart(currentOrg, true).then(v => {
+          if (!v[0]) {
+            fail(`No Data for ${currentOrg}`); //  this.router.navigate(['/orgChart']);
+          }
+          _obj = JSON.parse(v[0].OrgChart);
+          _obj.nodeDataArray.forEach(x => {
+            if (x.key === 1) {
+              let _n = new Node();
+              _n.parent = x;
+              _nodes.set(x.key, _n);
+              return;
+            }
+
+            if (x.parent) {
+              let n = _nodes.get(x.parent);
+              if (!n) {
+                //parent not found, make a new node
+                let _n = new Node();
+                _n.parent = getElementfromNodeDataArray(x.parent);
+                _n.child.push(x);
+                _nodes.set(x.parent, _n);
+              } else {
+                //parent found, let set the child
+                n.child.push(x);
+              }
+            }
+          });
+          let Data: TNode[] = [];
+          _nodes.forEach(x => {
+            let data = new TNode();
+            data.label = x.parent.name;
+            data.data = x.parent.userid;
+            data.expandedIcon = 'pi';
+            data.collapsedIcon = 'pi';
+            for (let y of x.child) {
+              let c = new TNode();
+              c.label = y.name;
+              c.data = y.userid;
+              c.expandedIcon = 'pi ';
+              c.collapsedIcon = 'pi ';
+              data.children.push(c);
+            }
+            Data.push(data);
+          });
+
+          for (let z of Data) {
+            if (z.children) {
+              let cCtr = 0;
+              for (let c of z.children) {
+                let n = IsChildrenExistAsNode(c.label);
+                if (n) {
+                  z.children[cCtr] = n;
+                }
+                cCtr = cCtr + 1;
+              }
+            }
+          }
+          /*
+          0: TNode
+            children: Array(3)
+              0: TNode
+                  children: (5) [TNode, TNode, TNode, TNode, TNode]
+              collapsedIcon: "pi"
+              data: "rafat.sarosh@axleinfo.com"
+              expandedIcon: "pi"
+              label: "Rafat Sarosh"
+              __proto__: Object
+        1: TNode {children: Array(1), label: "Nathan Hotaling", data: "Nathan.Hotaling@labshare.org", expandedIcon: "pi", collapsedIcon: "pi"}
+        2: TNode {children: Array(3), label: "Reid Simon", data: "reid.simon@axleinfo.com", expandedIcon: "pi", collapsedIcon: "pi"}
+        */
+          this.myCache.set(cacheKey, Data);
+          done(Data);
+
+          function IsChildrenExistAsNode(lbl: string): TNode {
+            for (let n of Data) {
+              if (n.label === lbl) {
+                Data = Data.filter(obj => obj !== n);
+                return n;
+              }
+            }
+          }
+
+          function getElementfromNodeDataArray(key: number) {
+            for (let o of _obj.nodeDataArray) {
+              if (o.key === key) return o;
+            }
+            return null;
+          }
+        });
+      } catch (ex) {
+        fail(ex);
+      }
+    }); //Promise
   }
 }
 

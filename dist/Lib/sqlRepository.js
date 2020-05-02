@@ -24,6 +24,16 @@ class ErrorObj {
     }
 }
 exports.ErrorObj = ErrorObj;
+class Node {
+    constructor() {
+        this.child = new Array();
+    }
+}
+class TNode {
+    constructor() {
+        this.children = new Array();
+    }
+}
 class PullRequest {
 }
 class GUser {
@@ -905,7 +915,7 @@ class SQLRepository {
             }
         });
     }
-    //Going to ignore org 
+    //Going to ignore org
     getPR4Dev(org, day = 1, login, action, pageSize) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!org) {
@@ -1671,6 +1681,117 @@ class SQLRepository {
                 console.log(`[E]  deleteUserRole: ${login} ${org} ${ex}`);
                 return ex;
             }
+        });
+    }
+    getOrgTree(currentOrg, userId, bustTheCache) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getOrgTree' + currentOrg + userId;
+            if (!bustTheCache) {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+            }
+            /*
+            { key: 1, name: "Eng Management" }
+            { key: 2, name: "Rafat Sarosh", userid: 'rsarosh' , parent: 1 }
+          */
+            let _nodes = new Map();
+            let _obj;
+            return new Promise((done, fail) => {
+                try {
+                    this.getOrgChart(currentOrg, true).then(v => {
+                        if (!v[0]) {
+                            fail(`No Data for ${currentOrg}`); //  this.router.navigate(['/orgChart']);
+                        }
+                        _obj = JSON.parse(v[0].OrgChart);
+                        _obj.nodeDataArray.forEach(x => {
+                            if (x.key === 1) {
+                                let _n = new Node();
+                                _n.parent = x;
+                                _nodes.set(x.key, _n);
+                                return;
+                            }
+                            if (x.parent) {
+                                let n = _nodes.get(x.parent);
+                                if (!n) {
+                                    //parent not found, make a new node
+                                    let _n = new Node();
+                                    _n.parent = getElementfromNodeDataArray(x.parent);
+                                    _n.child.push(x);
+                                    _nodes.set(x.parent, _n);
+                                }
+                                else {
+                                    //parent found, let set the child
+                                    n.child.push(x);
+                                }
+                            }
+                        });
+                        let Data = [];
+                        _nodes.forEach(x => {
+                            let data = new TNode();
+                            data.label = x.parent.name;
+                            data.data = x.parent.userid;
+                            data.expandedIcon = 'pi';
+                            data.collapsedIcon = 'pi';
+                            for (let y of x.child) {
+                                let c = new TNode();
+                                c.label = y.name;
+                                c.data = y.userid;
+                                c.expandedIcon = 'pi ';
+                                c.collapsedIcon = 'pi ';
+                                data.children.push(c);
+                            }
+                            Data.push(data);
+                        });
+                        for (let z of Data) {
+                            if (z.children) {
+                                let cCtr = 0;
+                                for (let c of z.children) {
+                                    let n = IsChildrenExistAsNode(c.label);
+                                    if (n) {
+                                        z.children[cCtr] = n;
+                                    }
+                                    cCtr = cCtr + 1;
+                                }
+                            }
+                        }
+                        /*
+                        0: TNode
+                          children: Array(3)
+                            0: TNode
+                                children: (5) [TNode, TNode, TNode, TNode, TNode]
+                            collapsedIcon: "pi"
+                            data: "rafat.sarosh@axleinfo.com"
+                            expandedIcon: "pi"
+                            label: "Rafat Sarosh"
+                            __proto__: Object
+                      1: TNode {children: Array(1), label: "Nathan Hotaling", data: "Nathan.Hotaling@labshare.org", expandedIcon: "pi", collapsedIcon: "pi"}
+                      2: TNode {children: Array(3), label: "Reid Simon", data: "reid.simon@axleinfo.com", expandedIcon: "pi", collapsedIcon: "pi"}
+                      */
+                        this.myCache.set(cacheKey, Data);
+                        done(Data);
+                        function IsChildrenExistAsNode(lbl) {
+                            for (let n of Data) {
+                                if (n.label === lbl) {
+                                    Data = Data.filter(obj => obj !== n);
+                                    return n;
+                                }
+                            }
+                        }
+                        function getElementfromNodeDataArray(key) {
+                            for (let o of _obj.nodeDataArray) {
+                                if (o.key === key)
+                                    return o;
+                            }
+                            return null;
+                        }
+                    });
+                }
+                catch (ex) {
+                    fail(ex);
+                }
+            }); //Promise
         });
     }
 }
