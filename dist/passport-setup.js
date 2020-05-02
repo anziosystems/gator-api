@@ -237,6 +237,13 @@ passport.use(new OidcStrategy({
             return done(result, profile.id);
         }
         let domain = profile._json.username.split('@');
+        //Todo: hardcoded for now 
+        if (domain[1] === 'labshare.org') {
+            domain[1] = 'axleinfo.com';
+        }
+        if (domain[1] === 'labshare.org') {
+            domain[1] = 'axleinfo.com';
+        }
         sqlRepositoy.saveUserOrg(profile.id, domain[1], 'org').then(res => {
             if (res) {
                 console.log('Profile is saved - ' + domain[1]);

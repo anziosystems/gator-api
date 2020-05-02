@@ -352,7 +352,7 @@ router.get('/TopDevForLastXDays', validateUser, (req, res) => {
         return res.json(err);
     });
 });
-router.get('/GitDev4Org', validateUser, (req, res) => {
+router.get('/GetDev4Org', validateUser, (req, res) => {
     sqlRepositoy
         .GetUser4Org(req.query.org)
         .then(result => {

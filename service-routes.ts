@@ -357,7 +357,7 @@ router.get('/TopDevForLastXDays', validateUser, (req: any, res: any) => {
     });
 });
 
-router.get('/GitDev4Org', validateUser, (req: any, res: any) => {
+router.get('/GetDev4Org', validateUser, (req: any, res: any) => {
   sqlRepositoy
     .GetUser4Org(req.query.org)
     .then(result => {
