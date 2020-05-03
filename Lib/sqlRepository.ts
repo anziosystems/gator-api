@@ -1730,6 +1730,43 @@ class SQLRepository {
       }
     }); //Promise
   }
+
+  //Is Y in tree of X -> Is X Manager of Y?
+  async IsXYAllowed(currentOrg: string, userId: string, X: string, Y: string) {
+    let tree = await this.getOrgTree(currentOrg, userId, false);
+    let parentNode = this.GetNode4User(X, tree[0].children);
+    if (parentNode) {
+      return this.SearchAllNodes(Y, parentNode.children);
+    }
+    return false;
+  }
+
+  SearchAllNodes(user: string, tree: any) {
+    for (const c of tree) {
+      if (c.data === user) {
+        return true;
+      }
+      if (c.children) {
+        if (this.SearchAllNodes(user, c.children))
+            return true;
+      }
+    }
+    return false;
+  }
+
+  GetNode4User(user: string, tree: any): any {
+    for (const c of tree) {
+      if (c.data === user) {
+        return c;
+      }
+      if (c.children) {
+        let node = this.GetNode4User(user, c.children);
+        if (node)
+            return node;
+      }
+    }
+    return null;
+  }
 }
 
 export {SQLRepository, GUser, JiraUser, ErrorObj};

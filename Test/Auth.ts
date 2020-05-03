@@ -13,7 +13,7 @@ describe('GetTenant', () => {
   });
 });
 
-describe.only('AddUser', () => {
+describe('AddUser', () => {
   it('should return number', async () => {
     const LSA = new LSAuthRepository();
     let user = new GUser();

@@ -1794,6 +1794,42 @@ class SQLRepository {
             }); //Promise
         });
     }
+    //Is Y in tree of X -> Is X Manager of Y?
+    IsXYAllowed(currentOrg, userId, X, Y) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let tree = yield this.getOrgTree(currentOrg, userId, false);
+            let parentNode = this.GetNode4User(X, tree[0].children);
+            if (parentNode) {
+                return this.SearchAllNodes(Y, parentNode.children);
+            }
+            return false;
+        });
+    }
+    SearchAllNodes(user, tree) {
+        for (const c of tree) {
+            if (c.data === user) {
+                return true;
+            }
+            if (c.children) {
+                if (this.SearchAllNodes(user, c.children))
+                    return true;
+            }
+        }
+        return false;
+    }
+    GetNode4User(user, tree) {
+        for (const c of tree) {
+            if (c.data === user) {
+                return c;
+            }
+            if (c.children) {
+                let node = this.GetNode4User(user, c.children);
+                if (node)
+                    return node;
+            }
+        }
+        return null;
+    }
 }
 exports.SQLRepository = SQLRepository;
 //# sourceMappingURL=sqlRepository.js.map
