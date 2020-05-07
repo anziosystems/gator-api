@@ -211,7 +211,7 @@ var anzioStrategy = new OidcStrategy({
     authorizationURL: `https://a.labshare.org/_api/auth/AnzioSystems/authorize`,
     userInfoURL: `https://a.labshare.org/_api/auth/AnzioSystems/me`,
     tokenURL: `https://a.labshare.org/_api/auth/AnzioSystems/oidc/token`,
-    callbackURL: `https://localhost:3000/auth/lsauth/redirect/anzio`,
+    callbackURL: process.env.OIDC_REDIRECT_URI_ANZIO,
     passReqToCallback: true,
 }, function (req, issuer, userId, profile, accessToken, refreshToken, params, done) {
     ProcessLSAuth(req, issuer, userId, profile, accessToken, refreshToken, params, done);

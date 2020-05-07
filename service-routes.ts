@@ -11,8 +11,7 @@ req.headers['JiraToken'];  //This is JiraTenant Id
 import {SQLRepository} from './Lib/sqlRepository';
 import {GitRepository} from './Lib/GitRepository';
 import {JiraRepository} from './Lib/JiraRepository';
-import { stringify } from 'querystring';
- 
+import {stringify} from 'querystring';
 
 const sqlRepositoy = new SQLRepository(null);
 const gitRepository = new GitRepository();
@@ -54,7 +53,7 @@ async function isJiraTokenValid(tenantId: string): Promise<boolean> {
 }
 
 function validateUser(req: any, res: any, next: any) {
-  const userId = getUserId(req);  
+  const userId = getUserId(req);
   isUserValid(userId)
     .then(val => {
       if (!val) {
@@ -69,9 +68,9 @@ function validateUser(req: any, res: any, next: any) {
 }
 
 function validateJiraUser(req: any, res: any, next: any) {
-  const userId = getJiraUser(req);  
-  if(!userId) {
-    console.log (`[E] validateJiraUser - No userId found in token`)
+  const userId = getJiraUser(req);
+  if (!userId) {
+    console.log(`[E] validateJiraUser - No userId found in token`);
     return;
   }
   isJiraTokenValid(userId)
@@ -90,8 +89,8 @@ function validateJiraUser(req: any, res: any, next: any) {
 function getUserId(req: any) {
   try {
     const token = req.headers['authorization']; //it is UserId in header
-    if(!token) {
-      console.log (`[E] getUserId - No token found in authorization header`);
+    if (!token) {
+      console.log(`[E] getUserId - No token found in authorization header`);
       return;
     }
     /* 
@@ -107,10 +106,10 @@ function getUserId(req: any) {
     id:"8584"
     */
     const result = jwt.verify(token, process.env.Session_Key, verifyOptions);
-    if (typeof (result) === 'number' || typeof (result) === 'string') {
-        return result;
+    if (typeof result === 'number' || typeof result === 'string') {
+      return result;
     } else {
-        return result.id; //Org header has the full user object
+      return result.id; //Org header has the full user object
     }
   } catch (ex) {
     console.log(`[E] getUserId ${ex.message}`);
@@ -121,15 +120,14 @@ function getUserId(req: any) {
 //token has the tenantId - It always come in authorization header as a token
 function getJiraUser(req: any) {
   try {
-    if(!req.headers['authorization'])
-    {
-      console.log (`[E] gitJiraUser No Authorization header`);
+    if (!req.headers['authorization']) {
+      console.log(`[E] gitJiraUser No Authorization header`);
       return;
     }
     const token = req.headers['authorization'].trim(); //it is tenantId in header
     // console.log(` ==> GetJiraTenant raw token from the call ${token}`);
-    if(!token) {
-      console.log (`[E] gitJiraUser No Token found in Authorization header`);
+    if (!token) {
+      console.log(`[E] gitJiraUser No Token found in Authorization header`);
       return;
     }
     const result = jwt.verify(token, process.env.Session_Key, verifyOptions);
@@ -222,13 +220,12 @@ router.get('/GetJiraIssues', validateJiraUser, (req: any, res: any) => {
 router.get('/GetOrg', validateUser, async (req: any, res: any) => {
   //TODO: just get from SQL after LSAuth implementatiopn
   const user = getUserId(req);
-  await sqlRepositoy.getOrg4UserId (user, Boolean(req.query.bustTheCache === 'true')).then ( result =>
-    {
-      if (result) {
-        return res.json(result);
-      } else {
-        //No Org in SQL - Lets try Git
-        gitRepository
+  await sqlRepositoy.getOrg4UserId(user, Boolean(req.query.bustTheCache === 'true')).then(result => {
+    if (result) {
+      return res.json(result);
+    } else {
+      //No Org in SQL - Lets try Git
+      gitRepository
         .getOrgFromGit(user, true)
         .then(result => {
           try {
@@ -240,17 +237,13 @@ router.get('/GetOrg', validateUser, async (req: any, res: any) => {
           } catch (ex) {
             console.log('[E] GetOrg: ' + ex);
           }
-          })
-          .catch(ex => {
-            console.log(`[E] GetOrg Error: ${ex}`);
-          });
-      }
-    })});
-
- 
-
-
-
+        })
+        .catch(ex => {
+          console.log(`[E] GetOrg Error: ${ex}`);
+        });
+    }
+  });
+});
 
 router.get('/getLoggedInUSerDetails', validateUser, (req: any, res: any) => {
   sqlRepositoy
@@ -513,7 +506,6 @@ router.post('/SetWatcher', validateUser, (req: any, res: any) => {
     });
 });
 
-
 router.post('/SetKudos', validateUser, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
@@ -529,18 +521,27 @@ router.post('/SetKudos', validateUser, (req: any, res: any) => {
     });
 });
 
-
-
 router.get('/getSR4User', validateUser, (req: any, res: any) => {
-  sqlRepositoy
-    .getSR4User(req.query.userid, Boolean(req.query.bustTheCache === 'true'))
-    .then(result => {
-      return res.json(result);
-    })
-    .catch(err => {
-      console.log(`getSR4User: ${err}`);
-      return res.json(err);
+  const userId = getUserId(req);
+  sqlRepositoy.getUser(userId).then(user => {
+      sqlRepositoy
+        .getSR4User(req.query.userid, Boolean(req.query.bustTheCache === 'true'))
+        .then(result => {
+          sqlRepositoy.IsXYAllowed(result[0].org, user[0].Email,user[0].Email, req.query.userid).then(isAllowed => {
+            if (isAllowed === true) {
+                return res.json(result);
+            } 
+            else {
+              return res.json(`${user[0].DisplayName} has no permission to see ${req.query.userid} status report. `)
+            }
+          });
+        })
+        .catch(err => {
+          console.log(`getSR4User: ${err}`);
+          return res.json(err);
+        });
     });
+
 });
 
 router.get('/GetSR4User4Review', validateUser, (req: any, res: any) => {
@@ -655,7 +656,7 @@ router.post('/saveOrgChart', validateUser, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
-  let tenantId = getUserId(req);  
+  let tenantId = getUserId(req);
   sqlRepositoy.getLoggedInUSerDetails(tenantId, false).then(result => {
     sqlRepositoy.isUserAdmin(result.UserName, req.body.org, false).then(r => {
       //check r here, if user is an admin let the call go thru, else reject
@@ -691,13 +692,12 @@ router.get('/getOrgChart', validateUser, (req: any, res: any) => {
     });
 });
 
-
 router.get('/getOrgTree', validateUser, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
   }
   sqlRepositoy
-    .getOrgTree(req.query.org, req.query.userId ,Boolean(req.query.bustTheCache === 'true'))
+    .getOrgTree(req.query.org, req.query.userId, Boolean(req.query.bustTheCache === 'true'))
     .then(result => {
       return res.json(result);
     })
@@ -706,7 +706,6 @@ router.get('/getOrgTree', validateUser, (req: any, res: any) => {
       return res.json(err);
     });
 });
-
 
 router.get('/getUserRole', validateUser, (req: any, res: any) => {
   sqlRepositoy
@@ -736,7 +735,7 @@ router.post('/saveUserRole', validateUser, (req: any, res: any) => {
   //check the caller and reject the call if he is not already an admin
   //only Admin can add userroles
 
-  let tenantId = getUserId(req);  
+  let tenantId = getUserId(req);
   sqlRepositoy.getLoggedInUSerDetails(tenantId, false).then(result => {
     sqlRepositoy.isUserAdmin(result.UserName, req.body.org, false).then(r => {
       //check r here, if tenant is an admin let the call go thru, else reject
@@ -761,7 +760,7 @@ router.post('/deleteUserRole', validateUser, (req: any, res: any) => {
   //check the caller and reject the call if he is not already an admin
   //only Admin can add userroles
 
-  let tenantId = getUserId(req);  
+  let tenantId = getUserId(req);
   sqlRepositoy.getLoggedInUSerDetails(tenantId, false).then(result => {
     sqlRepositoy.isUserAdmin(result.UserName, req.body.org, false).then(r => {
       //check r here, if tenant is an admin let the call go thru, else reject
@@ -805,8 +804,5 @@ router.get('/isUserMSRAdmin', validateUser, (req: any, res: any) => {
       return res.json(err);
     });
 });
-
-
-
 
 module.exports = router;

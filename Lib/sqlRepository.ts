@@ -577,6 +577,11 @@ class SQLRepository {
       const recordSet = await request.execute('SaveOrgChart');
       if (recordSet.recordset.length > 0) {
         return recordSet.recordset;
+        //Org Chart is updated lets drop the cache
+        const cacheKey = 'getOrgTree' + org + userId;
+        let v =  this.myCache.get (cacheKey);
+        if (v)
+          this.myCache.del (cacheKey);
       } else {
         return 0;
       }

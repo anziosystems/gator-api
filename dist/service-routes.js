@@ -116,7 +116,7 @@ function getUserId(req) {
         id:"8584"
         */
         const result = jwt.verify(token, process.env.Session_Key, verifyOptions);
-        if (typeof (result) === 'number' || typeof (result) === 'string') {
+        if (typeof result === 'number' || typeof result === 'string') {
             return result;
         }
         else {
@@ -513,14 +513,24 @@ router.post('/SetKudos', validateUser, (req, res) => {
     });
 });
 router.get('/getSR4User', validateUser, (req, res) => {
-    sqlRepositoy
-        .getSR4User(req.query.userid, Boolean(req.query.bustTheCache === 'true'))
-        .then(result => {
-        return res.json(result);
-    })
-        .catch(err => {
-        console.log(`getSR4User: ${err}`);
-        return res.json(err);
+    const userId = getUserId(req);
+    sqlRepositoy.getUser(userId).then(user => {
+        sqlRepositoy
+            .getSR4User(req.query.userid, Boolean(req.query.bustTheCache === 'true'))
+            .then(result => {
+            sqlRepositoy.IsXYAllowed(result[0].org, user[0].Email, user[0].Email, req.query.userid).then(isAllowed => {
+                if (isAllowed === true) {
+                    return res.json(result);
+                }
+                else {
+                    return res.json(`${user[0].DisplayName} has no permission to see ${req.query.userid} status report. `);
+                }
+            });
+        })
+            .catch(err => {
+            console.log(`getSR4User: ${err}`);
+            return res.json(err);
+        });
     });
 });
 router.get('/GetSR4User4Review', validateUser, (req, res) => {
