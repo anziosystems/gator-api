@@ -1,4 +1,6 @@
+"use strict";
 //https://www.youtube.com/watch?v=or1_A4sJ-oY
+Object.defineProperty(exports, "__esModule", { value: true });
 //NOTE - Token has User
 const router = require('express').Router();
 const passport = require('passport');
@@ -16,10 +18,30 @@ router.get('/login', () => {
     return 'login is called';
 });
 //https://localhost:3000/auth/lsauth
+router.get('/lsauth/axleinfo', passport.authenticate('axleInfoStrategy', {
+    successReturnToOrRedirect: '/',
+    scope: 'profile',
+}));
+router.get('/lsauth/anzio', passport.authenticate('anzioStrategy', {
+    successReturnToOrRedirect: '/',
+    scope: 'profile',
+}));
 router.get('/lsauth', passport.authenticate('openidconnect', {
     successReturnToOrRedirect: '/',
     scope: 'profile',
 }));
+router.get('/lsauth/redirect/axleInfo', passport.authenticate('axleInfoStrategy'), (req, res) => {
+    const token = jwt.sign(req.user, process.env.Session_Key);
+    res.redirect(callbackURL_LSUATH + '?OrgToken=' + token);
+});
+router.get('/lsauth/redirect/anzio', passport.authenticate('anzioStrategy'), (req, res) => {
+    const token = jwt.sign(req.user, process.env.Session_Key);
+    res.redirect(callbackURL_LSUATH + '?OrgToken=' + token);
+});
+router.get('/lsauth/redirect', passport.authenticate('openidconnect'), (req, res) => {
+    const token = jwt.sign(req.user, process.env.Session_Key);
+    res.redirect(callbackURL_LSUATH + '?OrgToken=' + token);
+});
 router.get('/github', passport.authenticate('github'), () => {
     //This function will never be called.
 });

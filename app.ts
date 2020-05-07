@@ -41,6 +41,7 @@ app.use(
     resave: false,
     saveUninitialized: false,
   }),
+  
 );
 
 passport.serializeUser((user: any, done: any) => {
@@ -88,14 +89,21 @@ app.get('/success', (req: any, res: any) => {
   res.render('success');
 });
 
+
+// var configGlobal = new Map();
+// returnConfiguration().then(x => {
+//   console.log('Ready with config Loaded from SQL ====>');
+//   configGlobal.set('axleinfo', x);
+// });
+
 // commenting it for https
 
 if (process.env.ENV === 'PROD') {
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log('listenting for prod request on port 3000');
-  console.log('===================================================');
-});
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => {
+    console.log('listenting for prod request on port 3000');
+    console.log('===================================================');
+  });
 } else {
   var http = require('http');
   var https = require('https');
@@ -167,3 +175,26 @@ function onError(error: any) {
 function onListening() {
   console.log(`----- local server ready on port ${port} -----`);
 }
+
+// async function returnConfiguration() {
+//   //req.query.tenant
+//   return new Promise ((done, fail) => {
+//   const sqlRepositoy = new SQLRepository(null);
+//   sqlRepositoy.getClientSecret('axleinfo').then((result: string) => {
+//     let client = JSON.parse(result);
+//     let obj = {
+//       issuer: client.issuer, // `https://a.labshare.org/_api/auth/AxleInfo`,
+//       clientID: client.clientID, //process.env.OIDC_CLIENT_ID,
+//       clientSecret: client.clientSecret, // process.env.OIDC_CLIENT_SECRET,
+//       authorizationURL: client.authorizationURL, // `https://a.labshare.org/_api/auth/AxleInfo/authorize`,
+//       userInfoURL: client.userInfoURL, //`https://a.labshare.org/_api/auth/AxleInfo/me`,
+//       tokenURL: client.tokenURL, //`https://a.labshare.org/_api/auth/AxleInfo/oidc/token`,
+//       callbackURL: process.env.OIDC_REDIRECT_URI,
+//       passReqToCallback: true,
+//     };
+//     done(obj);
+//   });
+// });
+// }
+
+// export {configGlobal};

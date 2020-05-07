@@ -10,7 +10,21 @@ import {GitRepository} from '../Lib/GitRepository';
 // import {JiraRepository} from '../Lib/JiraRepository';
 // import {isNullOrUndefined} from 'util';
 
-describe.only('IsXYAllowed', () => {
+//getClientSecret
+
+describe.only('getClientSecret', () => {
+  it('should return JSON', async () => {
+    const sqlRepositoy = new SQLRepository(null);
+    const tenant = 'axleinfo';
+
+    await sqlRepositoy.getClientSecret(tenant).then(result => {
+      let obj = JSON.parse(result);
+      expect(obj.clientID.length).greaterThan(0);
+    });
+  });
+});
+
+describe('IsXYAllowed', () => {
   it('should return true', async () => {
     const sqlRepositoy = new SQLRepository(null);
     const org = 'axleinfo.com';
@@ -23,7 +37,7 @@ describe.only('IsXYAllowed', () => {
   });
 });
 
-describe.only('IsXYAllowed', () => {
+describe('IsXYAllowed', () => {
   it('should return false', async () => {
     const sqlRepositoy = new SQLRepository(null);
     const org = 'axleinfo.com';
@@ -36,7 +50,7 @@ describe.only('IsXYAllowed', () => {
   });
 });
 
-describe.only('IsXYAllowed', () => {
+describe('IsXYAllowed', () => {
   it('should return true', async () => {
     const sqlRepositoy = new SQLRepository(null);
     const org = 'axleinfo.com';
@@ -49,7 +63,7 @@ describe.only('IsXYAllowed', () => {
   });
 });
 
-describe.only('IsXYAllowed', () => {
+describe('IsXYAllowed', () => {
   it('should return true', async () => {
     const sqlRepositoy = new SQLRepository(null);
     const org = 'axleinfo.com';
@@ -62,7 +76,7 @@ describe.only('IsXYAllowed', () => {
   });
 });
 
-describe.only('IsXYAllowed', () => {
+describe('IsXYAllowed', () => {
   it('should return false', async () => {
     const sqlRepositoy = new SQLRepository(null);
     const org = 'axleinfo.com';

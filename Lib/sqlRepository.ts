@@ -929,6 +929,30 @@ class SQLRepository {
     }
   }
 
+  async getClientSecret(tenant: string) {
+    const cacheKey = 'getClientSecret' + tenant;
+    try {
+      const val = this.myCache.get(cacheKey);
+      if (val) {
+        return val;
+      }
+      await this.createPool();
+      const request = await this.pool.request();
+      if (!tenant) {
+        throw new Error('tenant cannot be null');
+      }
+      request.input('tenant', sql.VarChar(this.ORG_LEN), tenant);
+      const recordSet = await request.execute('GetClientSecret');
+      if (recordSet.recordset.length > 0) {
+        this.myCache.set(cacheKey, recordSet.recordset[0].Secrets);
+      }
+      return recordSet.recordset[0].Secrets;
+    } catch (ex) {
+      console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+      return null;
+    }
+  }
+
   /*
   PullRequest took longest time between open and close
   */
@@ -1747,8 +1771,7 @@ class SQLRepository {
         return true;
       }
       if (c.children) {
-        if (this.SearchAllNodes(user, c.children))
-            return true;
+        if (this.SearchAllNodes(user, c.children)) return true;
       }
     }
     return false;
@@ -1761,8 +1784,7 @@ class SQLRepository {
       }
       if (c.children) {
         let node = this.GetNode4User(user, c.children);
-        if (node)
-            return node;
+        if (node) return node;
       }
     }
     return null;

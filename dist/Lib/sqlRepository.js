@@ -963,6 +963,32 @@ class SQLRepository {
             }
         });
     }
+    getClientSecret(tenant) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getClientSecret' + tenant;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!tenant) {
+                    throw new Error('tenant cannot be null');
+                }
+                request.input('tenant', sql.VarChar(this.ORG_LEN), tenant);
+                const recordSet = yield request.execute('GetClientSecret');
+                if (recordSet.recordset.length > 0) {
+                    this.myCache.set(cacheKey, recordSet.recordset[0].Secrets);
+                }
+                return recordSet.recordset[0].Secrets;
+            }
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return null;
+            }
+        });
+    }
     /*
     PullRequest took longest time between open and close
     */
