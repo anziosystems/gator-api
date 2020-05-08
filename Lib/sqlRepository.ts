@@ -579,9 +579,8 @@ class SQLRepository {
         return recordSet.recordset;
         //Org Chart is updated lets drop the cache
         const cacheKey = 'getOrgTree' + org + userId;
-        let v =  this.myCache.get (cacheKey);
-        if (v)
-          this.myCache.del (cacheKey);
+        let v = this.myCache.get(cacheKey);
+        if (v) this.myCache.del(cacheKey);
       } else {
         return 0;
       }
@@ -1099,6 +1098,26 @@ class SQLRepository {
     }
   }
 
+  //
+  async updateUserConnectIds(user: any) {
+    try {
+      await this.createPool();
+      const request = await this.pool.request();
+      request.input('Id', sql.Char, user.Id);
+      request.input('GitUserName', sql.VarChar(200), user.GitUserName);
+      request.input('TFSUserName', sql.VarChar(200), user.TfsUserName);
+      request.input('JiraUserName', sql.VarChar(200), user.JiraUserName);
+
+      const recordSet = await request.execute('updateUserConnectIds');
+      return recordSet.rowsAffected[0];
+      //Now drop the cache
+      const _cacheKey = 'getUser-' + user.Id;
+      this.myCache.del (_cacheKey);
+    } catch (ex) {
+      console.log(`[E]  ${ex}`);
+      return 0;
+    }
+  }
   async saveMSR(srId: number, userId: string, org: string, statusDetails: string, reviewer: string, status: number, links: string, manager: string, managerComment: string, managerStatus: number) {
     try {
       const request = await this.pool.request();
@@ -1243,7 +1262,7 @@ class SQLRepository {
       request.input('AuthToken', sql.VarChar(4000), user.AuthToken);
       request.input('RefreshToken', sql.VarChar(4000), user.RefreshToken);
       request.input('Photo', sql.VarChar(1000), user.Photo);
-      const recordSet = await request.execute('SaveTenant');
+      const recordSet = await request.execute('SaveUser');
       return recordSet.rowsAffected[0];
     } catch (ex) {
       console.log(`[E]  saveLoggedInUSer ${user} ${ex}`);

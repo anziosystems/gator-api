@@ -9,6 +9,7 @@ Drop SaveOrg it is replaced by SaveUserOrg
 Drop ActiveTenant it is replaced by ActiveUser
 Drop ActiveTenant SP it is replaced by SaveActiveUser
 Seems like no one care for [GetOrgDetail4UserId_Org]
+Drop SaveTenant SP replaced by SaveUser
 
 add to env variable 
 CALL_BACK_LSAUTH_URL

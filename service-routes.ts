@@ -362,6 +362,21 @@ router.get('/GetDev4Org', validateUser, (req: any, res: any) => {
     });
 });
 
+
+
+router.get('/GetUser4Org', validateUser, (req: any, res: any) => {
+  sqlRepositoy
+    .GetUser4Org(req.query.org)
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`GetUser4Org: ${err}`);
+      return res.json(err);
+    });
+});
+
+
 router.get('/GetWatcher', validateUser, (req: any, res: any) => {
   sqlRepositoy
     .getWatcher(req.query.org, req.query.gitorg)
@@ -482,6 +497,21 @@ router.post('/SaveMSR', validateUser, (req: any, res: any) => {
   }
   sqlRepositoy
     .saveMSR(req.body.srId, req.body.userId, req.body.org, req.body.statusDetails, req.body.reviewer, req.body.status, req.body.links, req.body.manager, req.body.managerComment, req.body.managerStatus)
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`SaveMSR: ${err}`);
+      return res.json(err);
+    });
+});
+
+
+//updateUser
+router.post('/updateUserConnectIds', validateUser, (req: any, res: any) => {
+ 
+  sqlRepositoy
+    .updateUserConnectIds(req.body.user)
     .then(result => {
       return res.json(result);
     })

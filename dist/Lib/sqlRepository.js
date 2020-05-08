@@ -1141,6 +1141,28 @@ class SQLRepository {
             }
         });
     }
+    //
+    updateUserConnectIds(user) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Id', sql.Char, user.Id);
+                request.input('GitUserName', sql.VarChar(200), user.GitUserName);
+                request.input('TFSUserName', sql.VarChar(200), user.TfsUserName);
+                request.input('JiraUserName', sql.VarChar(200), user.JiraUserName);
+                const recordSet = yield request.execute('updateUserConnectIds');
+                return recordSet.rowsAffected[0];
+                //Now drop the cache
+                const _cacheKey = 'getUser-' + user.Id;
+                this.myCache.del(_cacheKey);
+            }
+            catch (ex) {
+                console.log(`[E]  ${ex}`);
+                return 0;
+            }
+        });
+    }
     saveMSR(srId, userId, org, statusDetails, reviewer, status, links, manager, managerComment, managerStatus) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -1291,7 +1313,7 @@ class SQLRepository {
                 request.input('AuthToken', sql.VarChar(4000), user.AuthToken);
                 request.input('RefreshToken', sql.VarChar(4000), user.RefreshToken);
                 request.input('Photo', sql.VarChar(1000), user.Photo);
-                const recordSet = yield request.execute('SaveTenant');
+                const recordSet = yield request.execute('SaveUser');
                 return recordSet.rowsAffected[0];
             }
             catch (ex) {

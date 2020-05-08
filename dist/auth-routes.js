@@ -22,6 +22,10 @@ router.get('/lsauth/axleinfo', passport.authenticate('axleInfoStrategy', {
     successReturnToOrRedirect: '/',
     scope: 'profile',
 }));
+router.get('/lsauth/labshare', passport.authenticate('axleInfoStrategy', {
+    successReturnToOrRedirect: '/',
+    scope: 'profile',
+}));
 router.get('/lsauth/anzio', passport.authenticate('anzioStrategy', {
     successReturnToOrRedirect: '/',
     scope: 'profile',
