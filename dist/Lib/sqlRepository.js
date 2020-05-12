@@ -609,7 +609,7 @@ class SQLRepository {
             try {
                 yield this.createPool();
                 const request = yield this.pool.request();
-                request.input('Message', sql.VarChar(5000), message);
+                request.input('Message', sql.Text, message);
                 yield request.execute('SaveJiraHook');
                 return 200;
             }

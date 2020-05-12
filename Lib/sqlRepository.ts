@@ -603,10 +603,9 @@ class SQLRepository {
     try {
       await this.createPool();
       const request = await this.pool.request();
-      request.input('Message', sql.VarChar(5000), message);
+      request.input('Message', sql.Text, message);
       await request.execute('SaveJiraHook');
       return 200;
-      
     } catch (ex) {
       console.log(`[E]  SaveJira:  Error: ${ex}`);
       return 400;
