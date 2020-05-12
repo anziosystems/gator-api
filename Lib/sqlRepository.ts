@@ -598,6 +598,21 @@ class SQLRepository {
     }
   }
 
+  //
+  async saveJiraHook(message: string) {
+    try {
+      await this.createPool();
+      const request = await this.pool.request();
+      request.input('Message', sql.VarChar(5000), message);
+      await request.execute('SaveJiraHook');
+      return 200;
+      
+    } catch (ex) {
+      console.log(`[E]  SaveJira:  Error: ${ex}`);
+      return 400;
+    }
+  }
+
   //saveOrgChart
   async getOrgChart(org: string, bustTheCache: boolean = false) {
     await this.createPool();

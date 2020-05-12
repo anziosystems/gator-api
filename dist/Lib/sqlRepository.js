@@ -580,12 +580,18 @@ class SQLRepository {
                 request.input('orgChart', sql.VarChar, orgChart);
                 const recordSet = yield request.execute('SaveOrgChart');
                 if (recordSet.recordset.length > 0) {
-                    return recordSet.recordset;
                     //Org Chart is updated lets drop the cache
-                    const cacheKey = 'getOrgTree' + org + userId;
+                    let cacheKey = 'getOrgTree' + org + userId;
                     let v = this.myCache.get(cacheKey);
-                    if (v)
+                    if (v) {
                         this.myCache.del(cacheKey);
+                    }
+                    cacheKey = 'getOrgChart -' + org;
+                    v = this.myCache.get(cacheKey);
+                    if (v) {
+                        this.myCache.del(cacheKey);
+                    }
+                    return recordSet.recordset;
                 }
                 else {
                     return 0;
@@ -594,6 +600,22 @@ class SQLRepository {
             catch (ex) {
                 console.log(`[E]  SaveOrgChart:  Error: ${ex}`);
                 return 0;
+            }
+        });
+    }
+    //
+    saveJiraHook(message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Message', sql.VarChar(5000), message);
+                yield request.execute('SaveJiraHook');
+                return 200;
+            }
+            catch (ex) {
+                console.log(`[E]  SaveJira:  Error: ${ex}`);
+                return 400;
             }
         });
     }

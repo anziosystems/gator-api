@@ -681,6 +681,15 @@ router.post('/saveOrgChart', validateUser, (req, res) => {
         });
     });
 });
+router.post('/jiraHook', (req, res) => {
+    sqlRepositoy
+        .saveJiraHook(JSON.stringify(req.body))
+        .then(result => {
+        return res.json(result);
+    }).catch((ex) => {
+        console.log(ex);
+    });
+});
 router.get('/getOrgChart', validateUser, (req, res) => {
     if (!req.query.day) {
         req.query.day = '1';
