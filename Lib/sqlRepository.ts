@@ -576,11 +576,19 @@ class SQLRepository {
       request.input('orgChart', sql.VarChar, orgChart);
       const recordSet = await request.execute('SaveOrgChart');
       if (recordSet.recordset.length > 0) {
-        return recordSet.recordset;
         //Org Chart is updated lets drop the cache
-        const cacheKey = 'getOrgTree' + org + userId;
+        let cacheKey = 'getOrgTree' + org + userId;
         let v = this.myCache.get(cacheKey);
-        if (v) this.myCache.del(cacheKey);
+        if (v) {
+          this.myCache.del(cacheKey);
+        }
+        cacheKey = 'getOrgChart -' + org;
+        v = this.myCache.get(cacheKey);
+        if (v) {
+          this.myCache.del(cacheKey);
+        }
+
+        return recordSet.recordset;
       } else {
         return 0;
       }
@@ -1112,7 +1120,7 @@ class SQLRepository {
       return recordSet.rowsAffected[0];
       //Now drop the cache
       const _cacheKey = 'getUser-' + user.Id;
-      this.myCache.del (_cacheKey);
+      this.myCache.del(_cacheKey);
     } catch (ex) {
       console.log(`[E]  ${ex}`);
       return 0;
