@@ -19,7 +19,7 @@ req.headers['JiraToken'];  //This is JiraTenant Id
 const sqlRepository_1 = require("./Lib/sqlRepository");
 const GitRepository_1 = require("./Lib/GitRepository");
 const JiraRepository_1 = require("./Lib/JiraRepository");
-const sqlRepositoy = new sqlRepository_1.SQLRepository(null);
+const sqlRepository = new sqlRepository_1.SQLRepository(null);
 const gitRepository = new GitRepository_1.GitRepository();
 const jiraRepository = new JiraRepository_1.JiraRepository();
 const jwt = require('jsonwebtoken');
@@ -30,7 +30,7 @@ function isUserValid(userId) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             //Return  false if there is no user, true if user exist
-            return yield sqlRepositoy.checkUser(userId).then(r => {
+            return yield sqlRepository.checkUser(userId).then(r => {
                 if (r) {
                     return true;
                 }
@@ -48,7 +48,7 @@ function isJiraTokenValid(tenantId) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             //Return  false if there is no user, true if user exist
-            return yield sqlRepositoy.checkJiraToken(tenantId).then(r => {
+            return yield sqlRepository.checkJiraToken(tenantId).then(r => {
                 if (r) {
                     return true;
                 }
@@ -221,11 +221,24 @@ router.get('/GetJiraIssues', validateJiraUser, (req, res) => {
         return res.json(err);
     });
 });
+router.get('/GetJiraData', validateUser, (req, res) => {
+    sqlRepository
+        .GetJiraData(req.query.org, //org
+    req.query.userid, //'557058:f39310b9-d30a-41a3-8011-6a6ae5eeed07', //userId
+    req.query.day, Boolean(req.query.bustTheCache === 'true'))
+        .then(result => {
+        return res.json(result);
+    })
+        .catch(err => {
+        console.log(`GetJiraIssues: ${err}`);
+        return res.json(err);
+    });
+});
 //Returns all the org, git org and master org
 router.get('/GetOrg', validateUser, (req, res) => __awaiter(this, void 0, void 0, function* () {
     //TODO: just get from SQL after LSAuth implementatiopn
     const user = getUserId(req);
-    yield sqlRepositoy.getOrg4UserId(user, Boolean(req.query.bustTheCache === 'true')).then(result => {
+    yield sqlRepository.getOrg4UserId(user, Boolean(req.query.bustTheCache === 'true')).then(result => {
         if (result) {
             return res.json(result);
         }
@@ -252,7 +265,7 @@ router.get('/GetOrg', validateUser, (req, res) => __awaiter(this, void 0, void 0
     });
 }));
 router.get('/getLoggedInUSerDetails', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .getLoggedInUSerDetails(getUserId(req), Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         return res.json(result);
@@ -273,7 +286,7 @@ returns {
 
 */
 router.get('/GetGraphData4XDays', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .GetGraphData4XDays(req.query.org, req.query.day, req.query.login, Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         return res.json(result);
@@ -328,7 +341,7 @@ router.get('/GetHookStatus', validateUser, (req, res) => {
     });
 });
 router.get('/GetRepositoryPR', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .getRepoPR(req.query.org, req.query.repo, req.query.day, req.query.pageSize)
         .then(result => {
         return res.json(result);
@@ -342,7 +355,7 @@ router.get('/TopDevForLastXDays', validateUser, (req, res) => {
     if (!req.query.day) {
         req.query.day = '1';
     }
-    sqlRepositoy
+    sqlRepository
         .getTopDev4LastXDays(req.query.org, req.query.day)
         .then(result => {
         return res.json(result);
@@ -353,7 +366,7 @@ router.get('/TopDevForLastXDays', validateUser, (req, res) => {
     });
 });
 router.get('/GetDev4Org', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .GetUser4Org(req.query.org)
         .then(result => {
         return res.json(result);
@@ -364,7 +377,7 @@ router.get('/GetDev4Org', validateUser, (req, res) => {
     });
 });
 router.get('/GetUser4Org', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .GetUser4Org(req.query.org)
         .then(result => {
         return res.json(result);
@@ -375,7 +388,7 @@ router.get('/GetUser4Org', validateUser, (req, res) => {
     });
 });
 router.get('/GetWatcher', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .getWatcher(req.query.org, req.query.gitorg)
         .then(result => {
         return res.json(result);
@@ -386,7 +399,7 @@ router.get('/GetWatcher', validateUser, (req, res) => {
     });
 });
 router.get('/GetKudos', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .getKudos(req.query.org, req.query.gitorg)
         .then(result => {
         return res.json(result);
@@ -397,7 +410,7 @@ router.get('/GetKudos', validateUser, (req, res) => {
     });
 });
 router.get('/GetKudos4User', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .getKudos4User(req.query.target)
         .then(result => {
         return res.json(result);
@@ -429,7 +442,7 @@ router.get('/PullRequestCountForLastXDays', validateUser, (req, res) => {
     if (!req.query.day) {
         req.query.day = '1';
     }
-    sqlRepositoy
+    sqlRepository
         .getPRCount4LastXDays(req.query.org, req.query.login, req.query.day)
         .then(result => {
         return res.json(result);
@@ -443,7 +456,7 @@ router.get('/PullRequestForLastXDays', validateUser, (req, res) => {
     if (!req.query.day) {
         req.query.day = '1';
     }
-    sqlRepositoy
+    sqlRepository
         .getPR4LastXDays(getUserId(req), req.query.day)
         .then(result => {
         return res.json(result);
@@ -457,7 +470,7 @@ router.get('/GetTopRespositories4XDays', validateUser, (req, res) => {
     if (!req.query.day) {
         req.query.day = '1';
     }
-    sqlRepositoy
+    sqlRepository
         .getTopRepo4XDays(req.query.org, req.query.day)
         .then(result => {
         return res.json(result);
@@ -471,7 +484,7 @@ router.get('/PullRequest4Dev', validateUser, (req, res) => {
     if (!req.query.day) {
         req.query.day = '1';
     }
-    sqlRepositoy
+    sqlRepository
         .getPR4Dev(req.query.org, req.query.day, req.query.login, req.query.action, req.query.pageSize)
         .then(result => {
         return res.json(result);
@@ -485,7 +498,7 @@ router.post('/SaveMSR', validateUser, (req, res) => {
     if (!req.query.day) {
         req.query.day = '1';
     }
-    sqlRepositoy
+    sqlRepository
         .saveMSR(req.body.srId, req.body.userId, req.body.org, req.body.statusDetails, req.body.reviewer, req.body.status, req.body.links, req.body.manager, req.body.managerComment, req.body.managerStatus)
         .then(result => {
         return res.json(result);
@@ -497,7 +510,7 @@ router.post('/SaveMSR', validateUser, (req, res) => {
 });
 //updateUser
 router.post('/updateUserConnectIds', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .updateUserConnectIds(req.body.user)
         .then(result => {
         return res.json(result);
@@ -511,7 +524,7 @@ router.post('/SetWatcher', validateUser, (req, res) => {
     if (!req.query.day) {
         req.query.day = '1';
     }
-    sqlRepositoy
+    sqlRepository
         .setWatcher(req.body.watcher, req.body.target, req.body.org, req.body.gitorg)
         .then(result => {
         return res.json(result);
@@ -525,7 +538,7 @@ router.post('/SetKudos', validateUser, (req, res) => {
     if (!req.query.day) {
         req.query.day = '1';
     }
-    sqlRepositoy
+    sqlRepository
         .setKudos(req.body.sender, req.body.target, req.body.org, req.body.gitorg, req.body.kudos)
         .then(result => {
         return res.json(result);
@@ -537,11 +550,11 @@ router.post('/SetKudos', validateUser, (req, res) => {
 });
 router.get('/getSR4User', validateUser, (req, res) => {
     const userId = getUserId(req);
-    sqlRepositoy.getUser(userId).then(user => {
-        sqlRepositoy
+    sqlRepository.getUser(userId).then(user => {
+        sqlRepository
             .getSR4User(req.query.userid, Boolean(req.query.bustTheCache === 'true'))
             .then(result => {
-            sqlRepositoy.IsXYAllowed(result[0].org, user[0].Email, user[0].Email, req.query.userid).then(isAllowed => {
+            sqlRepository.IsXYAllowed(result[0].org, user[0].Email, user[0].Email, req.query.userid).then(isAllowed => {
                 if (isAllowed === true) {
                     return res.json(result);
                 }
@@ -557,7 +570,7 @@ router.get('/getSR4User', validateUser, (req, res) => {
     });
 });
 router.get('/GetSR4User4Review', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .GetSR4User4Review(req.query.userid, req.query.status, req.query.userFilter, req.query.dateFilter, Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         return res.json(result);
@@ -568,7 +581,7 @@ router.get('/GetSR4User4Review', validateUser, (req, res) => {
     });
 });
 router.get('/GetSR4Id', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .getSR4Id(req.query.id, Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         return res.json(result);
@@ -610,7 +623,7 @@ router.get('/GetPRfromGit', validateUser, (req, res) => {
     });
 });
 router.get('/GetAllRepoCollection4TenantOrg', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .getAllRepoCollection4TenantOrg(getUserId(req), req.query.org, Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         return res.json(result);
@@ -622,7 +635,7 @@ router.get('/GetAllRepoCollection4TenantOrg', validateUser, (req, res) => {
 });
 //collectionName
 router.get('/GetRepoCollectionByName', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .getAllRepoCollection4TenantOrg(req.query.collectionName, '', Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         return res.json(result.recordset);
@@ -634,7 +647,7 @@ router.get('/GetRepoCollectionByName', validateUser, (req, res) => {
 });
 //GetRepoParticipation4Login
 router.get('/GetRepoParticipation4Login', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .GetRepoParticipation4Login(req.query.org, req.query.login, req.query.days, Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         return res.json(result);
@@ -661,11 +674,11 @@ router.post('/saveOrgChart', validateUser, (req, res) => {
         req.query.day = '1';
     }
     let tenantId = getUserId(req);
-    sqlRepositoy.getLoggedInUSerDetails(tenantId, false).then(result => {
-        sqlRepositoy.isUserAdmin(result.UserName, req.body.org, false).then(r => {
+    sqlRepository.getLoggedInUSerDetails(tenantId, false).then(result => {
+        sqlRepository.isUserAdmin(result.UserName, req.body.org, false).then(r => {
             //check r here, if user is an admin let the call go thru, else reject
             if (r === 1) {
-                sqlRepositoy
+                sqlRepository
                     .saveOrgChart(req.body.userId, req.body.org, req.body.orgChart)
                     .then(result => {
                     return res.json(result);
@@ -682,7 +695,7 @@ router.post('/saveOrgChart', validateUser, (req, res) => {
     });
 });
 router.post('/jiraHook', (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .saveJiraHook(JSON.stringify(req.body))
         .then(result => {
         return res.json(result);
@@ -694,7 +707,7 @@ router.get('/getOrgChart', validateUser, (req, res) => {
     if (!req.query.day) {
         req.query.day = '1';
     }
-    sqlRepositoy
+    sqlRepository
         .getOrgChart(req.query.org, Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         return res.json(result);
@@ -708,7 +721,7 @@ router.get('/getOrgTree', validateUser, (req, res) => {
     if (!req.query.day) {
         req.query.day = '1';
     }
-    sqlRepositoy
+    sqlRepository
         .getOrgTree(req.query.org, req.query.userId, Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         return res.json(result);
@@ -719,7 +732,7 @@ router.get('/getOrgTree', validateUser, (req, res) => {
     });
 });
 router.get('/getUserRole', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .getUserRole(req.query.userid, req.query.org, Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         return res.json(result);
@@ -730,7 +743,7 @@ router.get('/getUserRole', validateUser, (req, res) => {
     });
 });
 router.get('/getRole4Org', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .getRole4Org(req.query.org, true)
         .then(result => {
         return res.json(result);
@@ -744,11 +757,11 @@ router.post('/saveUserRole', validateUser, (req, res) => {
     //check the caller and reject the call if he is not already an admin
     //only Admin can add userroles
     let tenantId = getUserId(req);
-    sqlRepositoy.getLoggedInUSerDetails(tenantId, false).then(result => {
-        sqlRepositoy.isUserAdmin(result.UserName, req.body.org, false).then(r => {
+    sqlRepository.getLoggedInUSerDetails(tenantId, false).then(result => {
+        sqlRepository.isUserAdmin(result.UserName, req.body.org, false).then(r => {
             //check r here, if tenant is an admin let the call go thru, else reject
             if (r === 1) {
-                sqlRepositoy
+                sqlRepository
                     .saveUserRole(req.body.userId, req.body.org, req.body.role)
                     .then(result => {
                     return res.json(result);
@@ -768,11 +781,11 @@ router.post('/deleteUserRole', validateUser, (req, res) => {
     //check the caller and reject the call if he is not already an admin
     //only Admin can add userroles
     let tenantId = getUserId(req);
-    sqlRepositoy.getLoggedInUSerDetails(tenantId, false).then(result => {
-        sqlRepositoy.isUserAdmin(result.UserName, req.body.org, false).then(r => {
+    sqlRepository.getLoggedInUSerDetails(tenantId, false).then(result => {
+        sqlRepository.isUserAdmin(result.UserName, req.body.org, false).then(r => {
             //check r here, if tenant is an admin let the call go thru, else reject
             if (r === 1) {
-                sqlRepositoy
+                sqlRepository
                     .deleteUserRole(req.body.userId, req.body.org, req.body.role)
                     .then(result => {
                     return res.json(result);
@@ -789,7 +802,7 @@ router.post('/deleteUserRole', validateUser, (req, res) => {
     });
 });
 router.get('/isUserAdmin', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .isUserAdmin(req.query.userid, req.query.org, Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         return res.json(result);
@@ -800,7 +813,7 @@ router.get('/isUserAdmin', validateUser, (req, res) => {
     });
 });
 router.get('/isUserMSRAdmin', validateUser, (req, res) => {
-    sqlRepositoy
+    sqlRepository
         .isUserMSRAdmin(req.query.userid, req.query.org, Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         return res.json(result);

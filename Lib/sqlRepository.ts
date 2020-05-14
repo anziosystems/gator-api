@@ -25,6 +25,7 @@ class JiraData {
   ProjectName: string;
   Title: string;
   JiraOrg: string;
+  Summary: string;
 }
 
 class ErrorObj {
@@ -703,8 +704,8 @@ class SQLRepository {
       jd.JiraOrg = z;
       jd.Priority = _.get(obj, 'issue.fields.priority.name');
       jd.Assignee = _.get(obj, 'issue.fields.assignee.displayName');
-      //accountId
       jd.AssigneeId = _.get(obj, 'issue.fields.assignee.accountId');
+      jd.Summary = _.get(obj, 'issue.fields.summary');
       jd.AssigneeAvatarUrl = _.get(obj, 'issue.fields.assignee.avatarUrls.48x48');
       jd.Status = _.get(obj, 'issue.fields.status.name');
       jd.Reporter = _.get(obj, 'issue.fields.reporter.displayName');
@@ -741,6 +742,8 @@ class SQLRepository {
     request.input('ProjectName', sql.VarChar(1000), obj.ProjectName);
     request.input('Org', sql.VarChar(200), obj.JiraOrg);
     request.input('AssigneeId', sql.VarChar(500), obj.AssigneeId);
+    request.input('Summary', sql.VarChar(2000), obj.Summary);
+
     const recordSet = await request.execute('SetJiraData');
     if (recordSet.rowsAffected[0] === 1) {
       //Delete the row
@@ -755,6 +758,51 @@ class SQLRepository {
       if (recordSet) {
         return recordSet.recordset;
       } else return null;
+    }
+  }
+
+
+  //
+  
+  async GetJiraData(org: string, userName: string,  day = 1,  bustTheCache: boolean = false) {
+    if (!org) {
+      console.log('[E] org cannot be null');
+      return;
+    }
+    
+    if (!userName) {
+      console.log('[E] userName cannot be null');
+      return;
+    }
+    
+    const cacheKey = 'GetJiraData' + org + userName + day;
+
+    try {
+      if (bustTheCache) {
+        this.myCache.del(cacheKey);
+      } else {
+        const val = this.myCache.get(cacheKey);
+        if (val) {
+          return val;
+        }
+      }
+   
+      await this.createPool();
+      const request = await this.pool.request();
+      
+      request.input('Org', sql.VarChar(this.ORG_LEN), org);
+      request.input('UserName', sql.VarChar(this.ORG_LEN), userName);
+      request.input('Day', sql.Int, day);
+      const recordSet = await request.execute('GetJiraData');
+      if (recordSet.recordset) {
+        this.myCache.set(cacheKey, recordSet.recordset);
+        return recordSet.recordset;
+      } else {
+        return;
+      }
+    } catch (ex) {
+      console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+      return;
     }
   }
 
@@ -1907,6 +1955,11 @@ class SQLRepository {
 
   //Is Y in tree of X -> Is X Manager of Y?
   async IsXYAllowed(currentOrg: string, userId: string, X: string, Y: string) {
+    
+    if( X === Y ){
+      return true;
+    }
+
     let tree = await this.getOrgTree(currentOrg, userId, false);
     let parentNode = this.GetNode4User(X, tree[0].children);
     if (parentNode) {
