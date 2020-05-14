@@ -17,6 +17,8 @@ const NodeCache = require('node-cache');
 const dotenv = require('dotenv');
 dotenv.config();
 const CryptoJS = require('crypto-js');
+class JiraData {
+}
 class ErrorObj {
     constructor(code, message) {
         this.code = code;
@@ -611,6 +613,7 @@ class SQLRepository {
                 const request = yield this.pool.request();
                 request.input('Message', sql.Text, message);
                 yield request.execute('SaveJiraHook');
+                this.processJiraHookData(message);
                 return 200;
             }
             catch (ex) {
@@ -666,6 +669,113 @@ class SQLRepository {
             }
             else
                 return;
+        });
+    }
+    processAllJiraHookData() {
+        return __awaiter(this, void 0, void 0, function* () {
+            let hookId;
+            // eslint-disable-next-line no-constant-condition
+            while (true) {
+                let jiraEvent = yield this.getHookData();
+                if (!jiraEvent[0])
+                    break; //No event
+                let obj = jiraEvent[0];
+                hookId = _.get(obj, 'Id');
+                let jd = new JiraData();
+                obj = JSON.parse(obj.message);
+                let x = _.get(obj, 'webhookEvent');
+                if (!x) {
+                    //Not Jira event - skip for now
+                }
+                else {
+                    jd.Id = _.get(obj, 'issue.id');
+                    jd.Key = _.get(obj, 'issue.key');
+                    jd.Priority = _.get(obj, 'issue.fields.priority.name');
+                    jd.Assignee = _.get(obj, 'issue.fields.assignee.displayName');
+                    jd.AssigneeAvatarUrl = _.get(obj, 'issue.fields.assignee.avatarUrls.48x48');
+                    jd.Status = _.get(obj, 'issue.fields.status.name');
+                    jd.Reporter = _.get(obj, 'issue.fields.reporter.displayName');
+                    jd.ReporterAvatarUrl = _.get(obj, 'issue.fields.reporter.avatarUrls.48x48');
+                    jd.IssueType = _.get(obj, 'issue.fields.issuetype.name');
+                    jd.ProjectName = _.get(obj, 'issue.fields.project.name');
+                    jd.Title = _.get(obj, 'issue.fields.summary');
+                    jd.CreatedDate = new Date(_.get(obj, 'issue.fields.created'));
+                    jd.UpdatedDate = new Date(_.get(obj, 'issue.fields.updated'));
+                    //Get The Story points
+                    //jd.Story  = _.get(obj, 'issue.fields.updated');
+                    this.updateJiraData(hookId, jd);
+                }
+            } //~while
+        });
+    }
+    processJiraHookData(jdata) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let hookId;
+            // eslint-disable-next-line no-constant-condition
+            let jd = new JiraData();
+            let obj = JSON.parse(jdata);
+            let x = _.get(obj, 'webhookEvent');
+            if (!x) {
+                //Not Jira event - skip for now
+            }
+            else {
+                jd.Id = _.get(obj, 'issue.id');
+                jd.Key = _.get(obj, 'issue.key');
+                jd.Priority = _.get(obj, 'issue.fields.priority.name');
+                jd.Assignee = _.get(obj, 'issue.fields.assignee.displayName');
+                jd.AssigneeAvatarUrl = _.get(obj, 'issue.fields.assignee.avatarUrls.48x48');
+                jd.Status = _.get(obj, 'issue.fields.status.name');
+                jd.Reporter = _.get(obj, 'issue.fields.reporter.displayName');
+                jd.ReporterAvatarUrl = _.get(obj, 'issue.fields.reporter.avatarUrls.48x48');
+                jd.IssueType = _.get(obj, 'issue.fields.issuetype.name');
+                jd.ProjectName = _.get(obj, 'issue.fields.project.name');
+                jd.Title = _.get(obj, 'issue.fields.summary');
+                jd.CreatedDate = new Date(_.get(obj, 'issue.fields.created'));
+                jd.UpdatedDate = new Date(_.get(obj, 'issue.fields.updated'));
+                //Get The Story points
+                //jd.Story  = _.get(obj, 'issue.fields.updated');
+                this.updateJiraData(hookId, jd);
+            }
+        });
+    }
+    //update Jira data and then delete the row from hooktable
+    updateJiraData(hookId, obj) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.createPool();
+            const request = yield this.pool.request();
+            request.input('Id', sql.Int, obj.Id);
+            request.input('key', sql.VarChar(this.ORG_LEN), obj.Key);
+            request.input('Title', sql.VarChar(5000), obj.Title);
+            request.input('Priority', sql.VarChar(50), obj.Priority);
+            request.input('Assignee', sql.VarChar(this.ORG_LEN), obj.Assignee);
+            request.input('Reporter', sql.VarChar(this.ORG_LEN), obj.Reporter);
+            request.input('CreatedDate', sql.Date, obj.CreatedDate);
+            request.input('UpdatedDate', sql.Date, obj.UpdatedDate);
+            request.input('IssueType', sql.VarChar(50), obj.IssueType);
+            request.input('Priority', sql.VarChar(50), obj.Priority);
+            request.input('Story', sql.Int, obj.Story);
+            request.input('ReporterAvatarUrl', sql.VarChar(1000), obj.ReporterAvatarUrl);
+            request.input('AssigneeAvatarUrl', sql.VarChar(1000), obj.AssigneeAvatarUrl);
+            request.input('Status', sql.VarChar(50), obj.Status);
+            request.input('ProjectName', sql.VarChar(1000), obj.ProjectName);
+            const recordSet = yield request.execute('SetJiraData');
+            if (recordSet.rowsAffected[0] === 1) {
+                //Delete the row
+            }
+        });
+    }
+    getHookData() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.createPool();
+            const request = yield this.pool.request();
+            const recordSet = yield request.execute('getHookData');
+            if (recordSet.recordset) {
+                if (recordSet) {
+                    return recordSet.recordset;
+                }
+                else
+                    return null;
+            }
         });
     }
     getJiraToken(id) {

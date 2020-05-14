@@ -8,6 +8,23 @@ const dotenv = require('dotenv');
 dotenv.config();
 const CryptoJS = require('crypto-js');
 
+class JiraData {
+  Id: number;
+  Key: string;
+  Reporter: string;
+  Assignee: string;
+  CreatedDate: Date;
+  UpdatedDate: Date;
+  IssueType: string;
+  Priority: string;
+  Story: string;
+  ReporterAvatarUrl: string;
+  AssigneeAvatarUrl: string;
+  Status: string;
+  ProjectName: string;
+  Title: string;
+}
+
 class ErrorObj {
   code: number;
   message: string;
@@ -605,6 +622,7 @@ class SQLRepository {
       const request = await this.pool.request();
       request.input('Message', sql.Text, message);
       await request.execute('SaveJiraHook');
+      this.processJiraHookData (message);
       return 200;
     } catch (ex) {
       console.log(`[E]  SaveJira:  Error: ${ex}`);
@@ -652,6 +670,106 @@ class SQLRepository {
       //return this.decrypt(recordSet[0].Auth_Token, id.toString());
       return recordSet[0].Auth_Token;
     } else return;
+  }
+
+  async processAllJiraHookData() {
+    let hookId: number;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      let jiraEvent = await this.getHookData();
+      if (!jiraEvent[0]) break; //No event
+      let obj = jiraEvent[0];
+      hookId = _.get(obj, 'Id');
+      let jd: JiraData = new JiraData();
+      obj = JSON.parse(obj.message);
+      let x = _.get(obj, 'webhookEvent');
+      if (!x) {
+        //Not Jira event - skip for now
+      } else {
+        jd.Id = _.get(obj, 'issue.id');
+        jd.Key = _.get(obj, 'issue.key');
+        jd.Priority = _.get(obj, 'issue.fields.priority.name');
+        jd.Assignee = _.get(obj, 'issue.fields.assignee.displayName');
+        jd.AssigneeAvatarUrl = _.get(obj, 'issue.fields.assignee.avatarUrls.48x48');
+        jd.Status = _.get(obj, 'issue.fields.status.name');
+        jd.Reporter = _.get(obj, 'issue.fields.reporter.displayName');
+        jd.ReporterAvatarUrl = _.get(obj, 'issue.fields.reporter.avatarUrls.48x48');
+        jd.IssueType = _.get(obj, 'issue.fields.issuetype.name');
+        jd.ProjectName = _.get(obj, 'issue.fields.project.name');
+        jd.Title = _.get(obj, 'issue.fields.summary');
+        jd.CreatedDate = new Date(_.get(obj, 'issue.fields.created'));
+        jd.UpdatedDate = new Date(_.get(obj, 'issue.fields.updated'));
+        //Get The Story points
+        //jd.Story  = _.get(obj, 'issue.fields.updated');
+        this.updateJiraData(hookId, jd);
+      }
+    } //~while
+  }
+
+  async processJiraHookData(jdata: any) {
+    let hookId: number;
+    // eslint-disable-next-line no-constant-condition
+      let jd: JiraData = new JiraData();
+      let obj = JSON.parse(jdata);
+      let x = _.get(obj, 'webhookEvent');
+      if (!x) {
+        //Not Jira event - skip for now
+      } else {
+        jd.Id = _.get(obj, 'issue.id');
+        jd.Key = _.get(obj, 'issue.key');
+        jd.Priority = _.get(obj, 'issue.fields.priority.name');
+        jd.Assignee = _.get(obj, 'issue.fields.assignee.displayName');
+        jd.AssigneeAvatarUrl = _.get(obj, 'issue.fields.assignee.avatarUrls.48x48');
+        jd.Status = _.get(obj, 'issue.fields.status.name');
+        jd.Reporter = _.get(obj, 'issue.fields.reporter.displayName');
+        jd.ReporterAvatarUrl = _.get(obj, 'issue.fields.reporter.avatarUrls.48x48');
+        jd.IssueType = _.get(obj, 'issue.fields.issuetype.name');
+        jd.ProjectName = _.get(obj, 'issue.fields.project.name');
+        jd.Title = _.get(obj, 'issue.fields.summary');
+        jd.CreatedDate = new Date(_.get(obj, 'issue.fields.created'));
+        jd.UpdatedDate = new Date(_.get(obj, 'issue.fields.updated'));
+        //Get The Story points
+        //jd.Story  = _.get(obj, 'issue.fields.updated');
+        this.updateJiraData(hookId, jd);
+      }
+
+  }
+  //update Jira data and then delete the row from hooktable
+  async updateJiraData(hookId: number, obj: JiraData) {
+    await this.createPool();
+    const request = await this.pool.request();
+    request.input('Id', sql.Int, obj.Id);
+    request.input('key', sql.VarChar(this.ORG_LEN), obj.Key);
+    request.input('Title', sql.VarChar(5000), obj.Title);
+    request.input('Priority', sql.VarChar(50), obj.Priority);
+    request.input('Assignee', sql.VarChar(this.ORG_LEN), obj.Assignee);
+    request.input('Reporter', sql.VarChar(this.ORG_LEN), obj.Reporter);
+    request.input('CreatedDate', sql.Date, obj.CreatedDate);
+    request.input('UpdatedDate', sql.Date, obj.UpdatedDate);
+    request.input('IssueType', sql.VarChar(50), obj.IssueType);
+    request.input('Priority', sql.VarChar(50), obj.Priority);
+    request.input('Story', sql.Int, obj.Story);
+    request.input('ReporterAvatarUrl', sql.VarChar(1000), obj.ReporterAvatarUrl);
+    request.input('AssigneeAvatarUrl', sql.VarChar(1000), obj.AssigneeAvatarUrl);
+    request.input('Status', sql.VarChar(50), obj.Status);
+    request.input('ProjectName', sql.VarChar(1000), obj.ProjectName);
+
+    const recordSet = await request.execute('SetJiraData');
+    if (recordSet.rowsAffected[0] === 1 ) {
+      //Delete the row
+
+    }
+  }
+
+  async getHookData() {
+    await this.createPool();
+    const request = await this.pool.request();
+    const recordSet = await request.execute('getHookData');
+    if (recordSet.recordset) {
+      if (recordSet) {
+        return recordSet.recordset;
+      } else return null;
+    }
   }
 
   async getJiraToken(id: string) {

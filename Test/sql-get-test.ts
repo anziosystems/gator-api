@@ -10,9 +10,20 @@ import {GitRepository} from '../Lib/GitRepository';
 // import {JiraRepository} from '../Lib/JiraRepository';
 // import {isNullOrUndefined} from 'util';
 
-//getClientSecret
+//processAllJiraHookData
 
-describe.only('getClientSecret', () => {
+describe.only('processAllJiraHookData', () => {
+  it('should return true', async () => {
+    const sqlRepositoy = new SQLRepository(null);
+     
+    await sqlRepositoy.processAllJiraHookData().then(result => {
+      expect(result).true
+    });
+  });
+});
+
+
+describe('getClientSecret', () => {
   it('should return JSON', async () => {
     const sqlRepositoy = new SQLRepository(null);
     const tenant = 'axleinfo';
