@@ -704,6 +704,8 @@ class SQLRepository {
                 jd.JiraOrg = z;
                 jd.Priority = _.get(obj, 'issue.fields.priority.name');
                 jd.Assignee = _.get(obj, 'issue.fields.assignee.displayName');
+                //accountId
+                jd.AssigneeId = _.get(obj, 'issue.fields.assignee.accountId');
                 jd.AssigneeAvatarUrl = _.get(obj, 'issue.fields.assignee.avatarUrls.48x48');
                 jd.Status = _.get(obj, 'issue.fields.status.name');
                 jd.Reporter = _.get(obj, 'issue.fields.reporter.displayName');
@@ -740,6 +742,7 @@ class SQLRepository {
             request.input('Status', sql.VarChar(50), obj.Status);
             request.input('ProjectName', sql.VarChar(1000), obj.ProjectName);
             request.input('Org', sql.VarChar(200), obj.JiraOrg);
+            request.input('AssigneeId', sql.VarChar(500), obj.AssigneeId);
             const recordSet = yield request.execute('SetJiraData');
             if (recordSet.rowsAffected[0] === 1) {
                 //Delete the row
