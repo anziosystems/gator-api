@@ -222,7 +222,7 @@ router.get('/GetJiraData', validateUser, (req: any, res: any) => {
       req.query.org, //org
       req.query.userid, //'557058:f39310b9-d30a-41a3-8011-6a6ae5eeed07', //userId
       req.query.day,
-      Boolean(req.query.bustTheCache === 'true') 
+      Boolean(req.query.bustTheCache === 'true'),
     )
     .then(result => {
       return res.json(result);
@@ -233,32 +233,34 @@ router.get('/GetJiraData', validateUser, (req: any, res: any) => {
     });
 });
 
+//org coming in here is Orgnization org, it is for OrgLink table
+router.get('/GetGitOrg', validateUser, async (req: any, res: any) => {
+  const user = getUserId(req);
+  const org = req.query.org;
+  await gitRepository
+    .getOrgFromGit(user, org, true)
+    .then(result => {
+      try {
+        if (!result) {
+          console.log(`GetGitOrg is null`);
+          return res.json(null);
+        }
+        return res.json(result);
+      } catch (ex) {
+        console.log('GetGitOrg: ' + ex);
+      }
+    })
+    .catch(ex => {
+      console.log(`GetGitOrg Error: ${ex}`);
+    });
+});
 
-//Returns all the org, git org and master org
 router.get('/GetOrg', validateUser, async (req: any, res: any) => {
   //TODO: just get from SQL after LSAuth implementatiopn
   const user = getUserId(req);
   await sqlRepository.getOrg4UserId(user, Boolean(req.query.bustTheCache === 'true')).then(result => {
     if (result) {
       return res.json(result);
-    } else {
-      //No Org in SQL - Lets try Git
-      gitRepository
-        .getOrgFromGit(user, true)
-        .then(result => {
-          try {
-            if (!result) {
-              console.log(`[E] getOrgFromGit is null`);
-              return res.json(null);
-            }
-            return res.json(result);
-          } catch (ex) {
-            console.log('[E] GetOrg: ' + ex);
-          }
-        })
-        .catch(ex => {
-          console.log(`[E] GetOrg Error: ${ex}`);
-        });
     }
   });
 });
@@ -380,8 +382,6 @@ router.get('/GetDev4Org', validateUser, (req: any, res: any) => {
     });
 });
 
-
-
 router.get('/GetUser4Org', validateUser, (req: any, res: any) => {
   sqlRepository
     .GetUser4Org(req.query.org)
@@ -393,7 +393,6 @@ router.get('/GetUser4Org', validateUser, (req: any, res: any) => {
       return res.json(err);
     });
 });
-
 
 router.get('/GetWatcher', validateUser, (req: any, res: any) => {
   sqlRepository
@@ -524,10 +523,8 @@ router.post('/SaveMSR', validateUser, (req: any, res: any) => {
     });
 });
 
-
 //updateUser
 router.post('/updateUserConnectIds', validateUser, (req: any, res: any) => {
- 
   sqlRepository
     .updateUserConnectIds(req.body.user)
     .then(result => {
@@ -572,24 +569,22 @@ router.post('/SetKudos', validateUser, (req: any, res: any) => {
 router.get('/getSR4User', validateUser, (req: any, res: any) => {
   const userId = getUserId(req);
   sqlRepository.getUser(userId).then(user => {
-      sqlRepository
-        .getSR4User(req.query.userid, Boolean(req.query.bustTheCache === 'true'))
-        .then(result => {
-          sqlRepository.IsXYAllowed(result[0].org, user[0].Email,user[0].Email, req.query.userid).then(isAllowed => {
-            if (isAllowed === true) {
-                return res.json(result);
-            } 
-            else {
-              return res.json(`${user[0].DisplayName} has no permission to see ${req.query.userid} status report. `)
-            }
-          });
-        })
-        .catch(err => {
-          console.log(`getSR4User: ${err}`);
-          return res.json(err);
+    sqlRepository
+      .getSR4User(req.query.userid, Boolean(req.query.bustTheCache === 'true'))
+      .then(result => {
+        sqlRepository.IsXYAllowed(result[0].org, user[0].Email, user[0].Email, req.query.userid).then(isAllowed => {
+          if (isAllowed === true) {
+            return res.json(result);
+          } else {
+            return res.json(`${user[0].DisplayName} has no permission to see ${req.query.userid} status report. `);
+          }
         });
-    });
-
+      })
+      .catch(err => {
+        console.log(`getSR4User: ${err}`);
+        return res.json(err);
+      });
+  });
 });
 
 router.get('/GetSR4User4Review', validateUser, (req: any, res: any) => {
@@ -616,10 +611,11 @@ router.get('/GetSR4Id', validateUser, (req: any, res: any) => {
     });
 });
 
-//    /GetOrg?tenantId='rsarosh@hotmail.com'&Org='LabShare'&bustTheCache=false&getFromGit = true
+//Get list of Repos
+//Get Repos from Git and Saves in SQL - calls from Hydration
 router.get('/GetRepos', validateUser, (req: any, res: any) => {
   gitRepository
-    .getRepos(getUserId(req), req.query.org, Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true'))
+    .getRepos(getUserId(req), req.query.org, true, true) //Bust the cache and get the repo list from Git
     .then(result => {
       if (result) {
         return res.json(result);
@@ -631,20 +627,28 @@ router.get('/GetRepos', validateUser, (req: any, res: any) => {
     });
 });
 
-router.get('/GetPRfromGit', validateUser, (req: any, res: any) => {
+//Gets the PR for every repo in the org
+router.get('/GetPRFromGit', validateUser, (req: any, res: any) => {
   const tenantId = getUserId(req);
   gitRepository
     .getRepos(tenantId, req.query.org, false, false)
     .then(result => {
-      for (const r of result) {
-        gitRepository.fillPullRequest(tenantId, req.query.org, r.RepoName).catch(ex => {
-          console.log(`GetPRfromGit ${ex}`);
-        });
-      }
-      return res.json(result.length);
+      result.forEach((r: {RepoName: string}) => {
+        gitRepository
+          .fillPullRequest(tenantId, req.query.org, r.RepoName, true, true)
+          .then(x => {
+            if (x) {
+              //  console.log(`.`);
+            }
+          })
+          .catch(ex => {
+            console.log(`[E] GetPRfromGit: ${ex}`);
+          });
+      });
+      // return res.json(result.length);
     })
     .catch(err => {
-      console.log(`GetPRfromGit: ${err}`);
+      console.log(`[E -2] GetPRfromGit: ${err}`);
       return res.json(err);
     });
 });
@@ -725,16 +729,15 @@ router.post('/saveOrgChart', validateUser, (req: any, res: any) => {
   });
 });
 
-
-router.post('/jiraHook',  (req: any, res: any) => {
-        sqlRepository
-          .saveJiraHook(JSON.stringify(req.body))
-          .then(result => {
-            return res.json(result);
-          }).catch ((ex: any) => {
-            console.log (ex);
-          })
-  
+router.post('/jiraHook', (req: any, res: any) => {
+  sqlRepository
+    .saveJiraHook(JSON.stringify(req.body))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch((ex: any) => {
+      console.log(ex);
+    });
 });
 
 router.get('/getOrgChart', validateUser, (req: any, res: any) => {

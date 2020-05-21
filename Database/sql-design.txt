@@ -5,5 +5,9 @@ Developer table is updated by calling git for the developer.
 Developer table is authoratative list of all the dev in an org. This table is used to build the view
 vwOpenClosedPR
 
+OrgLink table is keeping the link of Org and their GitReposioty Note - This table need to be updated manually.
+
+
+
 
 

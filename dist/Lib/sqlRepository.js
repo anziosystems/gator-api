@@ -344,9 +344,9 @@ class SQLRepository {
             }
         });
     }
-    getRepo(tenantId, org, bustTheCache = false) {
+    getRepo(org, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = `GetRepo: tenantId: ${tenantId} org: ${org}`;
+            const cacheKey = `GetRepo: tenantId:  org: ${org}`;
             try {
                 if (bustTheCache) {
                     this.myCache.del(cacheKey);
@@ -357,7 +357,6 @@ class SQLRepository {
                 }
                 yield this.createPool();
                 const request = yield this.pool.request();
-                request.input('TenantId', sql.Int, Number(tenantId));
                 request.input('Org', sql.VarChar(this.ORG_LEN), org);
                 const recordSet = yield request.execute('GetRepos');
                 if (recordSet) {
@@ -542,7 +541,7 @@ class SQLRepository {
     getPR4Repo(org, repo, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();
-            const cacheKey = 'GetPR4Repo -' + org + repo;
+            const cacheKey = 'GetPR4Repo: ' + org + ' ' + repo;
             try {
                 if (bustTheCache) {
                     this.myCache.del(cacheKey);
@@ -605,24 +604,25 @@ class SQLRepository {
             }
         });
     }
-    //
-    saveJiraHook(message) {
+    //saveOrgLinks
+    saveOrgLinks(org, gitOrgs) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 yield this.createPool();
                 const request = yield this.pool.request();
-                request.input('Message', sql.Text, message);
-                yield request.execute('SaveJiraHook');
-                this.processJiraHookData(message);
-                return 200;
+                gitOrgs.forEach((gitOrg) => __awaiter(this, void 0, void 0, function* () {
+                    request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                    //request.input('Org', sql.VarChar(this.ORG_LEN), org.url.substr('https://github.com/'.length));
+                    request.input('GitOrg', sql.VarChar(this.ORG_LEN), gitOrg.url.substr('https://github.com/'.length));
+                    let recordSet = yield request.execute('[SaveOrgLink]');
+                }));
             }
             catch (ex) {
-                console.log(`[E]  SaveJira:  Error: ${ex}`);
-                return 400;
+                console.log(`[E]  saveOrgLinks:  Error: ${ex}`);
+                return 0;
             }
         });
     }
-    //saveOrgChart
     getOrgChart(org, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();
@@ -671,6 +671,24 @@ class SQLRepository {
                 return;
         });
     }
+    //
+    saveJiraHook(message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Message', sql.Text, message);
+                yield request.execute('SaveJiraHook');
+                this.processJiraHookData(message); //Process the Jira Data
+                this.processTFSHookData(message); //Process the Jira Data
+                return 200;
+            }
+            catch (ex) {
+                console.log(`[E]  SaveJira:  Error: ${ex}`);
+                return 400;
+            }
+        });
+    }
     processAllJiraHookData() {
         return __awaiter(this, void 0, void 0, function* () {
             let hookId;
@@ -682,6 +700,7 @@ class SQLRepository {
                 let obj = jiraEvent[0];
                 hookId = _.get(obj, 'Id');
                 this.processJiraHookData(obj.message);
+                this.processTFSHookData(obj.message);
             } //~while
         });
     }
@@ -718,6 +737,80 @@ class SQLRepository {
                 //Get The Story points
                 //jd.Story  = _.get(obj, 'issue.fields.updated');
                 this.updateJiraData(hookId, jd);
+            }
+        });
+    }
+    processTFSHookData(jdata) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let hookId;
+            // eslint-disable-next-line no-constant-condition
+            let jd = new JiraData();
+            let obj = JSON.parse(jdata);
+            let wEvent = _.get(obj, 'subscriptionId');
+            if (!wEvent) {
+                //Not TFS event - skip for now
+            }
+            else {
+                let eventType = _.get(obj, 'eventType');
+                if (eventType === 'workitem.created') {
+                    jd.Id = _.get(obj, 'id');
+                    let fields = _.get(obj, 'resource.fields');
+                    jd.Key = fields['System.TeamProject'];
+                    let rc = _.get(obj, 'resourceContainers');
+                    let a = rc['account'];
+                    let x = a['baseUrl']; // "https://dev.azure.com/anzio/",
+                    let y = x.substr(22);
+                    let z = y.replace(`/`, ``);
+                    jd.JiraOrg = z;
+                    jd.Priority = fields['Microsoft.VSTS.Common.Priority'];
+                    jd.Assignee = fields['System.AssignedTo'];
+                    jd.AssigneeId = fields['System.AssignedTo'];
+                    jd.Title = fields['System.Title'];
+                    jd.CreatedDate = new Date(fields['System.CreatedDate']);
+                    jd.Summary = fields['System.Title'];
+                    // jd.AssigneeAvatarUrl = _.get(obj, 'issue.fields.assignee.avatarUrls.48x48');
+                    jd.Status = fields['System.State'];
+                    jd.Reporter = fields['System.CreatedBy'];
+                    // jd.ReporterAvatarUrl = _.get(obj, 'issue.fields.reporter.avatarUrls.48x48');
+                    jd.IssueType = fields['System.WorkItemType'];
+                    jd.ProjectName = fields['System.TeamProject'];
+                }
+                else {
+                    jd.Id = _.get(obj, 'id');
+                    let r = _.get(obj, 'resource');
+                    jd.UpdatedDate = new Date(r['revisedDate']);
+                }
+                //Get The Story points
+                //jd.Story  = _.get(obj, 'issue.fields.updated');
+                this.updateTFSData(hookId, jd);
+            }
+        });
+    }
+    updateTFSData(hookId, obj) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.createPool();
+            const request = yield this.pool.request();
+            request.input('Id', sql.Int, obj.Id);
+            request.input('key', sql.VarChar(this.ORG_LEN), obj.Key);
+            request.input('Title', sql.VarChar(5000), obj.Title);
+            request.input('Priority', sql.VarChar(50), obj.Priority);
+            request.input('Assignee', sql.VarChar(this.ORG_LEN), obj.Assignee);
+            request.input('Reporter', sql.VarChar(this.ORG_LEN), obj.Reporter);
+            request.input('CreatedDate', sql.Date, obj.CreatedDate);
+            request.input('UpdatedDate', sql.Date, obj.UpdatedDate);
+            request.input('IssueType', sql.VarChar(50), obj.IssueType);
+            request.input('Priority', sql.VarChar(50), obj.Priority);
+            request.input('Story', sql.Int, obj.Story);
+            request.input('ReporterAvatarUrl', sql.VarChar(1000), obj.ReporterAvatarUrl);
+            request.input('AssigneeAvatarUrl', sql.VarChar(1000), obj.AssigneeAvatarUrl);
+            request.input('Status', sql.VarChar(50), obj.Status);
+            request.input('ProjectName', sql.VarChar(1000), obj.ProjectName);
+            request.input('Org', sql.VarChar(200), obj.JiraOrg);
+            request.input('AssigneeId', sql.VarChar(500), obj.AssigneeId);
+            request.input('Summary', sql.VarChar(2000), obj.Summary);
+            const recordSet = yield request.execute('SetTFSData');
+            if (recordSet.rowsAffected[0] === 1) {
+                //Delete the row
             }
         });
     }
@@ -1508,16 +1601,16 @@ class SQLRepository {
                 let login;
                 let avatar_url;
                 let user_url;
+                let action;
                 const request = yield this.pool.request();
                 const nodes = pr.data.viewer.organization.repository.pullRequests.nodes;
                 if (nodes === undefined) {
-                    console.log(`[i] No PR found for org: ${org} Repo: ${repo}`);
+                    // console.log(`[I] savePR4Repo - No PR found for org: ${org} Repo: ${repo}`);
+                    return 0;
                 }
                 if (nodes.length === 0) {
-                    console.log(`[i] No PR found for org: ${org} Repo: ${repo}`);
-                }
-                if (nodes.length > 0) {
-                    console.log(`[i] ${nodes.length} PR found for org: ${org} Repo: ${repo}`);
+                    // console.log(`[I] savePR4Repo - No PR found for org: ${org} Repo: ${repo}`);
+                    return 0;
                 }
                 //nodes.forEach(async (elm: any) => {
                 for (const elm of nodes) {
@@ -1529,18 +1622,24 @@ class SQLRepository {
                         continue;
                     if (elm.author.login.startsWith('semantic-release-bot'))
                         continue;
-                    if (elm.action === 'opened' || elm.action === 'closed' || elm.action === 'edited') {
+                    if (elm.state.toLowerCase() === 'open' || elm.state.toLowerCase() === 'closed' || elm.state.toLowerCase() === 'commit') {
                         //move on
                     }
                     else {
+                        console.log(elm.state);
+                        console.log(`A => ${elm.action}`);
                         continue;
                     }
                     id = elm.id;
                     url = elm.url;
-                    state = elm.action; //Found out state has too much noise but action open and close is better
+                    state = elm.state.toLowerCase(); //Found out state has too much noise but action open and close is better
                     title = elm.title;
                     created_at = elm.createdAt;
                     pr_body = elm.body;
+                    if (elm.action)
+                        action = elm.action.toLowerCase();
+                    else
+                        action = elm.state.toLowerCase();
                     if (!pr_body) {
                         pr_body = ' ';
                     }
@@ -1555,6 +1654,7 @@ class SQLRepository {
                     request.input('Repo', sql.VarChar(this.REPO_LEN), repo);
                     request.input('Url', sql.VarChar(this.URL_LEN), url);
                     request.input('State', sql.VarChar(this.STATE_LEN), state);
+                    request.input('Action', sql.VarChar(this.STATE_LEN), action);
                     request.input('Title', sql.VarChar(this.TITLE_LEN), title);
                     request.input('Created_At', sql.VarChar(20), created_at);
                     request.input('Body', sql.VarChar(this.BODY_LEN), pr_body);
@@ -1563,15 +1663,16 @@ class SQLRepository {
                     request.input('User_Url', sql.VarChar(this.USER_URL_LEN), user_url);
                     try {
                         const x = yield request.execute('SavePR4Repo');
+                        console.log(`[S] savePR4Repo success`);
                         return x.rowsAffected[0];
                     }
                     catch (ex) {
-                        console.log(`[E]  Error! While saving PR for org:${org} repo: ${repo} - ${ex}`);
+                        console.log(`[E] savePR4Repo While saving PR for org:${org} repo: ${repo} - ${ex}`);
                     }
                 }
             }
             catch (ex) {
-                console.log(`[E]  savePR4Repo ${org} ${repo}`);
+                console.log(`[E] savePR4Repo ${org} ${repo} - ${ex}`);
                 return false;
             }
             return true;
@@ -1681,7 +1782,7 @@ class SQLRepository {
             }
         });
     }
-    saveRepo(tenantId, org, repos) {
+    saveRepo(org, repos) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 if (repos === undefined)
@@ -1695,20 +1796,29 @@ class SQLRepository {
                 for (const r of repos) {
                     let repo = r;
                     const createdAt = String(repo.createdAt).substr(0, 10);
-                    // console.log(`SaveRepo = org: ${org} repo: ${repo.name}`);
-                    request.input('TenantId', sql.Int, Number(tenantId));
                     request.input('Org', sql.VarChar(this.ORG_LEN), org);
                     request.input('Id', sql.VarChar(this.REPO_ID_LEN), repo.id);
                     request.input('name', sql.VarChar(this.REPO_LEN), repo.name);
-                    request.input('desc', sql.VarChar(200), repo.description);
+                    if (repo.subscription) {
+                        let _subscription = repo.description.substr(0, 199);
+                        request.input('desc', sql.VarChar(200), _subscription);
+                    }
+                    else {
+                        request.input('desc', sql.VarChar(200), '');
+                    }
                     request.input('HomePage', sql.VarChar(200), repo.homepageUrl);
                     request.input('CreatedAt', sql.VarChar(10), createdAt);
-                    const recordSet = yield request.execute('SaveRepos');
-                    return recordSet.rowsAffected[0];
+                    yield request.execute('SaveRepos');
+                    //Lets bust the cache for Get
+                    const cacheKey = `GetRepo: tenantId:  org: ${org}`;
+                    let v = this.myCache.get(cacheKey);
+                    if (v) {
+                        this.myCache.del(cacheKey);
+                    }
                 }
             }
             catch (ex) {
-                console.log(`[E]  saveRepo: ${tenantId} ${org} ${ex}`);
+                console.log(`[E]  saveRepo: ${org} ${ex}`);
                 return 0;
             }
         });

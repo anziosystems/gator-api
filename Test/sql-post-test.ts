@@ -50,7 +50,7 @@ describe('SaveActiveTenant', () => {
 describe('FillPullRequest', () => {
   it('should return rowsAffected', async () => {
     const gitRepository = new GitRepository();
-    await gitRepository.fillPullRequest('1040817', 'LabShare', 'forms', true, true, '').then(result => {
+    await gitRepository.fillPullRequest('1040817', 'LabShare', 'forms', true, true).then(result => {
       expect(result.length).to.greaterThan(0);
     });
   });

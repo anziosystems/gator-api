@@ -55,66 +55,75 @@ class GitRepository {
   }
 
   //Gets the PR for a Organization and a repo
-
   async getPullRequestFromGit(userId: string, org: string, repo: string) {
-    console.log(`Getting PR from git for org: ${org}  repo :${repo}`);
     const graphQL =
       `{\"query\":\"{viewer  {  name          organization(login: \\"` +
       org +
       `\\") {     name        repository(name: \\"` +
       repo +
-      `\\") { name            pullRequests(last: 25) {  nodes { id  url  state  title   permalink   createdAt  body  repository { name } author                                                                                                                                                                                { login  avatarUrl url                                           }            }          }        }      }    }  }\",\"variables\":{}}`;
+      `\\") { name            pullRequests(last: 1) {  nodes { id  url  state  title   permalink   createdAt  body  repository { name } author                                                                                                                                                                                { login  avatarUrl url                                           }            }          }        }      }    }  }\",\"variables\":{}}`;
 
     try {
-      request(await this.makeGitRequestHeader(userId, graphQL), async (error: any, response: any, body: any) => {
-        if (response.statusCode === 200) {
-          await this.sqlRepository.savePR4Repo(org, repo, body);
-          // eslint-disable-next-line @typescript-eslint/no-floating-promises
-          this.sqlRepository.saveStatus(userId, 'GET-PR-SUCCESS-' + org.substr(0, 20), `org: ${org}  repo: ${repo}`);
-        } else {
-          console.log('GetPullRequestFromGit: ' + body);
-          // eslint-disable-next-line @typescript-eslint/no-floating-promises
-          this.sqlRepository.saveStatus(userId, 'GET-PR-FAIL-' + org.substr(0, 20), body);
+      const gitReq = await this.makeGitRequestHeader(userId, graphQL);
+      return new Promise((resolve, reject) => {
+        try {
+          request(gitReq, async (error: any, response: any, body: any) => {
+            if (!response) {
+              reject(`No Response from GetPullRequestFromGit: for org: ${org} Repo: ${repo}`);
+            } else {
+              if (response.statusCode === 200) {
+                let result = await this.sqlRepository.savePR4Repo(org, repo, body);
+                resolve(result);
+              } else {
+                console.log('[E] GetPullRequestFromGit: ' + body);
+                reject(0);
+              }
+            }
+          });
+        } catch (ex) {
+          console.log(`[E] GetPullRequestFromGit Error! => ${ex}`);
+          reject(0);
         }
       });
     } catch (ex) {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.sqlRepository.saveStatus(userId, 'GET-PR-FAIL-' + org.substr(0, 20), ex);
-      console.log(`GetPullRequestFromGit Error! => ${ex}`);
+      console.log(`[E] GetPullRequestFromGit Error! => ${ex}`);
+      return 0;
     }
   }
 
-  async fillPullRequest(userId: string, org: string, repo: string, bustTheCache: Boolean = false, getFromGit: Boolean = false, endCursor = '') {
+  //Wrapper function for getPullRequestFromGit
+  //This method is filling the PullRequest in SQL DB - Not getting any PR out
+  async fillPullRequest(userId: string, org: string, repo: string, bustTheCache: Boolean, getFromGit: Boolean) {
     const cacheKey = 'FillPullRequest' + userId + org + repo;
     if (bustTheCache) {
-      this.sqlRepository.myCache.del(cacheKey);
+      let val = this.sqlRepository.myCache.get(cacheKey);
+      if (val) {
+        this.sqlRepository.myCache.del(cacheKey);
+      }
     }
 
     if (!getFromGit) {
-      //Get from local store
       let result = this.sqlRepository.myCache.get(cacheKey);
       if (result) {
         return result;
       }
-      //Get from sql
       result = await this.sqlRepository.getPR4Repo(org, repo);
       if (result) {
         return result;
       } else {
-        //Lets go to git
-        await this.getPullRequestFromGit(userId, org, repo);
-        //git call has put the PR in SQL, now lets get it from (cache).
-        return this.sqlRepository.getPR4Repo(org, repo);
+        await this.getPullRequestFromGit(userId, org, repo).catch(ex => {
+          console.log(`[E] fillPullRequest ${ex}`);
+        });
       }
     } else {
       //Lets go to git
-      await this.getPullRequestFromGit(userId, org, repo);
-      //git call has put the PR in SQL, now lets get it from (cache).
-      return this.sqlRepository.getPR4Repo(org, repo);
+      await this.getPullRequestFromGit(userId, org, repo).catch(ex => {
+        console.log(`[E] fillPullRequest ${ex}`);
+      });
     }
   }
 
-  // This functions fills the Dev names for the git Org, but no one care the return value 
+  // This functions fills the Dev names for the git Org, but no one care the return value
   //of this function.
   async getDevsFromGit(userId: string, org: any, endCursor = '') {
     let graphQL = '';
@@ -162,12 +171,13 @@ class GitRepository {
     }
   }
 
-  async getRepoFromGit(userId: string, org: string, endCursor = '') {
+  //Get Repos from Git and Saves in SQL
+  private async getRepoFromGit(userId: string, org: string, endCursor = '') {
     let graphQL = '';
     if (endCursor) {
-      graphQL = `{\"query\":\"query {  organization(login: ` + org + `) { repositories(first: 50 , after: \\"` + endCursor + `\\") {      nodes {id  name  isDisabled isArchived description homepageUrl createdAt } pageInfo { endCursor hasNextPage  } }  }}\",\"variables\":{}}`;
+      graphQL = `{\"query\":\"query {  organization(login: \\"` + org + `\\") { repositories(first: 100 , after: \\"` + endCursor + `\\") {      nodes {id  name  isDisabled isArchived description homepageUrl createdAt } pageInfo { endCursor hasNextPage  } }  }}\",\"variables\":{}}`;
     } else {
-      graphQL = `{\"query\":\"query {  organization(login: ` + org + `) { repositories(first: 50 ) {      nodes {id  name  isDisabled isArchived description homepageUrl createdAt } pageInfo { endCursor hasNextPage  } }  }}\",\"variables\":{}}`;
+      graphQL = `{\"query\":\"query {  organization(login: \\"` + org + `\\") { repositories(first: 100 ) {      nodes {id  name  isDisabled isArchived description homepageUrl createdAt } pageInfo { endCursor hasNextPage  } }  }}\",\"variables\":{}}`;
     }
     try {
       request(
@@ -177,13 +187,14 @@ class GitRepository {
           if (response.statusCode === 200) {
             const result = JSON.parse(body);
             if (!result.data) {
-              console.log('==> No repo found for org:' + org);
+              console.log('[E] No repo found for org:' + org);
               // eslint-disable-next-line @typescript-eslint/no-floating-promises
               this.sqlRepository.saveStatus(userId, 'GET-REPO-SUCCESS-' + org.substr(0, 20), 'No repo found for org:' + org);
             } else {
               // eslint-disable-next-line @typescript-eslint/no-floating-promises
               this.sqlRepository.saveStatus(userId, 'GET-REPO-SUCCESS-' + org.substr(0, 20), `${result.data.organization.repositories.nodes.length} repo found for org: ${org}`);
-              await this.sqlRepository.saveRepo(userId, org, result.data.organization.repositories.nodes);
+              //  console.log(`[I] ${result.data.organization.repositories.nodes.length} repo found for org: ${org}`);
+              await this.sqlRepository.saveRepo(org, result.data.organization.repositories.nodes);
               const pageInfo = result.data.organization.repositories.pageInfo;
               if (pageInfo.hasNextPage) {
                 // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -193,12 +204,12 @@ class GitRepository {
           } else {
             // eslint-disable-next-line @typescript-eslint/no-floating-promises
             this.sqlRepository.saveStatus(userId, 'GET-REPO-FAIL-' + org.substr(0, 20), `response status code: ${response.statusCode}`);
-            console.log('GetRpoFromGit: org - ' + org + ' - ' + body);
+            console.log('[E] GetRpoFromGit: org - ' + org + ' - ' + body);
           }
         },
       );
       //git call has put the org in SQL, now lets get it from (cache).
-      return await this.sqlRepository.getRepo(userId, org, false);
+      return await this.sqlRepository.getRepo(org, false);
     } catch (ex) {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.sqlRepository.saveStatus(userId, 'GET-REPO-FAIL-' + org.substr(0, 20), ex);
@@ -206,6 +217,8 @@ class GitRepository {
     }
   }
 
+  //call this method, as getRepoFromGit is recursive and stores the data in SQL
+  //This method collects everything in one shot
   async getRepos(userId: string, org: string, bustTheCache: Boolean = false, getFromGit: Boolean = false) {
     const cacheKey = 'GetRepos' + userId + org;
     if (bustTheCache) {
@@ -220,7 +233,7 @@ class GitRepository {
       if (result) {
         return result;
       }
-      result = await this.sqlRepository.getRepo(userId, org);
+      result = await this.sqlRepository.getRepo(org);
       if (result[0]) {
         this.sqlRepository.myCache.set(cacheKey, result);
         return result;
@@ -332,8 +345,8 @@ class GitRepository {
   //Get the org list from the git and then calls updatedev4Org to update dev names in the DB for each org
   //Save the org in DB and then return org list reading from table
   // [{"Org":"LabShare","DisplayName":"LabShare",OrgType: git ot Org},
-      
-  async getOrgFromGit(userId: string, getFromGit: Boolean = false) {
+
+  async getOrgFromGit(userId: string, org: string, getFromGit: Boolean = false) {
     //Lets go to git
     const graphQL = `{\"query\": \"query { viewer {name organizations(last: 100) { nodes { name url }} }}\",\"variables\":{}}`;
     /* Without this promise wrap this code will not work */
@@ -345,11 +358,15 @@ class GitRepository {
             if (response.statusCode === 200) {
               // eslint-disable-next-line @typescript-eslint/no-floating-promises
               this.sqlRepository.saveStatus(userId, 'GET-ORG-SUCCESS');
-              const orgs: string[] = JSON.parse(response.body).data.viewer.organizations.nodes;
-              await this.sqlRepository.saveOrgs(userId, orgs);
-              await this.UpdateDev4Org(userId, orgs);
-              const result = await this.sqlRepository.getOrg4UserId(userId);
-              resolve(result);
+              try {
+                const gitOrgs: string[] = JSON.parse(response.body).data.viewer.organizations.nodes;
+                await this.sqlRepository.saveOrgLinks(org, gitOrgs);
+                // await this.UpdateDev4Org(userId, orgs);
+                // const result = await this.sqlRepository.getOrg4UserId(userId);
+                resolve(gitOrgs);
+              } catch (ex) {
+                console.log(`[E] getOrgFromGit - ${ex} `);
+              }
             } else {
               // eslint-disable-next-line @typescript-eslint/no-floating-promises
               this.sqlRepository.saveStatus(userId, 'GET-ORG-FAIL', `status: ${response.statusCode}`);

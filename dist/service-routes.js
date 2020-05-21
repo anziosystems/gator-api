@@ -234,33 +234,34 @@ router.get('/GetJiraData', validateUser, (req, res) => {
         return res.json(err);
     });
 });
-//Returns all the org, git org and master org
+//org coming in here is Orgnization org, it is for OrgLink table
+router.get('/GetGitOrg', validateUser, (req, res) => __awaiter(this, void 0, void 0, function* () {
+    const user = getUserId(req);
+    const org = req.query.org;
+    yield gitRepository
+        .getOrgFromGit(user, org, true)
+        .then(result => {
+        try {
+            if (!result) {
+                console.log(`GetGitOrg is null`);
+                return res.json(null);
+            }
+            return res.json(result);
+        }
+        catch (ex) {
+            console.log('GetGitOrg: ' + ex);
+        }
+    })
+        .catch(ex => {
+        console.log(`GetGitOrg Error: ${ex}`);
+    });
+}));
 router.get('/GetOrg', validateUser, (req, res) => __awaiter(this, void 0, void 0, function* () {
     //TODO: just get from SQL after LSAuth implementatiopn
     const user = getUserId(req);
     yield sqlRepository.getOrg4UserId(user, Boolean(req.query.bustTheCache === 'true')).then(result => {
         if (result) {
             return res.json(result);
-        }
-        else {
-            //No Org in SQL - Lets try Git
-            gitRepository
-                .getOrgFromGit(user, true)
-                .then(result => {
-                try {
-                    if (!result) {
-                        console.log(`[E] getOrgFromGit is null`);
-                        return res.json(null);
-                    }
-                    return res.json(result);
-                }
-                catch (ex) {
-                    console.log('[E] GetOrg: ' + ex);
-                }
-            })
-                .catch(ex => {
-                console.log(`[E] GetOrg Error: ${ex}`);
-            });
         }
     });
 }));
@@ -591,10 +592,11 @@ router.get('/GetSR4Id', validateUser, (req, res) => {
         return res.json(err);
     });
 });
-//    /GetOrg?tenantId='rsarosh@hotmail.com'&Org='LabShare'&bustTheCache=false&getFromGit = true
+//Get list of Repos
+//Get Repos from Git and Saves in SQL - calls from Hydration
 router.get('/GetRepos', validateUser, (req, res) => {
     gitRepository
-        .getRepos(getUserId(req), req.query.org, Boolean(req.query.bustTheCache === 'true'), Boolean(req.query.getFromGit === 'true'))
+        .getRepos(getUserId(req), req.query.org, true, true) //Bust the cache and get the repo list from Git
         .then(result => {
         if (result) {
             return res.json(result);
@@ -605,20 +607,29 @@ router.get('/GetRepos', validateUser, (req, res) => {
         return res.json(err);
     });
 });
-router.get('/GetPRfromGit', validateUser, (req, res) => {
+//Gets the PR for every repo in the org
+router.get('/GetPRFromGit', validateUser, (req, res) => {
     const tenantId = getUserId(req);
     gitRepository
         .getRepos(tenantId, req.query.org, false, false)
         .then(result => {
-        for (const r of result) {
-            gitRepository.fillPullRequest(tenantId, req.query.org, r.RepoName).catch(ex => {
-                console.log(`GetPRfromGit ${ex}`);
+        result.forEach((r) => {
+            console.log(`Getting PR for ${r.RepoName}`);
+            gitRepository
+                .fillPullRequest(tenantId, req.query.org, r.RepoName, true, true)
+                .then(x => {
+                if (x) {
+                    //  console.log(`.`);
+                }
+            })
+                .catch(ex => {
+                console.log(`[E] GetPRfromGit: ${ex}`);
             });
-        }
-        return res.json(result.length);
+        });
+        // return res.json(result.length);
     })
         .catch(err => {
-        console.log(`GetPRfromGit: ${err}`);
+        console.log(`[E -2] GetPRfromGit: ${err}`);
         return res.json(err);
     });
 });
@@ -699,7 +710,8 @@ router.post('/jiraHook', (req, res) => {
         .saveJiraHook(JSON.stringify(req.body))
         .then(result => {
         return res.json(result);
-    }).catch((ex) => {
+    })
+        .catch((ex) => {
         console.log(ex);
     });
 });

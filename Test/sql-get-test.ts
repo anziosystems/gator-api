@@ -12,16 +12,15 @@ import {GitRepository} from '../Lib/GitRepository';
 
 //processAllJiraHookData
 
-describe.only('processAllJiraHookData', () => {
+describe('processAllJiraHookData', () => {
   it('should return true', async () => {
     const sqlRepositoy = new SQLRepository(null);
-     
+
     await sqlRepositoy.processAllJiraHookData().then(result => {
-      expect(result).true
+      expect(result).true;
     });
   });
 });
-
 
 describe('getClientSecret', () => {
   it('should return JSON', async () => {
@@ -111,19 +110,19 @@ describe('TopDevForLastXDays', () => {
   });
 });
 
-describe('GetOrg', () => {
+describe('GetGitOrg', () => {
   it('should return rowsAffected', async () => {
     const gitRepository = new GitRepository();
-    await gitRepository.getOrgFromGit('1040817', true).then(result => {
-      // expect(result.toTable.length).to.greaterThan(0);
+    await gitRepository.getOrgFromGit('1040817', 'xxx', true).then(result => {
+      expect(result).length.greaterThan(0);
     });
   });
 });
 
-describe('GetRepos', () => {
+describe.only('GetRepos', () => {
   it('should return rowsAffected', async () => {
     const gitRepository = new GitRepository();
-    await gitRepository.getRepos('1040817', 'LabShare', true, true).then(result => {
+    await gitRepository.getRepos('1040817', 'ncats', true, true).then(result => {
       expect(result.toTable.length).to.greaterThan(0);
     });
   });
