@@ -1626,8 +1626,8 @@ class SQLRepository {
                         //move on
                     }
                     else {
-                        console.log(elm.state);
-                        console.log(`A => ${elm.action}`);
+                        // console.log(elm.state);
+                        // console.log(`A => ${elm.action}`);
                         continue;
                     }
                     id = elm.id;
@@ -1663,7 +1663,7 @@ class SQLRepository {
                     request.input('User_Url', sql.VarChar(this.USER_URL_LEN), user_url);
                     try {
                         const x = yield request.execute('SavePR4Repo');
-                        console.log(`[S] savePR4Repo success`);
+                        // console.log(`[S] savePR4Repo success`);
                         return x.rowsAffected[0];
                     }
                     catch (ex) {

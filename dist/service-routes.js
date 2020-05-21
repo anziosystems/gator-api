@@ -614,7 +614,6 @@ router.get('/GetPRFromGit', validateUser, (req, res) => {
         .getRepos(tenantId, req.query.org, false, false)
         .then(result => {
         result.forEach((r) => {
-            console.log(`Getting PR for ${r.RepoName}`);
             gitRepository
                 .fillPullRequest(tenantId, req.query.org, r.RepoName, true, true)
                 .then(x => {

@@ -119,7 +119,7 @@ describe('GetGitOrg', () => {
   });
 });
 
-describe.only('GetRepos', () => {
+describe('GetRepos', () => {
   it('should return rowsAffected', async () => {
     const gitRepository = new GitRepository();
     await gitRepository.getRepos('1040817', 'ncats', true, true).then(result => {

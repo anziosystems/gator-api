@@ -59,33 +59,26 @@ class GitRepository {
     //Gets the PR for a Organization and a repo
     getPullRequestFromGit(userId, org, repo) {
         return __awaiter(this, void 0, void 0, function* () {
-            // console.log(`Getting PR from git for org: ${org}  repo :${repo}`);
             const graphQL = `{\"query\":\"{viewer  {  name          organization(login: \\"` +
                 org +
                 `\\") {     name        repository(name: \\"` +
                 repo +
                 `\\") { name            pullRequests(last: 1) {  nodes { id  url  state  title   permalink   createdAt  body  repository { name } author                                                                                                                                                                                { login  avatarUrl url                                           }            }          }        }      }    }  }\",\"variables\":{}}`;
             try {
-                console.log(`[I-0] GetPullRequestFromGit: for org: ${org} Repo: ${repo}`);
                 const gitReq = yield this.makeGitRequestHeader(userId, graphQL);
                 return new Promise((resolve, reject) => {
                     try {
                         request(gitReq, (error, response, body) => __awaiter(this, void 0, void 0, function* () {
                             if (!response) {
-                                console.log(`[I-1] GetPullRequestFromGit: Empty Response Org: ${org} - Repo: ${repo}`);
                                 reject(`No Response from GetPullRequestFromGit: for org: ${org} Repo: ${repo}`);
                             }
                             else {
-                                console.log(`[I-2] GetPullRequestFromGit: Status Code:  ${response.statusCode} for org: ${org} Repo: ${repo}`);
                                 if (response.statusCode === 200) {
                                     let result = yield this.sqlRepository.savePR4Repo(org, repo, body);
-                                    console.log(`[I-3] GetPullRequestFromGit: Saved data for Org: ${org} - Repo: ${repo}`);
                                     resolve(result);
                                 }
                                 else {
                                     console.log('[E] GetPullRequestFromGit: ' + body);
-                                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                                    // this.sqlRepository.saveStatus(userId, 'GET-PR-FAIL-' + org.substr(0, 20), body);
                                     reject(0);
                                 }
                             }
@@ -98,8 +91,6 @@ class GitRepository {
                 });
             }
             catch (ex) {
-                // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                //   this.sqlRepository.saveStatus(userId, 'GET-PR-FAIL-' + org.substr(0, 20), ex);
                 console.log(`[E] GetPullRequestFromGit Error! => ${ex}`);
                 return 0;
             }
@@ -117,23 +108,18 @@ class GitRepository {
                 }
             }
             if (!getFromGit) {
-                //Get from local store
                 let result = this.sqlRepository.myCache.get(cacheKey);
                 if (result) {
                     return result;
                 }
-                //Get from sql
                 result = yield this.sqlRepository.getPR4Repo(org, repo);
                 if (result) {
                     return result;
                 }
                 else {
-                    //Lets go to git
                     yield this.getPullRequestFromGit(userId, org, repo).catch(ex => {
                         console.log(`[E] fillPullRequest ${ex}`);
                     });
-                    //git call has put the PR in SQL, now lets get it from (cache).
-                    //  return this.sqlRepository.getPR4Repo(org, repo);
                 }
             }
             else {
@@ -141,8 +127,6 @@ class GitRepository {
                 yield this.getPullRequestFromGit(userId, org, repo).catch(ex => {
                     console.log(`[E] fillPullRequest ${ex}`);
                 });
-                //git call has put the PR in SQL, now lets get it from (cache).
-                // return this.sqlRepository.getPR4Repo(org, repo);
             }
         });
     }
