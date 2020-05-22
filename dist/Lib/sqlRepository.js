@@ -938,6 +938,21 @@ class SQLRepository {
             }
         });
     }
+    //
+    saveSignUpToken(token) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Token', sql.VarChar(2000), token);
+                request.execute('SaveSignupToken');
+            }
+            catch (ex) {
+                console.log(`[E] saveSignUpToken  Error: ${ex}`);
+                return;
+            }
+        });
+    }
     //No one calls this
     getGitDev4Org(org) {
         return __awaiter(this, void 0, void 0, function* () {

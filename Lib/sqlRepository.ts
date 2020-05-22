@@ -931,6 +931,20 @@ class SQLRepository {
     }
   }
 
+  //
+
+  async saveSignUpToken(token: string) {
+    try{
+      await this.createPool();
+      const request = await this.pool.request();
+      request.input('Token', sql.VarChar(2000), token);
+      request.execute('SaveSignupToken');
+    } catch (ex) {
+      console.log(`[E] saveSignUpToken  Error: ${ex}`);
+      return;
+    }
+  }
+
   //No one calls this
   async getGitDev4Org(org: string) {
     const cacheKey = 'getGitDev4Org' + org;

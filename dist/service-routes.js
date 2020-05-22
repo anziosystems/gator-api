@@ -467,6 +467,13 @@ router.get('/PullRequestForLastXDays', validateUser, (req, res) => {
         return res.json(err);
     });
 });
+router.get('/Signup', (req, res) => {
+    console.log('signup called');
+    if (req.query.token) {
+        sqlRepository.saveSignUpToken(req.query.token);
+    }
+    return res.json(`{ 'result:1'}`);
+});
 router.get('/GetTopRespositories4XDays', validateUser, (req, res) => {
     if (!req.query.day) {
         req.query.day = '1';
