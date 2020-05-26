@@ -8,7 +8,7 @@ import {expect} from 'chai';
 import {SQLRepository, GUser} from '../Lib/sqlRepository';
 import {GitRepository} from '../Lib/GitRepository';
 
-describe('SaveTenant', () => {
+describe('saveLoggedInUser', () => {
   it('should return rowsAffected', async () => {
     const sqlRepositoy = new SQLRepository(null);
     const tenant = new GUser();

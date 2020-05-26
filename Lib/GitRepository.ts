@@ -125,6 +125,7 @@ class GitRepository {
 
   // This functions fills the Dev names for the git Org, but no one care the return value
   //of this function.
+  //No one intresting call this anymore 
   async getDevsFromGit(userId: string, org: any, endCursor = '') {
     let graphQL = '';
     //url:"https://github.com/ncats" name: "National Center ..."
@@ -332,6 +333,7 @@ class GitRepository {
     }
   }
 
+  //No one call this anymore
   async UpdateDev4Org(userId: string, orgs: string[]) {
     for (const o of orgs) {
       await this.getDevsFromGit(userId, o);
