@@ -914,11 +914,39 @@ class SQLRepository {
       await this.createPool();
       const request = await this.pool.request();
       if (!org) {
-        throw new Error('tenant cannot be null');
+        throw new Error('org cannot be null');
       }
       request.input('Org', sql.VarChar(this.ORG_LEN), org);
       request.input('Day', sql.Int, day);
       const recordSet = await request.execute('TopDevForLastXDays');
+      if (recordSet.recordset) {
+        this.myCache.set(cacheKey, recordSet.recordset);
+        return recordSet.recordset;
+      } else {
+        return;
+      }
+    } catch (ex) {
+      console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+      return;
+    }
+  }
+
+  async getAllUsers(org: string) {
+    const cacheKey = 'getAllUsers' + org ;
+    try {
+      const val = this.myCache.get(cacheKey);
+      if (val) {
+        return val;
+      }
+
+      await this.createPool();
+      const request = await this.pool.request();
+      if (!org) {
+        throw new Error('Org (Tenant) cannot be null');
+      }
+      request.input('Org', sql.VarChar(this.ORG_LEN), org);
+     
+      const recordSet = await request.execute('GetAllUsers');
       if (recordSet.recordset) {
         this.myCache.set(cacheKey, recordSet.recordset);
         return recordSet.recordset;

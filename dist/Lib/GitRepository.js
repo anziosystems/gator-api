@@ -132,6 +132,7 @@ class GitRepository {
     }
     // This functions fills the Dev names for the git Org, but no one care the return value
     //of this function.
+    //No one intresting call this anymore 
     getDevsFromGit(userId, org, endCursor = '') {
         return __awaiter(this, void 0, void 0, function* () {
             let graphQL = '';
@@ -351,6 +352,7 @@ class GitRepository {
             }
         });
     }
+    //No one call this anymore
     UpdateDev4Org(userId, orgs) {
         return __awaiter(this, void 0, void 0, function* () {
             for (const o of orgs) {

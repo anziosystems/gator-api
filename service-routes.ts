@@ -370,6 +370,20 @@ router.get('/TopDevForLastXDays', validateUser, (req: any, res: any) => {
     });
 });
 
+
+router.get('/GetAllUsers', validateUser, (req: any, res: any) => {
+  sqlRepository
+    .getAllUsers(req.query.org)
+    .then(result => {
+      return res.json(result);
+    })
+    .catch(err => {
+      console.log(`GetAllUsers: ${err}`);
+      return res.json(err);
+    });
+});
+
+
 // //No one calls it
 // router.get('/GetDev4Org', validateUser, (req: any, res: any) => {
 //   sqlRepository

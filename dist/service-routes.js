@@ -366,17 +366,29 @@ router.get('/TopDevForLastXDays', validateUser, (req, res) => {
         return res.json(err);
     });
 });
-router.get('/GetDev4Org', validateUser, (req, res) => {
+router.get('/GetAllUsers', validateUser, (req, res) => {
     sqlRepository
-        .GetUser4Org(req.query.org)
+        .getAllUsers(req.query.org)
         .then(result => {
         return res.json(result);
     })
         .catch(err => {
-        console.log(`GitDev4Org: ${err}`);
+        console.log(`GetAllUsers: ${err}`);
         return res.json(err);
     });
 });
+// //No one calls it
+// router.get('/GetDev4Org', validateUser, (req: any, res: any) => {
+//   sqlRepository
+//     .GetUser4Org(req.query.org)
+//     .then(result => {
+//       return res.json(result);
+//     })
+//     .catch(err => {
+//       console.log(`GitDev4Org: ${err}`);
+//       return res.json(err);
+//     });
+// });
 router.get('/GetUser4Org', validateUser, (req, res) => {
     sqlRepository
         .GetUser4Org(req.query.org)

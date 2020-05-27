@@ -118,7 +118,7 @@ passport.use(new GitHubStrategy({
         return done(null, String(profile.id.trim()));
     })
         .catch(err => {
-        console.log(`saveTenant Error: ${err}`);
+        console.log(`saveLoggedInUser Error: ${err}`);
     });
 }));
 passport.use(new BitbucketStrategy({
