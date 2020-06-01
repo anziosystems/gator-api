@@ -1406,7 +1406,7 @@ class SQLRepository {
   }
 
   //
-  async updateUserConnectIds(user: any) {
+  async updateUserConnectIds(user: any, org: string) {
     try {
       await this.createPool();
       const request = await this.pool.request();
@@ -1418,8 +1418,12 @@ class SQLRepository {
       const recordSet = await request.execute('updateUserConnectIds');
       return recordSet.rowsAffected[0];
       //Now drop the cache
-      const _cacheKey = 'getUser-' + user.Id;
+      let _cacheKey = 'getUser-' + user.Id;
       this.myCache.del(_cacheKey);
+      //getUSer4Org
+      _cacheKey = 'getGitDev4Org' + org;
+      this.myCache.del(_cacheKey);
+
     } catch (ex) {
       console.log(`[E]  ${ex}`);
       return 0;

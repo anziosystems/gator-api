@@ -199,6 +199,7 @@ var axleInfoStrategy = new OidcStrategy({
     tokenURL: `https://a.labshare.org/_api/auth/AxleInfo/oidc/token`,
     callbackURL: process.env.OIDC_REDIRECT_URI_AXLEINFO,
     passReqToCallback: true,
+    scope: ['email', 'profile', 'openid'],
 }, function (req, issuer, userId, profile, accessToken, refreshToken, params, done) {
     ProcessLSAuth(req, issuer, userId, profile, accessToken, refreshToken, params, done);
 });
@@ -213,6 +214,7 @@ var anzioStrategy = new OidcStrategy({
     tokenURL: `https://a.labshare.org/_api/auth/AnzioSystems/oidc/token`,
     callbackURL: process.env.OIDC_REDIRECT_URI_ANZIO,
     passReqToCallback: true,
+    scope: ['email', 'profile'],
 }, function (req, issuer, userId, profile, accessToken, refreshToken, params, done) {
     ProcessLSAuth(req, issuer, userId, profile, accessToken, refreshToken, params, done);
 });

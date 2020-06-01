@@ -550,7 +550,7 @@ router.post('/SaveMSR', validateUser, (req: any, res: any) => {
 //updateUser
 router.post('/updateUserConnectIds', validateUser, (req: any, res: any) => {
   sqlRepository
-    .updateUserConnectIds(req.body.user)
+    .updateUserConnectIds(req.body.user, req.body.org)
     .then(result => {
       return res.json(result);
     })

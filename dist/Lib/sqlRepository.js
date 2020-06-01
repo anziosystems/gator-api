@@ -1439,7 +1439,7 @@ class SQLRepository {
         });
     }
     //
-    updateUserConnectIds(user) {
+    updateUserConnectIds(user, org) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 yield this.createPool();
@@ -1451,7 +1451,10 @@ class SQLRepository {
                 const recordSet = yield request.execute('updateUserConnectIds');
                 return recordSet.rowsAffected[0];
                 //Now drop the cache
-                const _cacheKey = 'getUser-' + user.Id;
+                let _cacheKey = 'getUser-' + user.Id;
+                this.myCache.del(_cacheKey);
+                //getUSer4Org
+                _cacheKey = 'getGitDev4Org' + org;
                 this.myCache.del(_cacheKey);
             }
             catch (ex) {

@@ -531,7 +531,7 @@ router.post('/SaveMSR', validateUser, (req, res) => {
 //updateUser
 router.post('/updateUserConnectIds', validateUser, (req, res) => {
     sqlRepository
-        .updateUserConnectIds(req.body.user)
+        .updateUserConnectIds(req.body.user, req.body.org)
         .then(result => {
         return res.json(result);
     })
