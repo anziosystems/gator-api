@@ -226,6 +226,7 @@ var axleInfoStrategy = new OidcStrategy(
     tokenURL: `https://a.labshare.org/_api/auth/AxleInfo/oidc/token`,
     callbackURL: process.env.OIDC_REDIRECT_URI_AXLEINFO,
     passReqToCallback: true,
+    scope: ['email', 'profile', 'openid'],
   },
   function(req: any, issuer: string, userId: string, profile: any, accessToken: string, refreshToken: string, params: any, done: any) {
     ProcessLSAuth(req, issuer, userId, profile, accessToken, refreshToken, params, done);
@@ -244,6 +245,7 @@ var anzioStrategy = new OidcStrategy(
     tokenURL: `https://a.labshare.org/_api/auth/AnzioSystems/oidc/token`,
     callbackURL: process.env.OIDC_REDIRECT_URI_ANZIO,
     passReqToCallback: true,
+    scope: ['email', 'profile'],
   },
   function(req: any, issuer: string, userId: string, profile: any, accessToken: string, refreshToken: string, params: any, done: any) {
     ProcessLSAuth(req, issuer, userId, profile, accessToken, refreshToken, params, done);
@@ -337,7 +339,6 @@ function ProcessLSAuth(req: any, issuer: string, userId: string, profile: any, a
   user.AuthToken = accessToken;
   console.log(accessToken);
   if (!refreshToken) refreshToken = '';
-
   user.RefreshToken = refreshToken;
   user.UserName = profile._json.username; //email name to keep it unique
   user.DisplayName = profile.displayName;

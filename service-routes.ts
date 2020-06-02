@@ -561,9 +561,7 @@ router.post('/updateUserConnectIds', validateUser, (req: any, res: any) => {
 });
 
 router.post('/SetWatcher', validateUser, (req: any, res: any) => {
-  if (!req.query.day) {
-    req.query.day = '1';
-  }
+
   sqlRepository
     .setWatcher(req.body.watcher, req.body.target, req.body.org, req.body.gitorg)
     .then(result => {
@@ -576,16 +574,14 @@ router.post('/SetWatcher', validateUser, (req: any, res: any) => {
 });
 
 router.post('/SetKudos', validateUser, (req: any, res: any) => {
-  if (!req.query.day) {
-    req.query.day = '1';
-  }
+
   sqlRepository
     .setKudos(req.body.sender, req.body.target, req.body.org, req.body.gitorg, req.body.kudos)
     .then(result => {
       return res.json(result);
     })
     .catch(err => {
-      console.log(`SetWatcher: ${err}`);
+      console.log(`SetKudos: ${err}`);
       return res.json(err);
     });
 });
