@@ -551,6 +551,8 @@ router.get('/Signup', (req: any, res: any) => {
           _config = {};
           _config = {
             headers: {
+              //'Content-Type': 'text/html; charset=UTF-8',
+              'Content-Type': 'application/x-www-form-urlencoded',
               'x-ms-marketplace-token': _ampToken,
               Authorization: `Bearer  ${_accessToken}`,
             },
