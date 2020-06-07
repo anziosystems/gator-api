@@ -965,6 +965,7 @@ class SQLRepository {
     try {
       await this.createPool();
       const request = await this.pool.request();
+      console.log(`[I] saveSignUpToken token: ${token}`);
       request.input('Token', sql.VarChar(2000), token);
       let result = await request.execute('SaveSignupToken');
       return result.recordsets[0][0].ID;

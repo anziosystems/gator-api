@@ -495,6 +495,8 @@ router.get('/PullRequestForLastXDays', validateUser, (req: any, res: any) => {
 router.get('/Signup', (req: any, res: any) => {
   console.log('signup called');
   if (req.query.token) {
+    console.log(`[I] Token Received as: ${req.query.token}`);
+    console.log(`[I] Token after decoding: ${decodeURIComponent(req.query.token)}`);
     sqlRepository.saveSignUpToken(decodeURIComponent(req.query.token)).then((subId: any) => {
       //https://docs.microsoft.com/en-us/azure/marketplace/partner-center-portal/pc-saas-fulfillment-api-v2
       //STEP - 1
