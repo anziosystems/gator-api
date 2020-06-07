@@ -503,6 +503,7 @@ router.get('/Signup', (req: any, res: any) => {
       //converts %2B to + thats what next call want
       //NOTE: In SQL it saves %2B as SPACES. So a string from SQL need to do a  str.replace(' ', '+')
       let _ampToken = decodeURIComponent (req.query.token); 
+      _ampToken = _ampToken.replace(' ', '+'); 
       let _accessToken: string;
       let _config: any = {
         headers: {
