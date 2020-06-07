@@ -495,7 +495,7 @@ router.get('/PullRequestForLastXDays', validateUser, (req: any, res: any) => {
 router.get('/Signup', (req: any, res: any) => {
   console.log('signup called');
   if (req.query.token) {
-    sqlRepository.saveSignUpToken(req.query.token).then((subId: any) => {
+    sqlRepository.saveSignUpToken(decodeURIComponent(req.query.token)).then((subId: any) => {
       //https://docs.microsoft.com/en-us/azure/marketplace/partner-center-portal/pc-saas-fulfillment-api-v2
       //STEP - 1
       //Get the Token from AD to call MarketPlace "https://login.microsoftonline.com/ea097b21-0d4b-4ce9-9318-04a9061bfe96/oauth2/token";
@@ -503,7 +503,7 @@ router.get('/Signup', (req: any, res: any) => {
       //converts %2B to + thats what next call want
       //NOTE: In SQL it saves %2B as SPACES. So a string from SQL need to do a  str.replace(' ', '+')
       let _ampToken = decodeURIComponent(req.query.token);
-      console.log (`[S] _ampToken: ${_ampToken}`);
+      console.log(`[S] _ampToken: ${_ampToken}`);
       let _accessToken: string;
       let _config: any = {
         headers: {
@@ -552,8 +552,6 @@ router.get('/Signup', (req: any, res: any) => {
           _config = {
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
-              //'Content-Type': 'application/x-www-form-urlencoded',
-              
               'x-ms-marketplace-token': _ampToken,
               Authorization: `Bearer  ${_accessToken}`,
             },
@@ -565,7 +563,7 @@ router.get('/Signup', (req: any, res: any) => {
               sqlRepository.UpdateSubscriptionDetails(_subId, subDetails).then(x => {
                 //STEP - 3
                 //Activate a subscription
-               
+
                 _url = `https://marketplaceapi.microsoft.com/api/saas/subscriptions/resolve?api-version=2018-08-31&`;
                 _config = {
                   headers: {'x-ms-marketplace-token': _ampToken, Authorization: `Bearer  ${_accessToken}`},
