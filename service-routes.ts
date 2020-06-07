@@ -502,8 +502,8 @@ router.get('/Signup', (req: any, res: any) => {
       let _subId: string = subId;
       //converts %2B to + thats what next call want
       //NOTE: In SQL it saves %2B as SPACES. So a string from SQL need to do a  str.replace(' ', '+')
-      let _ampToken = decodeURIComponent (req.query.token); 
-      _ampToken = _ampToken.replace(' ', '+'); 
+      let _ampToken = decodeURIComponent(req.query.token);
+      _ampToken = _ampToken.replace(' ', '+');
       let _accessToken: string;
       let _config: any = {
         headers: {
@@ -551,7 +551,6 @@ router.get('/Signup', (req: any, res: any) => {
           _config = {};
           _config = {
             headers: {
-              'Content-Type': 'text/html; charset=UTF-8',
               'x-ms-marketplace-token': _ampToken,
               Authorization: `Bearer  ${_accessToken}`,
             },
@@ -578,7 +577,7 @@ router.get('/Signup', (req: any, res: any) => {
                     //update DB with the subactivate
                     if (subActivated.status === 200) {
                       sqlRepository.ActivateSubscriptionDetails(subId, true).then(y => {
-                        console.log("subscription Activated");
+                        console.log('subscription Activated');
                       });
                     }
                   })
