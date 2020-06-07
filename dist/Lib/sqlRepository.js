@@ -974,10 +974,46 @@ class SQLRepository {
                 yield this.createPool();
                 const request = yield this.pool.request();
                 request.input('Token', sql.VarChar(2000), token);
-                request.execute('SaveSignupToken');
+                let result = yield request.execute('SaveSignupToken');
+                return result.recordsets[0][0].ID;
             }
             catch (ex) {
                 console.log(`[E] saveSignUpToken  Error: ${ex}`);
+                return;
+            }
+        });
+    }
+    //
+    UpdateSubscriptionDetails(subId, subDetails) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                let planId = subDetails.data.planId;
+                let quantity = subDetails.data.quantity;
+                request.input('Id', sql.Int, subId);
+                request.input('planId', sql.VarChar(200), planId);
+                request.input('Quantity', sql.Int, quantity);
+                request.input('SubscriptionDetails', sql.VarChar(8000), JSON.stringify(subDetails.data));
+                request.execute('UpdateSubscriptionDetails');
+            }
+            catch (ex) {
+                console.log(`[E] UpdateSubscriptionDetails  Error: ${ex}`);
+                return;
+            }
+        });
+    }
+    ActivateSubscriptionDetails(subId, IsActivated) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Id', sql.Int, subId);
+                request.input('IsActivated', sql.Bit, IsActivated);
+                request.execute('ActivateSubscriptionDetails');
+            }
+            catch (ex) {
+                console.log(`[E] ActivateSubscriptionDetails  Error: ${ex}`);
                 return;
             }
         });

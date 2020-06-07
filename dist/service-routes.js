@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 //https://www.youtube.com/watch?v=or1_A4sJ-oY
 const router = require('express').Router();
+const axios = require('axios').default;
 /*
 Jira calls must have following in the header
 
@@ -482,7 +483,97 @@ router.get('/PullRequestForLastXDays', validateUser, (req, res) => {
 router.get('/Signup', (req, res) => {
     console.log('signup called');
     if (req.query.token) {
-        sqlRepository.saveSignUpToken(req.query.token);
+        sqlRepository.saveSignUpToken(req.query.token).then((subId) => {
+            //https://docs.microsoft.com/en-us/azure/marketplace/partner-center-portal/pc-saas-fulfillment-api-v2
+            //STEP - 1
+            //Get the Token from AD to call MarketPlace "https://login.microsoftonline.com/ea097b21-0d4b-4ce9-9318-04a9061bfe96/oauth2/token";
+            let _subId = subId;
+            let _ampToken = req.query.token;
+            let _accessToken;
+            let _config = {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            };
+            let _url = `https://login.microsoftonline.com/ea097b21-0d4b-4ce9-9318-04a9061bfe96/oauth2/token`;
+            let _data = {
+                grant_type: 'client_credentials',
+                client_id: 'd5245214-485d-4616-b2ac-4297b845bac9',
+                client_secret: 'oDBg-a3s.NCF7~eOS5EYfwZ7fN9.q-NXK5',
+                resource: '62d94f6c-d599-489b-a797-3e10e42fbe22',
+            };
+            let _request = Object.keys(_data)
+                .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(_data[k])}`)
+                .join('&');
+            axios
+                .post(_url, _request, _config)
+                .then((resp) => {
+                /*
+              resp = {
+                "token_type": "Bearer",
+                "expires_in": "3599",
+                "ext_expires_in": "3599",
+                "expires_on": "1591494943",
+                "not_before": "1591491043",
+                "resource": "62d94f6c-d599-489b-a797-3e10e42fbe22",
+                "access_token": "XX"
+                }*/
+                _accessToken = resp.data.access_token;
+                //Get the subscription details - call resolve subscription you get the quantity for the offer, subscription Id etc
+                //STEP - 2
+                /*
+                {
+                "id": "<guid>",
+                "subscriptionName": "Contoso Cloud Solution",
+                "offerId": "offer1",
+                "planId": "silver",
+                "quantity": "20"
+                }
+                */
+                _url = `https://marketplaceapi.microsoft.com/api/saas/subscriptions/resolve?api-version=2018-08-31`;
+                _config = {};
+                _config = {
+                    headers: {
+                        'Content-Type': 'text/html; charset=UTF-8',
+                        'x-ms-marketplace-token': _ampToken,
+                        Authorization: `Bearer  ${_accessToken}`,
+                    },
+                };
+                axios
+                    .post(_url, null, _config)
+                    .then((subDetails) => {
+                    //Save subscription Details
+                    sqlRepository.UpdateSubscriptionDetails(_subId, subDetails).then(x => {
+                        //STEP - 3
+                        //Activate a subscription
+                        console.log(x);
+                        _url = `https://marketplaceapi.microsoft.com/api/saas/subscriptions/resolve?api-version=2018-08-31&`;
+                        _config = {
+                            headers: { 'x-ms-marketplace-token': _ampToken, Authorization: `Bearer  ${_accessToken}` },
+                        };
+                        _data = {
+                            planId: subDetails.data.planId,
+                            quantity: subDetails.data.quantity,
+                        };
+                        axios
+                            .post(_url, _data, _config)
+                            .then((subActivated) => {
+                            //update DB with the subactivate
+                            sqlRepository.ActivateSubscriptionDetails(subId, true).then(y => { });
+                        })
+                            .catch((err) => {
+                            console.log(err);
+                        });
+                    }); //subscription saved
+                })
+                    .catch((err) => {
+                    console.log(err);
+                }); //resolve Subscription
+            })
+                .catch((err) => {
+                console.log(err);
+            }); //Getting Token
+        });
     }
     return res.json(`{ 'result:1'}`);
 });
@@ -541,9 +632,6 @@ router.post('/updateUserConnectIds', validateUser, (req, res) => {
     });
 });
 router.post('/SetWatcher', validateUser, (req, res) => {
-    if (!req.query.day) {
-        req.query.day = '1';
-    }
     sqlRepository
         .setWatcher(req.body.watcher, req.body.target, req.body.org, req.body.gitorg)
         .then(result => {
@@ -555,16 +643,13 @@ router.post('/SetWatcher', validateUser, (req, res) => {
     });
 });
 router.post('/SetKudos', validateUser, (req, res) => {
-    if (!req.query.day) {
-        req.query.day = '1';
-    }
     sqlRepository
         .setKudos(req.body.sender, req.body.target, req.body.org, req.body.gitorg, req.body.kudos)
         .then(result => {
         return res.json(result);
     })
         .catch(err => {
-        console.log(`SetWatcher: ${err}`);
+        console.log(`SetKudos: ${err}`);
         return res.json(err);
     });
 });

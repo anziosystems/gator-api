@@ -932,7 +932,7 @@ class SQLRepository {
   }
 
   async getAllUsers(org: string) {
-    const cacheKey = 'getAllUsers' + org ;
+    const cacheKey = 'getAllUsers' + org;
     try {
       const val = this.myCache.get(cacheKey);
       if (val) {
@@ -945,7 +945,7 @@ class SQLRepository {
         throw new Error('Org (Tenant) cannot be null');
       }
       request.input('Org', sql.VarChar(this.ORG_LEN), org);
-     
+
       const recordSet = await request.execute('GetAllUsers');
       if (recordSet.recordset) {
         this.myCache.set(cacheKey, recordSet.recordset);
@@ -962,13 +962,47 @@ class SQLRepository {
   //
 
   async saveSignUpToken(token: string) {
-    try{
+    try {
       await this.createPool();
       const request = await this.pool.request();
       request.input('Token', sql.VarChar(2000), token);
-      request.execute('SaveSignupToken');
+      let result = await request.execute('SaveSignupToken');
+      return result.recordsets[0][0].ID;
     } catch (ex) {
       console.log(`[E] saveSignUpToken  Error: ${ex}`);
+      return;
+    }
+  }
+
+  //
+
+  async UpdateSubscriptionDetails(subId: string, subDetails: any) {
+    try {
+      await this.createPool();
+      const request = await this.pool.request();
+
+      let planId = subDetails.data.planId;
+      let quantity = subDetails.data.quantity;
+      request.input('Id', sql.Int, subId);
+      request.input('planId', sql.VarChar(200), planId);
+      request.input('Quantity', sql.Int, quantity);
+      request.input('SubscriptionDetails', sql.VarChar(8000), JSON.stringify(subDetails.data));
+      request.execute('UpdateSubscriptionDetails');
+    } catch (ex) {
+      console.log(`[E] UpdateSubscriptionDetails  Error: ${ex}`);
+      return;
+    }
+  }
+
+  async ActivateSubscriptionDetails(subId: string, IsActivated: Boolean) {
+    try {
+      await this.createPool();
+      const request = await this.pool.request();
+      request.input('Id', sql.Int, subId);
+      request.input('IsActivated', sql.Bit, IsActivated);
+      request.execute('ActivateSubscriptionDetails');
+    } catch (ex) {
+      console.log(`[E] ActivateSubscriptionDetails  Error: ${ex}`);
       return;
     }
   }
@@ -1423,7 +1457,6 @@ class SQLRepository {
       //getUSer4Org
       _cacheKey = 'getGitDev4Org' + org;
       this.myCache.del(_cacheKey);
-
     } catch (ex) {
       console.log(`[E]  ${ex}`);
       return 0;
