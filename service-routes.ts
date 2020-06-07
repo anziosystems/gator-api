@@ -503,7 +503,7 @@ router.get('/Signup', (req: any, res: any) => {
       //converts %2B to + thats what next call want
       //NOTE: In SQL it saves %2B as SPACES. So a string from SQL need to do a  str.replace(' ', '+')
       let _ampToken = decodeURIComponent(req.query.token);
-      _ampToken = _ampToken.replace(' ', '+');
+     // console.log (`[S] _ampToken: ${_ampToken}`);
       let _accessToken: string;
       let _config: any = {
         headers: {
@@ -551,8 +551,8 @@ router.get('/Signup', (req: any, res: any) => {
           _config = {};
           _config = {
             headers: {
-              //'Content-Type': 'text/html; charset=UTF-8',
-              'Content-Type': 'application/x-www-form-urlencoded',
+              'Content-Type': 'text/html; charset=UTF-8',
+              //'Content-Type': 'application/x-www-form-urlencoded',
               'x-ms-marketplace-token': _ampToken,
               Authorization: `Bearer  ${_accessToken}`,
             },
@@ -564,7 +564,7 @@ router.get('/Signup', (req: any, res: any) => {
               sqlRepository.UpdateSubscriptionDetails(_subId, subDetails).then(x => {
                 //STEP - 3
                 //Activate a subscription
-                console.log(x);
+               
                 _url = `https://marketplaceapi.microsoft.com/api/saas/subscriptions/resolve?api-version=2018-08-31&`;
                 _config = {
                   headers: {'x-ms-marketplace-token': _ampToken, Authorization: `Bearer  ${_accessToken}`},

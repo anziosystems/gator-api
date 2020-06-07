@@ -488,7 +488,10 @@ router.get('/Signup', (req, res) => {
             //STEP - 1
             //Get the Token from AD to call MarketPlace "https://login.microsoftonline.com/ea097b21-0d4b-4ce9-9318-04a9061bfe96/oauth2/token";
             let _subId = subId;
-            let _ampToken = req.query.token;
+            //converts %2B to + thats what next call want
+            //NOTE: In SQL it saves %2B as SPACES. So a string from SQL need to do a  str.replace(' ', '+')
+            let _ampToken = decodeURIComponent(req.query.token);
+            console.log(`[S] _ampToken: ${_ampToken}`);
             let _accessToken;
             let _config = {
                 headers: {
@@ -535,6 +538,7 @@ router.get('/Signup', (req, res) => {
                 _config = {
                     headers: {
                         'Content-Type': 'text/html; charset=UTF-8',
+                        //'Content-Type': 'application/x-www-form-urlencoded',
                         'x-ms-marketplace-token': _ampToken,
                         Authorization: `Bearer  ${_accessToken}`,
                     },
@@ -546,7 +550,6 @@ router.get('/Signup', (req, res) => {
                     sqlRepository.UpdateSubscriptionDetails(_subId, subDetails).then(x => {
                         //STEP - 3
                         //Activate a subscription
-                        console.log(x);
                         _url = `https://marketplaceapi.microsoft.com/api/saas/subscriptions/resolve?api-version=2018-08-31&`;
                         _config = {
                             headers: { 'x-ms-marketplace-token': _ampToken, Authorization: `Bearer  ${_accessToken}` },
@@ -559,7 +562,11 @@ router.get('/Signup', (req, res) => {
                             .post(_url, _data, _config)
                             .then((subActivated) => {
                             //update DB with the subactivate
-                            sqlRepository.ActivateSubscriptionDetails(subId, true).then(y => { });
+                            if (subActivated.status === 200) {
+                                sqlRepository.ActivateSubscriptionDetails(subId, true).then(y => {
+                                    console.log('subscription Activated');
+                                });
+                            }
                         })
                             .catch((err) => {
                             console.log(err);
