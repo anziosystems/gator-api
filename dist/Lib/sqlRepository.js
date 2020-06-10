@@ -973,6 +973,7 @@ class SQLRepository {
             try {
                 yield this.createPool();
                 const request = yield this.pool.request();
+                console.log(`[I] saveSignUpToken token: ${token}`);
                 request.input('Token', sql.VarChar(2000), token);
                 let result = yield request.execute('SaveSignupToken');
                 return result.recordsets[0][0].ID;

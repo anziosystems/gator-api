@@ -41,7 +41,6 @@ app.use(
     resave: false,
     saveUninitialized: false,
   }),
-  
 );
 
 passport.serializeUser((user: any, done: any) => {
@@ -88,7 +87,6 @@ app.get('/', (req: any, res: any) => {
 app.get('/success', (req: any, res: any) => {
   res.render('success');
 });
-
 
 // var configGlobal = new Map();
 // returnConfiguration().then(x => {
