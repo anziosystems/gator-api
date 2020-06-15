@@ -486,9 +486,9 @@ router.get('/Signup', (req, res) => {
         //This is the hack, because of some weiredness when the string comes from browser with %2B it become space.
         //Same string coming from postman remain as +
         //unfortunate hack
-        let _ampToken = req.query.token; //.replace(' ', '+');
-        console.log(`[I] Token Received as: ${req.query.token}`);
-        console.log(`[I] Token after decoding: ${decodeURIComponent(req.query.token)}`);
+        let _ampToken = req.query.token.replace(' ', '+');
+        // console.log(`[I] Token Received as: ${req.query.token}`);
+        // console.log(`[I] Token after decoding: ${decodeURIComponent(req.query.token)}`);
         sqlRepository.saveSignUpToken(decodeURIComponent(_ampToken)).then((subId) => {
             //https://docs.microsoft.com/en-us/azure/marketplace/partner-center-portal/pc-saas-fulfillment-api-v2
             //STEP - 1
