@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const request = require('request');
+//const request = require('request');
 const app = express();
 const authRoutes = require('./auth-routes');
 const serviceRoutes = require('./service-routes');
@@ -56,7 +56,7 @@ passport.deserializeUser(function(id: any, done: any) {
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sqlRepositoy.getUser(id).then(result => {
       if (result) {
-        console.log('==> inside deserialize - user.id: ' + result[0].Id);
+        console.log('==> inside Deserialize - user.id: ' + result[0].Email);
         //do something with Tenant details
         //https://github.com/jaredhanson/passport/issues/6
         done(null, false); //don't care for done. Else pass value in place of false.  // invalidates the existing login session.
@@ -88,14 +88,20 @@ app.get('/success', (req: any, res: any) => {
   res.render('success');
 });
 
+// var configGlobal = new Map();
+// returnConfiguration().then(x => {
+//   console.log('Ready with config Loaded from SQL ====>');
+//   configGlobal.set('axleinfo', x);
+// });
+
 // commenting it for https
 
 if (process.env.ENV === 'PROD') {
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log('listenting for prod request on port 3000');
-  console.log('===================================================');
-});
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => {
+    console.log('listenting for prod request on port 3000');
+    console.log('===================================================');
+  });
 } else {
   var http = require('http');
   var https = require('https');
@@ -167,3 +173,26 @@ function onError(error: any) {
 function onListening() {
   console.log(`----- local server ready on port ${port} -----`);
 }
+
+// async function returnConfiguration() {
+//   //req.query.tenant
+//   return new Promise ((done, fail) => {
+//   const sqlRepositoy = new SQLRepository(null);
+//   sqlRepositoy.getClientSecret('axleinfo').then((result: string) => {
+//     let client = JSON.parse(result);
+//     let obj = {
+//       issuer: client.issuer, // `https://a.labshare.org/_api/auth/AxleInfo`,
+//       clientID: client.clientID, //process.env.OIDC_CLIENT_ID,
+//       clientSecret: client.clientSecret, // process.env.OIDC_CLIENT_SECRET,
+//       authorizationURL: client.authorizationURL, // `https://a.labshare.org/_api/auth/AxleInfo/authorize`,
+//       userInfoURL: client.userInfoURL, //`https://a.labshare.org/_api/auth/AxleInfo/me`,
+//       tokenURL: client.tokenURL, //`https://a.labshare.org/_api/auth/AxleInfo/oidc/token`,
+//       callbackURL: process.env.OIDC_REDIRECT_URI,
+//       passReqToCallback: true,
+//     };
+//     done(obj);
+//   });
+// });
+// }
+
+// export {configGlobal};

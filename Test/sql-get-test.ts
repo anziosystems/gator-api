@@ -10,6 +10,95 @@ import {GitRepository} from '../Lib/GitRepository';
 // import {JiraRepository} from '../Lib/JiraRepository';
 // import {isNullOrUndefined} from 'util';
 
+//processAllJiraHookData
+
+describe('processAllJiraHookData', () => {
+  it('should return true', async () => {
+    const sqlRepositoy = new SQLRepository(null);
+
+    await sqlRepositoy.processAllJiraHookData().then(result => {
+      expect(result).true;
+    });
+  });
+});
+
+describe('getClientSecret', () => {
+  it('should return JSON', async () => {
+    const sqlRepositoy = new SQLRepository(null);
+    const tenant = 'axleinfo';
+
+    await sqlRepositoy.getClientSecret(tenant).then(result => {
+      let obj = JSON.parse(result);
+      expect(obj.clientID.length).greaterThan(0);
+    });
+  });
+});
+
+describe('IsXYAllowed', () => {
+  it('should return true', async () => {
+    const sqlRepositoy = new SQLRepository(null);
+    const org = 'axleinfo.com';
+    const user = 'rafat.sarosh@axleinfo.com';
+    const X = 'rafat.sarosh@axleinfo.com';
+    const Y = 'Artem.Serebryakov@labshare.org';
+    await sqlRepositoy.IsXYAllowed(org, user, X, Y).then(result => {
+      expect(result).equals(true, `${Y} reports to ${X}`);
+    });
+  });
+});
+
+describe('IsXYAllowed', () => {
+  it('should return false', async () => {
+    const sqlRepositoy = new SQLRepository(null);
+    const org = 'axleinfo.com';
+    const user = 'rafat.sarosh@axleinfo.com';
+    const X = 'Artem.Serebryakov@labshare.org';
+    const Y = 'rafat.sarosh@axleinfo.com';
+    await sqlRepositoy.IsXYAllowed(org, user, X, Y).then(result => {
+      expect(result).equals(false, `Yes, ${Y} does not reports to ${X}`);
+    });
+  });
+});
+
+describe('IsXYAllowed', () => {
+  it('should return true', async () => {
+    const sqlRepositoy = new SQLRepository(null);
+    const org = 'axleinfo.com';
+    const user = 'rafat.sarosh@axleinfo.com';
+    const X = 'James.Kestler@axleinfo.com';
+    const Y = 'lohitha.tummuri@labshare.org';
+    await sqlRepositoy.IsXYAllowed(org, user, X, Y).then(result => {
+      expect(result).equals(true, `Yes, ${Y} does reports to ${X}`);
+    });
+  });
+});
+
+describe('IsXYAllowed', () => {
+  it('should return true', async () => {
+    const sqlRepositoy = new SQLRepository(null);
+    const org = 'axleinfo.com';
+    const user = 'rafat.sarosh@axleinfo.com';
+    const X = 'James.Kestler@axleinfo.com';
+    const Y = 'rachel.chen@labshare.org';
+    await sqlRepositoy.IsXYAllowed(org, user, X, Y).then(result => {
+      expect(result).equals(true, `Yes, ${Y} does reports to ${X}`);
+    });
+  });
+});
+
+describe('IsXYAllowed', () => {
+  it('should return false', async () => {
+    const sqlRepositoy = new SQLRepository(null);
+    const org = 'axleinfo.com';
+    const user = 'rafat.sarosh@axleinfo.com';
+    const X = 'rachel.chen@labshare.org';
+    const Y = 'Artem.Serebryakov@labshare.org';
+    await sqlRepositoy.IsXYAllowed(org, user, X, Y).then(result => {
+      expect(result).equals(false, `Yes, ${Y} does not reports to ${X}`);
+    });
+  });
+});
+
 describe('TopDevForLastXDays', () => {
   it('should return rowsAffected', async () => {
     const sqlRepositoy = new SQLRepository(null);
@@ -21,11 +110,11 @@ describe('TopDevForLastXDays', () => {
   });
 });
 
-describe('GetOrg', () => {
+describe('GetGitOrg', () => {
   it('should return rowsAffected', async () => {
     const gitRepository = new GitRepository();
-    await gitRepository.getOrgFromGit('1040817', true).then(result => {
-     // expect(result.toTable.length).to.greaterThan(0);
+    await gitRepository.getOrgFromGit('1040817', 'xxx', true).then(result => {
+      expect(result).length.greaterThan(0);
     });
   });
 });
@@ -33,7 +122,7 @@ describe('GetOrg', () => {
 describe('GetRepos', () => {
   it('should return rowsAffected', async () => {
     const gitRepository = new GitRepository();
-    await gitRepository.getRepos('1040817', 'LabShare', true, true).then(result => {
+    await gitRepository.getRepos('1040817', 'ncats', true, true).then(result => {
       expect(result.toTable.length).to.greaterThan(0);
     });
   });
@@ -48,7 +137,6 @@ describe('getGitHygiene', () => {
     });
   });
 });
-
 
 describe('getDevs4Org', () => {
   it('should return rowsAffected', async () => {

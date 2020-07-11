@@ -8,7 +8,7 @@ import {expect} from 'chai';
 import {SQLRepository, GUser} from '../Lib/sqlRepository';
 import {GitRepository} from '../Lib/GitRepository';
 
-describe('SaveTenant', () => {
+describe('saveLoggedInUser', () => {
   it('should return rowsAffected', async () => {
     const sqlRepositoy = new SQLRepository(null);
     const tenant = new GUser();
@@ -50,7 +50,7 @@ describe('SaveActiveTenant', () => {
 describe('FillPullRequest', () => {
   it('should return rowsAffected', async () => {
     const gitRepository = new GitRepository();
-    await gitRepository.fillPullRequest('1040817', 'LabShare', 'forms', true, true, '').then(result => {
+    await gitRepository.fillPullRequest('1040817', 'LabShare', 'forms', true, true).then(result => {
       expect(result.length).to.greaterThan(0);
     });
   });

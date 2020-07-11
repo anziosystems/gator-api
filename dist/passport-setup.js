@@ -118,7 +118,7 @@ passport.use(new GitHubStrategy({
         return done(null, String(profile.id.trim()));
     })
         .catch(err => {
-        console.log(`saveTenant Error: ${err}`);
+        console.log(`saveLoggedInUser Error: ${err}`);
     });
 }));
 passport.use(new BitbucketStrategy({
@@ -190,32 +190,109 @@ profile.accessibleResources[0]
  * Token endpoint Auth Method: client_secret_post
  * Make provider on
  */
-passport.use(new OidcStrategy({
+var axleInfoStrategy = new OidcStrategy({
     issuer: `https://a.labshare.org/_api/auth/AxleInfo`,
-    clientID: `oKU4JSoI3TbvdfYOVwwCR`,
-    clientSecret: `d024ef66-81c9-11ea-9ca6-0242ac120003`,
+    clientID: process.env.OIDC_CLIENT_ID,
+    clientSecret: process.env.OIDC_CLIENT_SECRET,
     authorizationURL: `https://a.labshare.org/_api/auth/AxleInfo/authorize`,
     userInfoURL: `https://a.labshare.org/_api/auth/AxleInfo/me`,
     tokenURL: `https://a.labshare.org/_api/auth/AxleInfo/oidc/token`,
-    callbackURL: 'https://localhost:3000/auth/lsauth/redirect',
+    callbackURL: process.env.OIDC_REDIRECT_URI_AXLEINFO,
     passReqToCallback: true,
+    scope: ['email', 'profile', 'openid'],
 }, function (req, issuer, userId, profile, accessToken, refreshToken, params, done) {
-    // console.log('issuer:', issuer);
-    // console.log('userId:', userId);
-    // console.log('accessToken:', accessToken);
-    // console.log('refreshToken:', refreshToken);
-    // console.log('params:', params);
-    // console.log('profile:', JSON.stringify(profile));
-    // Store the Access Token and ID Token in the request session
+    ProcessLSAuth(req, issuer, userId, profile, accessToken, refreshToken, params, done);
+});
+exports.axleInfoStrategy = axleInfoStrategy;
+axleInfoStrategy.name = 'axleInfoStrategy';
+var anzioStrategy = new OidcStrategy({
+    issuer: `https://a.labshare.org/_api/auth/AnzioSystems`,
+    clientID: `oKU4JSoI3TbvdfYOVwwCR`,
+    clientSecret: `57c34770-8ffd-11ea-80df-0242ac120003`,
+    authorizationURL: `https://a.labshare.org/_api/auth/AnzioSystems/authorize`,
+    userInfoURL: `https://a.labshare.org/_api/auth/AnzioSystems/me`,
+    tokenURL: `https://a.labshare.org/_api/auth/AnzioSystems/oidc/token`,
+    callbackURL: process.env.OIDC_REDIRECT_URI_ANZIO,
+    passReqToCallback: true,
+    scope: ['email', 'profile'],
+}, function (req, issuer, userId, profile, accessToken, refreshToken, params, done) {
+    ProcessLSAuth(req, issuer, userId, profile, accessToken, refreshToken, params, done);
+});
+exports.anzioStrategy = anzioStrategy;
+anzioStrategy.name = 'anzioStrategy';
+passport.use(axleInfoStrategy);
+passport.use(anzioStrategy);
+// passport.use(
+//   new OidcStrategy(
+//     {
+//       issuer: `https://a.labshare.org/_api/auth/AxleInfo`,
+//       clientID: process.env.OIDC_CLIENT_ID,
+//       clientSecret: process.env.OIDC_CLIENT_SECRET,
+//       authorizationURL: `https://a.labshare.org/_api/auth/AxleInfo/authorize`,
+//       userInfoURL: `https://a.labshare.org/_api/auth/AxleInfo/me`,
+//       tokenURL: `https://a.labshare.org/_api/auth/AxleInfo/oidc/token`,
+//       callbackURL: process.env.OIDC_REDIRECT_URI,
+//       passReqToCallback: true,
+//     },
+//     function(req: any, issuer: string, userId: string, profile: any, accessToken: string, refreshToken: string, params: any, done: any) {
+//       req.session.accessToken = accessToken;
+//       req.session.idToken = params.id_token;
+//       const user = new GUser();
+//       user.AuthToken = accessToken;
+//       console.log(accessToken);
+//       if (!refreshToken) refreshToken = '';
+//       user.RefreshToken = refreshToken;
+//       user.UserName = profile._json.username; //email name to keep it unique
+//       user.DisplayName = profile.displayName;
+//       user.Id = profile.id;
+//       user.Photo = '';
+//       user.Email = profile._json.username;
+//       user.ProfileUrl = profile.profileUrl;
+//       const sqlRepositoy = new SQLRepository(null);
+//       sqlRepositoy
+//         .saveLoggedInUser(user)
+//         .then(result => {
+//           if (result.message) {
+//             //if error then pass the error message
+//             return done(result, profile.id);
+//           }
+//           let domain = profile._json.username.split('@');
+//           //Todo: hardcoded for now
+//           if(domain[1] === 'labshare.org') {
+//             domain[1] = 'axleinfo.com'
+//           }
+//           if(domain[1] === 'labshare.org') {
+//             domain[1] = 'axleinfo.com'
+//           }
+//           sqlRepositoy.saveUserOrg(profile.id, domain[1], 'org').then(res => {
+//             if (res) {
+//               console.log('Profile is saved - ' + domain[1]);
+//             }
+//             // const LSA = new LSAuthRepository();
+//             // try {
+//             //   LSA.addUser(user).then(r => {
+//             //     if (r === 200) {
+//             //       console.log('User Added to LSAuth');
+//             //     } else {
+//             //       console.log('[E] user is NOT added');
+//             //     }
+//             //   });
+//             // } catch (ex) {
+//             //   console.log(`[E] passport - oidc ${ex}`);
+//             // }
+//           });
+//           return done(null, String(profile.id.trim()));
+//         })
+//         .catch(err => {
+//           console.log(`saveLoggedInUser Error: ${err}`);
+//         });
+//       // return cb(null, profile);
+//     },//funciton
+//   ),
+// );
+function ProcessLSAuth(req, issuer, userId, profile, accessToken, refreshToken, params, done) {
     req.session.accessToken = accessToken;
     req.session.idToken = params.id_token;
-    /*
-    profile: {"id":"8584","displayName":"Rafat Sarosh","name":{"familyName":"Sarosh","givenName":"Rafat"},
-            "_raw":"{\"sub\":\"8584\",\"family_name\":\"Sarosh\",\"given_name\":\"Rafat\",\"name\":\"Rafat Sarosh\",
-            \"username\":\"rafat.sarosh@axleinfo.com\",\"roles\":[],\"role\":\"user\"}",
-            "_json":{"sub":"8584","family_name":"Sarosh","given_name":"Rafat","name":"Rafat Sarosh",
-            "username":"rafat.sarosh@axleinfo.com","roles":[],"role":"user"}}
-    */
     const user = new sqlRepository_1.GUser();
     user.AuthToken = accessToken;
     console.log(accessToken);
@@ -234,31 +311,25 @@ passport.use(new OidcStrategy({
         .then(result => {
         if (result.message) {
             //if error then pass the error message
-            return done(result, profile.id);
+            return done(result, user.Email);
         }
         let domain = profile._json.username.split('@');
-        sqlRepositoy.saveUserOrg(profile.id, domain[1]).then(res => {
+        //Todo: hardcoded for now
+        if (domain[1] === 'labshare.org') {
+            domain[1] = 'axleinfo.com';
+        }
+        if (domain[1] === 'labshare.org') {
+            domain[1] = 'axleinfo.com';
+        }
+        sqlRepositoy.saveUserOrg(user.Email, domain[1], 'org').then(res => {
             if (res) {
                 console.log('Profile is saved - ' + domain[1]);
             }
-            // const LSA = new LSAuthRepository();
-            // try {
-            //   LSA.addUser(user).then(r => {
-            //     if (r === 200) {
-            //       console.log('User Added to LSAuth');
-            //     } else {
-            //       console.log('[E] user is NOT added');
-            //     }
-            //   });
-            // } catch (ex) {
-            //   console.log(`[E] passport - oidc ${ex}`);
-            // }
         });
-        return done(null, String(profile.id.trim()));
+        return done(null, String(user.Email.trim()));
     })
         .catch(err => {
         console.log(`saveLoggedInUser Error: ${err}`);
     });
-    // return cb(null, profile);
-}));
+} //funciton
 //# sourceMappingURL=passport-setup.js.map

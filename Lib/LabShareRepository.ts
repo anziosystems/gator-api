@@ -35,7 +35,7 @@ class LSAuthRepository {
         return null;
       }
 
-      const token = 'Bearer ' + (await this.sqlRepository.getToken4User(Number(userId)));
+      const token = 'Bearer ' + (await this.sqlRepository.getToken4User(userId));
       let header: any = {
         method: method,
         uri: `https://a.labshare.org/_api/auth/${gUri}`,
@@ -112,7 +112,7 @@ class LSAuthRepository {
     }
     const _uri = `admin/tenants/${tenantId}/users`;
     if (domain[1] === 'axleinfo.com') {
-      _user.identityIssuer = `https://sts.windows.net/{tenantid}/`;  //BUG!! in LSAuth {TenantId} string use the value not the string
+      _user.identityIssuer = `https://sts.windows.net/{tenantid}/`; //BUG!! in LSAuth {TenantId} string use the value not the string
     }
     if (domain[1] === `gmail.com`) {
       _user.identityIssuer = `https://accounts.google.com`; //accounts.axleinfo.com
