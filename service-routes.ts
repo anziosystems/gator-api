@@ -23,10 +23,10 @@ const verifyOptions = {
   algorithm: ['RS256'],
 };
 
-async function isUserValid(userId: number): Promise<boolean> {
+async function isUserValid(email: string): Promise<boolean> {
   try {
     //Return  false if there is no user, true if user exist
-    return await sqlRepository.checkUser(userId).then(r => {
+    return await sqlRepository.checkUser(email).then(r => {
       if (r) {
         return true;
       } else {
@@ -107,10 +107,10 @@ function getUserId(req: any) {
     id:"8584"
     */
     const result = jwt.verify(token, process.env.Session_Key, verifyOptions);
-    if (typeof result === 'number' || typeof result === 'string') {
+    if (typeof result === 'string') {
       return result;
     } else {
-      return result.id; //Org header has the full user object
+      return result.username; //Org header has the full user object
     }
   } catch (ex) {
     console.log(`[E] getUserId ${ex.message}`);

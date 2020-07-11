@@ -262,7 +262,7 @@ class GitRepository {
     makeGitRequestHeader(userId, graphQL = '', gUri = 'https://api.github.com/graphql', method = 'POST') {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const token = 'Bearer ' + (yield this.sqlRepository.getToken4User(Number(userId)));
+                const token = 'Bearer ' + (yield this.sqlRepository.getToken4User(userId));
                 const header = {
                     method: method,
                     uri: gUri,
@@ -285,7 +285,7 @@ class GitRepository {
     makeGitRequestHeaderLight(userId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const token = 'Bearer ' + (yield this.sqlRepository.getToken4User(Number(userId)));
+                const token = 'Bearer ' + (yield this.sqlRepository.getToken4User(userId));
                 const header = {
                     headers: {
                         'Content-Type': 'application/json',

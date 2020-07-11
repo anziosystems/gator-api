@@ -27,11 +27,11 @@ const jwt = require('jsonwebtoken');
 const verifyOptions = {
     algorithm: ['RS256'],
 };
-function isUserValid(userId) {
+function isUserValid(email) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             //Return  false if there is no user, true if user exist
-            return yield sqlRepository.checkUser(userId).then(r => {
+            return yield sqlRepository.checkUser(email).then(r => {
                 if (r) {
                     return true;
                 }
@@ -117,11 +117,11 @@ function getUserId(req) {
         id:"8584"
         */
         const result = jwt.verify(token, process.env.Session_Key, verifyOptions);
-        if (typeof result === 'number' || typeof result === 'string') {
+        if (typeof result === 'string') {
             return result;
         }
         else {
-            return result.id; //Org header has the full user object
+            return result.username; //Org header has the full user object
         }
     }
     catch (ex) {

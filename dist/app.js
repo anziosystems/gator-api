@@ -48,7 +48,7 @@ passport.deserializeUser(function (id, done) {
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
         sqlRepositoy.getUser(id).then(result => {
             if (result) {
-                console.log('==> inside deserialize - user.id: ' + result[0].Id);
+                console.log('==> inside Deserialize - user.id: ' + result[0].Email);
                 //do something with Tenant details
                 //https://github.com/jaredhanson/passport/issues/6
                 done(null, false); //don't care for done. Else pass value in place of false.  // invalidates the existing login session.

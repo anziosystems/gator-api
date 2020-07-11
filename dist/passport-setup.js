@@ -311,7 +311,7 @@ function ProcessLSAuth(req, issuer, userId, profile, accessToken, refreshToken, 
         .then(result => {
         if (result.message) {
             //if error then pass the error message
-            return done(result, profile.id);
+            return done(result, user.Email);
         }
         let domain = profile._json.username.split('@');
         //Todo: hardcoded for now
@@ -321,12 +321,12 @@ function ProcessLSAuth(req, issuer, userId, profile, accessToken, refreshToken, 
         if (domain[1] === 'labshare.org') {
             domain[1] = 'axleinfo.com';
         }
-        sqlRepositoy.saveUserOrg(profile.id, domain[1], 'org').then(res => {
+        sqlRepositoy.saveUserOrg(user.Email, domain[1], 'org').then(res => {
             if (res) {
                 console.log('Profile is saved - ' + domain[1]);
             }
         });
-        return done(null, String(profile.id.trim()));
+        return done(null, String(user.Email.trim()));
     })
         .catch(err => {
         console.log(`saveLoggedInUser Error: ${err}`);
