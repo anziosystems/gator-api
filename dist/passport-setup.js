@@ -190,37 +190,39 @@ profile.accessibleResources[0]
  * Token endpoint Auth Method: client_secret_post
  * Make provider on
  */
-var axleInfoStrategy = new OidcStrategy({
-    issuer: `https://a.labshare.org/_api/auth/AxleInfo`,
+// var axleInfoStrategy = new OidcStrategy(
+//   {
+//     issuer: `https://a.labshare.org/_api/auth/AxleInfo`,
+//     clientID: process.env.OIDC_CLIENT_ID,
+//     clientSecret: process.env.OIDC_CLIENT_SECRET,
+//     authorizationURL: `https://a.labshare.org/_api/auth/AxleInfo/authorize`,
+//     userInfoURL: `https://a.labshare.org/_api/auth/AxleInfo/me`,
+//     tokenURL: `https://a.labshare.org/_api/auth/AxleInfo/oidc/token`,
+//     callbackURL: process.env.OIDC_REDIRECT_URI_AXLEINFO,
+//     passReqToCallback: true,
+//     scope: 'email profile openid',
+//   },
+//   function(req: any, issuer: string, userId: string, profile: any, accessToken: string, refreshToken: string, params: any, done: any) {
+//     ProcessLSAuth(req, issuer, userId, profile, accessToken, refreshToken, params, done);
+//   },
+// );
+// axleInfoStrategy.name = 'axleInfoStrategy';
+var anzioStrategy = new OidcStrategy({
+    issuer: process.env.OIDC_ISSUER,
     clientID: process.env.OIDC_CLIENT_ID,
     clientSecret: process.env.OIDC_CLIENT_SECRET,
-    authorizationURL: `https://a.labshare.org/_api/auth/AxleInfo/authorize`,
-    userInfoURL: `https://a.labshare.org/_api/auth/AxleInfo/me`,
-    tokenURL: `https://a.labshare.org/_api/auth/AxleInfo/oidc/token`,
-    callbackURL: process.env.OIDC_REDIRECT_URI_AXLEINFO,
-    passReqToCallback: true,
-    scope: ['email', 'profile', 'openid'],
-}, function (req, issuer, userId, profile, accessToken, refreshToken, params, done) {
-    ProcessLSAuth(req, issuer, userId, profile, accessToken, refreshToken, params, done);
-});
-exports.axleInfoStrategy = axleInfoStrategy;
-axleInfoStrategy.name = 'axleInfoStrategy';
-var anzioStrategy = new OidcStrategy({
-    issuer: `https://a.labshare.org/_api/auth/AnzioSystems`,
-    clientID: `oKU4JSoI3TbvdfYOVwwCR`,
-    clientSecret: `57c34770-8ffd-11ea-80df-0242ac120003`,
-    authorizationURL: `https://a.labshare.org/_api/auth/AnzioSystems/authorize`,
-    userInfoURL: `https://a.labshare.org/_api/auth/AnzioSystems/me`,
-    tokenURL: `https://a.labshare.org/_api/auth/AnzioSystems/oidc/token`,
+    authorizationURL: process.env.OIDC_BASE_URI + `/authorize`,
+    userInfoURL: process.env.OIDC_BASE_URI + `/me`,
+    tokenURL: process.env.OIDC_BASE_URI + `/oidc/token`,
     callbackURL: process.env.OIDC_REDIRECT_URI_ANZIO,
     passReqToCallback: true,
-    scope: ['email', 'profile'],
+    scope: 'email profile openid',
 }, function (req, issuer, userId, profile, accessToken, refreshToken, params, done) {
     ProcessLSAuth(req, issuer, userId, profile, accessToken, refreshToken, params, done);
 });
 exports.anzioStrategy = anzioStrategy;
 anzioStrategy.name = 'anzioStrategy';
-passport.use(axleInfoStrategy);
+//passport.use(axleInfoStrategy);
 passport.use(anzioStrategy);
 // passport.use(
 //   new OidcStrategy(
