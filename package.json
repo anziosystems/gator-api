@@ -48,7 +48,7 @@
     "express-session": "^1.16.1",
     "jsonwebtoken": "^8.5.1",
     "lint": "^1.1.2",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "mocha": "^6.1.4",
     "mssql": "^5.0.5",
     "node": "10.14.0",
