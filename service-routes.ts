@@ -499,8 +499,8 @@ router.get('/Signup', (req: any, res: any) => {
     //Same string coming from postman remain as +
     //unfortunate hack
     let _ampToken = req.query.token.replace(' ', '+');
-   // console.log(`[I] Token Received as: ${req.query.token}`);
-   // console.log(`[I] Token after decoding: ${decodeURIComponent(req.query.token)}`);
+    // console.log(`[I] Token Received as: ${req.query.token}`);
+    // console.log(`[I] Token after decoding: ${decodeURIComponent(req.query.token)}`);
 
     sqlRepository.saveSignUpToken(decodeURIComponent(_ampToken)).then((subId: any) => {
       //https://docs.microsoft.com/en-us/azure/marketplace/partner-center-portal/pc-saas-fulfillment-api-v2
@@ -853,7 +853,19 @@ router.post('/saveOrgChart', validateUser, (req: any, res: any) => {
 
 router.post('/jiraHook', (req: any, res: any) => {
   sqlRepository
-    .saveJiraHook(JSON.stringify(req.body))
+    .saveRawHookData(JSON.stringify(req.body))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch((ex: any) => {
+      console.log(ex);
+    });
+});
+
+
+router.post('/Hook', (req: any, res: any) => {
+  sqlRepository
+    .saveRawHookData(JSON.stringify(req.body))
     .then(result => {
       return res.json(result);
     })

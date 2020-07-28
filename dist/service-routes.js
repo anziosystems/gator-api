@@ -821,7 +821,17 @@ router.post('/saveOrgChart', validateUser, (req, res) => {
 });
 router.post('/jiraHook', (req, res) => {
     sqlRepository
-        .saveJiraHook(JSON.stringify(req.body))
+        .saveRawHookData(JSON.stringify(req.body))
+        .then(result => {
+        return res.json(result);
+    })
+        .catch((ex) => {
+        console.log(ex);
+    });
+});
+router.post('/Hook', (req, res) => {
+    sqlRepository
+        .saveRawHookData(JSON.stringify(req.body))
         .then(result => {
         return res.json(result);
     })

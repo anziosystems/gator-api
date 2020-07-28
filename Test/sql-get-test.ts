@@ -16,7 +16,7 @@ describe('processAllJiraHookData', () => {
   it('should return true', async () => {
     const sqlRepositoy = new SQLRepository(null);
 
-    await sqlRepositoy.processAllJiraHookData().then(result => {
+    await sqlRepositoy.processAllHookData().then(result => {
       expect(result).true;
     });
   });

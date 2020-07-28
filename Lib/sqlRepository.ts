@@ -369,8 +369,8 @@ class SQLRepository {
 
       request.input('status', sql.VarChar(this.STATUS_LEN), status);
       request.input('message', sql.VarChar(this.MESSAGE_LEN), message);
-      request.input('TenantId', sql.Int, Number(tenantId));
-      const recordSet = await request.execute('saveStatus');
+      request.input('TenantId', sql.VarChar(this.LOGIN_LEN), tenantId);
+      const recordSet = await request.execute('saveStatus2');
       if (recordSet) {
         return recordSet.rowsAffected.length;
       } else {
@@ -681,112 +681,128 @@ class SQLRepository {
   }
 
   //
-  async saveJiraHook(message: string) {
+  async saveRawHookData(message: string) {
     try {
       await this.createPool();
       const request = await this.pool.request();
       request.input('Message', sql.Text, message);
-      await request.execute('SaveJiraHook');
-      this.processJiraHookData(message); //Process the Jira Data
-      this.processTFSHookData(message); //Process the Jira Data
-      return 200;
+      await request.execute('SaveRawHookData');
+      return this.processAllHookData();
     } catch (ex) {
-      console.log(`[E]  SaveJira:  Error: ${ex}`);
-      return 400;
+      console.log(`[E]  saveRawHookData:  Error: ${ex.message}`);
+      return false;
     }
   }
 
-  async processAllJiraHookData() {
+  async processAllHookData() {
     let hookId: number;
     // eslint-disable-next-line no-constant-condition
-    while (true) {
+   // while (true) {
       let jiraEvent = await this.getHookData();
-      if (!jiraEvent[0]) break; //No event
+      if (!jiraEvent[0]) {
+        return true;
+      }
+   //   if (!jiraEvent[0]) break; //No event
       let obj = jiraEvent[0];
       hookId = _.get(obj, 'Id');
-      this.processJiraHookData(obj.message);
-      this.processTFSHookData(obj.message);
-    } //~while
+      this.processJiraHookData(hookId, obj.message).then (x => {
+        this.processTFSHookData(hookId, obj.message).then (y => {
+          return x || y;
+        });
+      });
+
+//    } //~while
+    
   }
 
-  async processJiraHookData(jdata: any) {
-    let hookId: number;
-    // eslint-disable-next-line no-constant-condition
-    let jd: JiraData = new JiraData();
-    let obj = JSON.parse(jdata);
-    let wEvent = _.get(obj, 'webhookEvent');
-    if (!wEvent) {
-      //Not Jira event - skip for now
-    } else {
-      jd.Id = _.get(obj, 'issue.id');
-      jd.Key = _.get(obj, 'issue.key');
-      let x = _.get(obj, 'issue.self'); // "self": "https://labshare.atlassian.net/rest/api/2/42065",
-      let y = _.split(x, '.');
-      let z = y[0].substr(8);
-      jd.JiraOrg = z;
-      jd.Priority = _.get(obj, 'issue.fields.priority.name');
-      jd.Assignee = _.get(obj, 'issue.fields.assignee.displayName');
-      jd.AssigneeId = _.get(obj, 'issue.fields.assignee.accountId');
-      jd.Summary = _.get(obj, 'issue.fields.summary');
-      jd.AssigneeAvatarUrl = _.get(obj, 'issue.fields.assignee.avatarUrls.48x48');
-      jd.Status = _.get(obj, 'issue.fields.status.name');
-      jd.Reporter = _.get(obj, 'issue.fields.reporter.displayName');
-      jd.ReporterAvatarUrl = _.get(obj, 'issue.fields.reporter.avatarUrls.48x48');
-      jd.IssueType = _.get(obj, 'issue.fields.issuetype.name');
-      jd.ProjectName = _.get(obj, 'issue.fields.project.name');
-      jd.Title = _.get(obj, 'issue.fields.summary');
-      jd.CreatedDate = new Date(_.get(obj, 'issue.fields.created'));
-      jd.UpdatedDate = new Date(_.get(obj, 'issue.fields.updated'));
-      //Get The Story points
-      //jd.Story  = _.get(obj, 'issue.fields.updated');
-      this.updateJiraData(hookId, jd);
-    }
-  }
-
-  async processTFSHookData(jdata: any) {
-    let hookId: number;
-    // eslint-disable-next-line no-constant-condition
-    let jd: JiraData = new JiraData();
-    let obj = JSON.parse(jdata);
-    let wEvent = _.get(obj, 'subscriptionId');
-    if (!wEvent) {
-      //Not TFS event - skip for now
-    } else {
-      let eventType = _.get(obj, 'eventType');
-      if (eventType === 'workitem.created') {
-        jd.Id = _.get(obj, 'id');
-        let fields = _.get(obj, 'resource.fields');
-        jd.Key = fields['System.TeamProject'];
-        let rc = _.get(obj, 'resourceContainers');
-        let a = rc['account'];
-        let x = a['baseUrl']; // "https://dev.azure.com/anzio/",
-        let y = x.substr(22);
-        let z = y.replace(`/`, ``);
-        jd.JiraOrg = z;
-        jd.Priority = fields['Microsoft.VSTS.Common.Priority'];
-        jd.Assignee = fields['System.AssignedTo'];
-        jd.AssigneeId = fields['System.AssignedTo'];
-        jd.Title = fields['System.Title'];
-        jd.CreatedDate = new Date(fields['System.CreatedDate']);
-        jd.Summary = fields['System.Title'];
-        // jd.AssigneeAvatarUrl = _.get(obj, 'issue.fields.assignee.avatarUrls.48x48');
-        jd.Status = fields['System.State'];
-        jd.Reporter = fields['System.CreatedBy'];
-        // jd.ReporterAvatarUrl = _.get(obj, 'issue.fields.reporter.avatarUrls.48x48');
-        jd.IssueType = fields['System.WorkItemType'];
-        jd.ProjectName = fields['System.TeamProject'];
+  async processJiraHookData(hookId: number, jdata: any): Promise<Boolean> {
+    try {
+      // eslint-disable-next-line no-constant-condition
+      let jd: JiraData = new JiraData();
+      let obj = JSON.parse(jdata);
+      let wEvent = _.get(obj, 'webhookEvent');
+      if (!wEvent) {
+        //Not Jira event - skip for now
+        return true;
       } else {
-        jd.Id = _.get(obj, 'id');
-        let r = _.get(obj, 'resource');
-        jd.UpdatedDate = new Date(r['revisedDate']);
+        jd.Id = _.get(obj, 'issue.id');
+        jd.Key = _.get(obj, 'issue.key');
+        let x = _.get(obj, 'issue.self'); // "self": "https://labshare.atlassian.net/rest/api/2/42065",
+        let y = _.split(x, '.');
+        let z = y[0].substr(8);
+        jd.JiraOrg = z;
+        jd.Priority = _.get(obj, 'issue.fields.priority.name');
+        jd.Assignee = _.get(obj, 'issue.fields.assignee.displayName');
+        jd.AssigneeId = _.get(obj, 'issue.fields.assignee.accountId');
+        jd.Summary = _.get(obj, 'issue.fields.summary');
+        jd.AssigneeAvatarUrl = _.get(obj, 'issue.fields.assignee.avatarUrls.48x48');
+        jd.Status = _.get(obj, 'issue.fields.status.name');
+        jd.Reporter = _.get(obj, 'issue.fields.reporter.displayName');
+        jd.ReporterAvatarUrl = _.get(obj, 'issue.fields.reporter.avatarUrls.48x48');
+        jd.IssueType = _.get(obj, 'issue.fields.issuetype.name');
+        jd.ProjectName = _.get(obj, 'issue.fields.project.name');
+        jd.Title = _.get(obj, 'issue.fields.summary');
+        jd.CreatedDate = new Date(_.get(obj, 'issue.fields.created'));
+        jd.UpdatedDate = new Date(_.get(obj, 'issue.fields.updated'));
+        //Get The Story points
+        //jd.Story  = _.get(obj, 'issue.fields.updated');
+        return this.updateJiraData(hookId, jd);
       }
-      //Get The Story points
-      //jd.Story  = _.get(obj, 'issue.fields.updated');
-      this.updateTFSData(hookId, jd);
+    } catch (ex) {
+      console.log(`[E] processJiraHookData ${ex}`);
+      return false;
     }
   }
 
-  async updateTFSData(hookId: number, obj: JiraData) {
+  async processTFSHookData(hookId: number, jdata: any): Promise<Boolean> {
+    try {
+      // eslint-disable-next-line no-constant-condition
+      let jd: JiraData = new JiraData();
+      let obj = JSON.parse(jdata);
+      let wEvent = _.get(obj, 'subscriptionId');
+      if (!wEvent) {
+        //Not a TFS Event skip it
+        return true;
+      } else {
+        let eventType = _.get(obj, 'eventType');
+        if (eventType === 'workitem.created') {
+          jd.Id = _.get(obj, 'id');
+          let fields = _.get(obj, 'resource.fields');
+          jd.Key = fields['System.TeamProject'];
+          let rc = _.get(obj, 'resourceContainers');
+          let a = rc['account'];
+          let x = a['baseUrl']; // "https://dev.azure.com/anzio/",
+          let y = x.substr(22);
+          let z = y.replace(`/`, ``);
+          jd.JiraOrg = z;
+          jd.Priority = fields['Microsoft.VSTS.Common.Priority'];
+          jd.Assignee = fields['System.AssignedTo'];
+          jd.AssigneeId = fields['System.AssignedTo'];
+          jd.Title = fields['System.Title'];
+          jd.CreatedDate = new Date(fields['System.CreatedDate']);
+          jd.Summary = fields['System.Title'];
+          // jd.AssigneeAvatarUrl = _.get(obj, 'issue.fields.assignee.avatarUrls.48x48');
+          jd.Status = fields['System.State'];
+          jd.Reporter = fields['System.CreatedBy'];
+          // jd.ReporterAvatarUrl = _.get(obj, 'issue.fields.reporter.avatarUrls.48x48');
+          jd.IssueType = fields['System.WorkItemType'];
+          jd.ProjectName = fields['System.TeamProject'];
+        } else {
+          jd.Id = _.get(obj, 'id');
+          let r = _.get(obj, 'resource');
+          jd.UpdatedDate = new Date(r['revisedDate']);
+        }
+        //Get The Story points
+        //jd.Story  = _.get(obj, 'issue.fields.updated');
+        return this.updateTFSData(hookId, jd);
+      }
+    } catch (ex) {
+      console.log(`[E] processTFSHookData ${ex}`);
+      return false;
+    }
+  }
+
+  async updateTFSData(hookId: number, obj: JiraData): Promise<Boolean> {
     await this.createPool();
     const request = await this.pool.request();
     request.input('Id', sql.Int, obj.Id);
@@ -811,11 +827,13 @@ class SQLRepository {
 
     const recordSet = await request.execute('SetTFSData');
     if (recordSet.rowsAffected[0] === 1) {
-      //Delete the row
+      return this.deleteHookData(hookId);
+    } else {
+      return false;
     }
   }
   //update Jira data and then delete the row from hooktable
-  async updateJiraData(hookId: number, obj: JiraData) {
+  async updateJiraData(hookId: number, obj: JiraData): Promise<Boolean> {
     await this.createPool();
     const request = await this.pool.request();
     request.input('Id', sql.Int, obj.Id);
@@ -840,7 +858,9 @@ class SQLRepository {
 
     const recordSet = await request.execute('SetJiraData');
     if (recordSet.rowsAffected[0] === 1) {
-      //Delete the row
+      return this.deleteHookData(hookId);
+    } else {
+      return false;
     }
   }
 
@@ -855,6 +875,15 @@ class SQLRepository {
     }
   }
 
+  async deleteHookData(hookId: number): Promise<Boolean> {
+    await this.createPool();
+    const request = await this.pool.request();
+    request.input('HookId', sql.Int, hookId);
+    const recordSet = await request.execute('DeleteHookData');
+    if (recordSet.rowsAffected[0] === 1) {
+      return true;
+    } else return false;
+  }
   //
 
   async GetJiraData(org: string, userName: string, day = 1, bustTheCache: boolean = false) {

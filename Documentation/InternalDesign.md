@@ -2,20 +2,20 @@
 
 ![DB Tabels](Images/DBTables.PNG "DB Tables")
 
-# Users
+# Table - Users 
 
 This table keeps all the information about the user. Id is from LSAuth and it is unique across all the tenants. This table is updated when user signs in. GitUserName, JiraUserName, and TfsUserName is updated later by individual user using the admin in GG Screen. After this table another call(SaveUserOrg) is made from the Passport file in BE to update **UserOrg**. This table Org is actually **Tenant** for the OrgType = 'org'. This table also keeps Git Org for the user name. Git Org OrgType = 'Git'.  
 
 >OAuth token is also kept here. User Id is send to client as Auth Token. When the client calls back BE (Backend) it put this token in the header. BE gets the Id from the Header calls the BE to get the token and then make the calls to any of the services in BE. 
 
-# PullRequestDetails 
+# Table - PullRequestDetails 
 
 This table is updated by GitWebhook. This table is also filled by at the time of hydration for the first use.
 
 
 # UI Data Flow
 
-There are two kind of organization is GG. One is Tenant Org e.g. AxleInfo and then there are Git Organization e.g Labshare, NCATS etc. Tenant (org) and Git Org are connected thru OrgLink Table. Hydration process updates this table.
+There are two kind of organization is DS. One is Tenant Org e.g. AxleInfo and then there are Git Organization e.g Labshare, NCATS etc. Tenant (org) and Git Org are connected thru OrgLink Table. Hydration process updates this table.
 
 ![DB Tabels](Images/Org.PNG "USer Org")
 
@@ -51,7 +51,7 @@ and when user clicks on the Dev name in Git context, **PullRequest4Dev** API is 
 
 When user clicks on dev name in "Jira Context", **GetJiraData** is called which in turn pulls the data from **JiraData**
 
-## GetTopRespositories4XDays
+## SP - GetTopRespositories4XDays
 
 **GetTopRepos4XDays** SP is called. Which is depended on  **vwOpenClosePR**
 
@@ -65,3 +65,52 @@ GG extensively uses this infomation about the logged in user and the Current-dev
 current-org is Tenant Org. 
 
 As use clicks on Git/Jira and TFS, current-context changes accordingly.
+
+# How the hooks work
+
+## JIRA 
+All Jira hooks send the data to HookRawData table. 
+
+Hook is put in Jira
+https://gator-api-ppe.azurewebsites.net/service/Hook
+
+
+Registering a webhook via the [Jira administration console](https://community.atlassian.com/t5/Jira-Software-questions/How-do-I-access-the-Jira-administration-console/qaq-p/824434)
+        <ul>
+          <li>Go to Jira administration console > System > Webhooks (in the Advanced section).</li>
+          <li>To register your webhook, click Create.</li>
+          Please select the radio buttons as shown in the below image
+          ![DB Tabels](Images/Jira-Hook.png "JiraHook")
+        </ul>
+
+## GIT
+
+Without webhooks Dev Star will not update your data. Please ask the admin of your orgnization to install webhook. 
+        Follow these simple steps to Manually Install web hook?
+        <ul>
+          <li>Goto your organization page on the github <br /></li>
+          <li>Navigate to the "Settings" tab. <br /></li>
+          <li>Select the "Webhooks" option on the left menu. <br /></li>
+          <li>Click "Add Webhook" <br /></li>
+          <li>put 'https://gatorgithook.azurewebsites.net/api/httptrigger' in payload URL <br /></li>
+          <li>Select "application/json" as the encoding type. <br /></li>
+          <li>select radio button 'Let me select individual events.' <br /></li>
+          <li>check 'Pull requests' <br /></li>
+          <li>click on Add webhook <br /></li>
+        </ul>
+
+This hook will put data directly in PullRequestDetails table.
+![DB Tabels](Images/GitHook-1.png "GitHook")
+![DB Tabels](Images/GitHook-2.png "GitHook")
+
+### For Hydration of Git Data
+
+Goto GitHub -> Settings -> OAuthApp
+
+And setup the following values
+Set Authorization callback to the following link:
+
+https://gator-api-ppe.azurewebsites.net/auth/github/redirect
+
+
+
