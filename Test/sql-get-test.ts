@@ -34,6 +34,18 @@ describe('getClientSecret', () => {
   });
 });
 
+describe.only('isUserMSRAdmin', () => {
+  it('should return true', async () => {
+    const sqlRepositoy = new SQLRepository(null);
+    const org = 'axleinfo.com';
+    const user = 'rafat.sarosh@axleinfo.com';
+    await sqlRepositoy.isUserMSRAdmin(user, org, true).then(result => {
+      expect(result).equals(true);
+    });
+  });
+});
+
+
 describe('IsXYAllowed', () => {
   it('should return true', async () => {
     const sqlRepositoy = new SQLRepository(null);

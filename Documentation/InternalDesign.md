@@ -112,5 +112,27 @@ Set Authorization callback to the following link:
 
 https://gator-api-ppe.azurewebsites.net/auth/github/redirect
 
+## Azure DevOps - Azure Boards
+
+Follow these simple steps to Manually Install web hook?
+![DB Tabels](Images/TFS1.png "TFS")
+        
+Click on "+" sign to add a new web hook, as shown in above image.
+![DB Tabels](Images/TFS1.png "TFS1A")
 
 
+Click Next
+
+![DB Tabels](Images/TFS2.png "TFS1A")
+
+NOTE: Please remember you have to create total of three webhooks, one for created, deleted and updated.
+Please make sure to add the following (https://gator-api-ppe.azurewebsites.net/service/Hook) in the URL as shown in below image.
+![DB Tabels](Images/TFS3.png "TFS1A")
+Please remember you have to create total of three webhooks, one for created, deleted and updated.
+
+## hydrate
+
+Once you installed the webhooks, data will start trickling in. Dev Star have an option to hydrate with some historical data right away. For that go to Admin screen, and click on "Hydrate" option. Hydrate option will work in background and pull data in. It may take couple of minutes to hours, depending upon the data size.
+
+          
+With time data in Dev Star will grow and it will become more and more valuable tool for your organization.

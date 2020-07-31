@@ -87,6 +87,7 @@ function validateJiraUser(req: any, res: any, next: any) {
     });
 }
 
+//Get User from header
 function getUserId(req: any) {
   try {
     const token = req.headers['authorization']; //it is UserId in header
@@ -688,19 +689,31 @@ router.post('/SetKudos', validateUser, (req: any, res: any) => {
     });
 });
 
+//Called from Review (ic-reports) of UI to see the report of the user - Gets all reports for the user clicked, 
+//the user who is asking for report is in AuthHeader  
+//the user whoes reports are asked in query
+
 router.get('/getSR4User', validateUser, (req: any, res: any) => {
-  const userId = getUserId(req);
+  const userId = getUserId(req); 
   sqlRepository.getUser(userId).then(user => {
     sqlRepository
       .getSR4User(req.query.userid, Boolean(req.query.bustTheCache === 'true'))
       .then(result => {
-        sqlRepository.IsXYAllowed(result[0].org, user[0].Email, user[0].Email, req.query.userid).then(isAllowed => {
-          if (isAllowed === true) {
+        sqlRepository.isUserMSRAdmin (user[0].Email,result[0].org, false ).then (YorN => {
+          if (YorN) {
             return res.json(result);
-          } else {
-            return res.json(`${user[0].DisplayName} has no permission to see ${req.query.userid} status report. `);
+          } 
+          else {
+            sqlRepository.IsXYAllowed(result[0].org, user[0].Email, user[0].Email, req.query.userid).then(isAllowed => {
+              if (isAllowed === true) {
+                return res.json(result);
+              } else {
+                return res.json(`${user[0].DisplayName} has no permission to see ${req.query.userid} status report. `);
+              }
+            });
           }
-        });
+        })
+      
       })
       .catch(err => {
         console.log(`getSR4User: ${err}`);

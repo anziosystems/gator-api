@@ -2045,7 +2045,7 @@ class SQLRepository {
     }
     isUserMSRAdmin(loginId, org, bustTheCache) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = 'isUserMSRAdmin' + loginId + org;
+            const cacheKey = 'isUserMSRAdmin' + loginId + '-' + org;
             try {
                 if (!bustTheCache) {
                     const val = this.myCache.get(cacheKey);
@@ -2053,6 +2053,7 @@ class SQLRepository {
                         return val;
                     }
                 }
+                yield this.createPool();
                 const request = yield this.pool.request();
                 request.input('login', sql.VarChar(100), loginId);
                 request.input('org', sql.VarChar(200), org);
@@ -2060,11 +2061,11 @@ class SQLRepository {
                 if (recordSet) {
                     this.myCache.set(cacheKey, recordSet.recordset);
                 }
-                return recordSet.recordset;
+                return recordSet.returnValue === 1;
             }
             catch (ex) {
                 console.log(`[E]  ${cacheKey} ${ex}`);
-                return ex;
+                return false;
             }
         });
     }

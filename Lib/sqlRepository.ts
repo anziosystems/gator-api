@@ -697,22 +697,21 @@ class SQLRepository {
   async processAllHookData() {
     let hookId: number;
     // eslint-disable-next-line no-constant-condition
-   // while (true) {
-      let jiraEvent = await this.getHookData();
-      if (!jiraEvent[0]) {
-        return true;
-      }
-   //   if (!jiraEvent[0]) break; //No event
-      let obj = jiraEvent[0];
-      hookId = _.get(obj, 'Id');
-      this.processJiraHookData(hookId, obj.message).then (x => {
-        this.processTFSHookData(hookId, obj.message).then (y => {
-          return x || y;
-        });
+    // while (true) {
+    let jiraEvent = await this.getHookData();
+    if (!jiraEvent[0]) {
+      return true;
+    }
+    //   if (!jiraEvent[0]) break; //No event
+    let obj = jiraEvent[0];
+    hookId = _.get(obj, 'Id');
+    this.processJiraHookData(hookId, obj.message).then(x => {
+      this.processTFSHookData(hookId, obj.message).then(y => {
+        return x || y;
       });
+    });
 
-//    } //~while
-    
+    //    } //~while
   }
 
   async processJiraHookData(hookId: number, jdata: any): Promise<Boolean> {
@@ -1979,8 +1978,8 @@ class SQLRepository {
     }
   }
 
-  async isUserMSRAdmin(loginId: string, org: string, bustTheCache: boolean) {
-    const cacheKey = 'isUserMSRAdmin' + loginId + org;
+  async isUserMSRAdmin(loginId: string, org: string, bustTheCache: boolean): Promise<boolean> {
+    const cacheKey = 'isUserMSRAdmin' + loginId + '-' + org;
     try {
       if (!bustTheCache) {
         const val = this.myCache.get(cacheKey);
@@ -1988,6 +1987,7 @@ class SQLRepository {
           return val;
         }
       }
+      await this.createPool();
       const request = await this.pool.request();
       request.input('login', sql.VarChar(100), loginId);
       request.input('org', sql.VarChar(200), org);
@@ -1995,10 +1995,10 @@ class SQLRepository {
       if (recordSet) {
         this.myCache.set(cacheKey, recordSet.recordset);
       }
-      return recordSet.recordset;
+      return recordSet.returnValue === 1;
     } catch (ex) {
       console.log(`[E]  ${cacheKey} ${ex}`);
-      return ex;
+      return false;
     }
   }
 
