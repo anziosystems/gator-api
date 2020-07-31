@@ -4,3 +4,4 @@ Remove JiraHook Table
 Remove SaveJiraHook - Replaced with saveRawHookData
 Remove Status table
 Remove SaveStatus SP
+Remove GetSR4User4Review
