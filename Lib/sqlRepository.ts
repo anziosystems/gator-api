@@ -1594,18 +1594,26 @@ class SQLRepository {
     }
   }
 
-  async GetSR4User4Review(userId: string, status: number, userFilter: string = null, dateFilter: string = null, bustTheCache: boolean) {
-    const cacheKey = 'GetSR4User4Review' + userId + status;
+  async GetSR4User4Review(userId: string, org:string, status: number, userFilter: string = null, dateFilter: string = null, bustTheCache: boolean) {
+    
+    //is user MSRAdmin then turn status into 1000 
+    this.isUserMSRAdmin (userId, org, false).then ( YorN => {
+        if (YorN) {
+          status = 1000; //User is MSRAdmin get him all the reports
+        }
+    });
+    const cacheKey = 'GetSR4User4Review' + userId + status + org;
     try {
       userFilter = userFilter.trim();
       dateFilter = dateFilter.trim();
       const request = await this.pool.request();
       request.input('UserId', sql.VarChar(100), userId);
       request.input('Status', sql.Int, status);
+      request.input('Org', sql.VarChar(this.ORG_LEN), org);
       request.input('UserFilter', sql.VarChar, userFilter != 'null' ? userFilter : null);
       request.input('DateFilter', sql.VarChar(50), dateFilter != 'null' ? dateFilter : null);
 
-      const recordSet = await request.execute('GetSR4User4Review');
+      const recordSet = await request.execute('GetSR4User4Review2');
       if (recordSet) {
         this.myCache.set(cacheKey, recordSet.recordset);
       }

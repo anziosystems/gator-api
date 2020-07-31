@@ -722,9 +722,10 @@ router.get('/getSR4User', validateUser, (req: any, res: any) => {
   });
 });
 
+//Manager wants to see all reports he need to review 
 router.get('/GetSR4User4Review', validateUser, (req: any, res: any) => {
   sqlRepository
-    .GetSR4User4Review(req.query.userid, req.query.status, req.query.userFilter, req.query.dateFilter, Boolean(req.query.bustTheCache === 'true'))
+    .GetSR4User4Review(req.query.userid, req.query.org, req.query.status, req.query.userFilter, req.query.dateFilter, Boolean(req.query.bustTheCache === 'true'))
     .then(result => {
       return res.json(result);
     })
