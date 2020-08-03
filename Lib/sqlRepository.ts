@@ -1596,11 +1596,11 @@ class SQLRepository {
 
   async GetSR4User4Review(userId: string, org: string, status: number, userFilter: string = null, dateFilter: string = null, bustTheCache: boolean) {
     //is user MSRAdmin then turn status into 1000
-    this.isUserMSRAdmin(userId, org, false).then(YorN => {
-      if (YorN) {
+     let YorN = await  this.isUserMSRAdmin(userId, org, false);
+     if (YorN) {
         status = 1000; //User is MSRAdmin get him all the reports
       }
-    });
+    
 
     if (isNullOrUndefined(userFilter)) {
       userFilter = 'null';

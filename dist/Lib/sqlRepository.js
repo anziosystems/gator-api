@@ -1645,11 +1645,10 @@ class SQLRepository {
     GetSR4User4Review(userId, org, status, userFilter = null, dateFilter = null, bustTheCache) {
         return __awaiter(this, void 0, void 0, function* () {
             //is user MSRAdmin then turn status into 1000
-            this.isUserMSRAdmin(userId, org, false).then(YorN => {
-                if (YorN) {
-                    status = 1000; //User is MSRAdmin get him all the reports
-                }
-            });
+            let YorN = yield this.isUserMSRAdmin(userId, org, false);
+            if (YorN) {
+                status = 1000; //User is MSRAdmin get him all the reports
+            }
             if (util_1.isNullOrUndefined(userFilter)) {
                 userFilter = 'null';
             }
