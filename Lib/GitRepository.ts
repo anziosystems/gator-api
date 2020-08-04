@@ -128,7 +128,8 @@ class GitRepository {
 
   // This functions fills the Dev names for the git Org, but no one care the return value
   //of this function.
-  //No one intresting call this anymore
+  //Obselete - No one care
+
   async getDevsFromGit(userId: string, org: any, endCursor = '') {
     let graphQL = '';
     //url:"https://github.com/ncats" name: "National Center ..."

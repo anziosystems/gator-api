@@ -693,28 +693,33 @@ class SQLRepository {
         return __awaiter(this, void 0, void 0, function* () {
             let hookId;
             // eslint-disable-next-line no-constant-condition
-            // while (true) {
-            let jiraEvent = yield this.getHookData();
-            if (!jiraEvent[0]) {
-                return true;
-            }
-            //   if (!jiraEvent[0]) break; //No event
-            let obj = jiraEvent[0];
-            hookId = _.get(obj, 'Id');
-            this.processJiraHookData(hookId, obj.message).then(x => {
-                this.processTFSHookData(hookId, obj.message).then(y => {
-                    return x || y;
+            while (true) {
+                let jiraEvent = yield this.getHookData();
+                if (!jiraEvent[0]) {
+                    return true;
+                }
+                //   if (!jiraEvent[0]) break; //No event
+                let obj = jiraEvent[0];
+                hookId = _.get(obj, 'Id');
+                this.processJiraHookData(hookId, obj.message).then(x => {
+                    // this.processTFSHookData(hookId, obj.message).then(y => {
+                    //   return x || y;
+                    // });
                 });
-            });
-            //    } //~while
+            } //~while
         });
     }
     processJiraHookData(hookId, jdata) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 // eslint-disable-next-line no-constant-condition
+                // - is having problem in processing
                 let jd = new JiraData();
-                let obj = JSON.parse(jdata);
+                //  console.log(jdata);
+                // eslint-disable-next-line no-useless-escape
+                let x = jdata.replace(/[^a-zA-Z0-9$@#!\&\*\"\'\:\,\/\_\.\\\]\[\}\{\- ]/g, '');
+                // console.log(x);
+                let obj = JSON.parse(x);
                 let wEvent = _.get(obj, 'webhookEvent');
                 if (!wEvent) {
                     //Not Jira event - skip for now
@@ -741,11 +746,13 @@ class SQLRepository {
                     jd.CreatedDate = new Date(_.get(obj, 'issue.fields.created'));
                     jd.UpdatedDate = new Date(_.get(obj, 'issue.fields.updated'));
                     //Get The Story points
-                    //jd.Story  = _.get(obj, 'issue.fields.updated');
+                    let storyCustomColName = 'customfield_10721';
+                    jd.Story = _.get(obj, `issue.fields.${storyCustomColName}`);
                     return this.updateJiraData(hookId, jd);
                 }
             }
             catch (ex) {
+                this.saveStatus('processJiraHookData', 'processJiraHookData-FAIL', ex);
                 console.log(`[E] processJiraHookData ${ex}`);
                 return false;
             }
@@ -837,31 +844,37 @@ class SQLRepository {
     //update Jira data and then delete the row from hooktable
     updateJiraData(hookId, obj) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.createPool();
-            const request = yield this.pool.request();
-            request.input('Id', sql.Int, obj.Id);
-            request.input('key', sql.VarChar(this.ORG_LEN), obj.Key);
-            request.input('Title', sql.VarChar(5000), obj.Title);
-            request.input('Priority', sql.VarChar(50), obj.Priority);
-            request.input('Assignee', sql.VarChar(this.ORG_LEN), obj.Assignee);
-            request.input('Reporter', sql.VarChar(this.ORG_LEN), obj.Reporter);
-            request.input('CreatedDate', sql.Date, obj.CreatedDate);
-            request.input('UpdatedDate', sql.Date, obj.UpdatedDate);
-            request.input('IssueType', sql.VarChar(50), obj.IssueType);
-            request.input('Priority', sql.VarChar(50), obj.Priority);
-            request.input('Story', sql.Int, obj.Story);
-            request.input('ReporterAvatarUrl', sql.VarChar(1000), obj.ReporterAvatarUrl);
-            request.input('AssigneeAvatarUrl', sql.VarChar(1000), obj.AssigneeAvatarUrl);
-            request.input('Status', sql.VarChar(50), obj.Status);
-            request.input('ProjectName', sql.VarChar(1000), obj.ProjectName);
-            request.input('Org', sql.VarChar(200), obj.JiraOrg);
-            request.input('AssigneeId', sql.VarChar(500), obj.AssigneeId);
-            request.input('Summary', sql.VarChar(2000), obj.Summary);
-            const recordSet = yield request.execute('SetJiraData');
-            if (recordSet.rowsAffected[0] === 1) {
-                return this.deleteHookData(hookId);
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Id', sql.Int, obj.Id);
+                request.input('key', sql.VarChar(this.ORG_LEN), obj.Key);
+                request.input('Title', sql.VarChar(5000), obj.Title);
+                request.input('Priority', sql.VarChar(50), obj.Priority);
+                request.input('Assignee', sql.VarChar(this.ORG_LEN), obj.Assignee);
+                request.input('Reporter', sql.VarChar(this.ORG_LEN), obj.Reporter);
+                request.input('CreatedDate', sql.Date, obj.CreatedDate);
+                request.input('UpdatedDate', sql.Date, obj.UpdatedDate);
+                request.input('IssueType', sql.VarChar(50), obj.IssueType);
+                request.input('Priority', sql.VarChar(50), obj.Priority);
+                request.input('Story', sql.Int, obj.Story);
+                request.input('ReporterAvatarUrl', sql.VarChar(1000), obj.ReporterAvatarUrl);
+                request.input('AssigneeAvatarUrl', sql.VarChar(1000), obj.AssigneeAvatarUrl);
+                request.input('Status', sql.VarChar(50), obj.Status);
+                request.input('ProjectName', sql.VarChar(1000), obj.ProjectName);
+                request.input('Org', sql.VarChar(200), obj.JiraOrg);
+                request.input('AssigneeId', sql.VarChar(500), obj.AssigneeId);
+                request.input('Summary', sql.VarChar(2000), obj.Summary);
+                const recordSet = yield request.execute('SetJiraData');
+                if (recordSet.rowsAffected[0] === 1) {
+                    return yield this.deleteHookData(hookId);
+                }
+                else {
+                    return false;
+                }
             }
-            else {
+            catch (ex) {
+                this.saveStatus('updateJiraData', 'updateJiraData-FAIL', ex);
                 return false;
             }
         });
@@ -882,18 +895,23 @@ class SQLRepository {
     }
     deleteHookData(hookId) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.createPool();
-            const request = yield this.pool.request();
-            request.input('HookId', sql.Int, hookId);
-            const recordSet = yield request.execute('DeleteHookData');
-            if (recordSet.rowsAffected[0] === 1) {
-                return true;
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('HookId', sql.Int, hookId);
+                const recordSet = yield request.execute('DeleteHookData');
+                if (recordSet.rowsAffected[0] === 1) {
+                    return true;
+                }
+                else
+                    return false;
             }
-            else
+            catch (ex) {
+                this.saveStatus('deleteHookData', 'deleteHookData-FAIL', ex);
                 return false;
+            }
         });
     }
-    //
     GetJiraData(org, userName, day = 1, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!org) {
@@ -1896,6 +1914,7 @@ class SQLRepository {
             }
         });
     }
+    //Obselete No one cares
     saveDevs(org, devs) {
         return __awaiter(this, void 0, void 0, function* () {
             try {

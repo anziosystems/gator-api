@@ -1,6 +1,7 @@
 const sql = require('mssql');
 import * as _ from 'lodash';
 import {isNullOrUndefined} from 'util';
+
 // import {EMLINK} from 'constants';
 //import {RedisStorage, LabShareCache} from "@labshare/services-cache";
 const NodeCache = require('node-cache');
@@ -697,28 +698,35 @@ class SQLRepository {
   async processAllHookData() {
     let hookId: number;
     // eslint-disable-next-line no-constant-condition
-    // while (true) {
-    let jiraEvent = await this.getHookData();
-    if (!jiraEvent[0]) {
-      return true;
-    }
-    //   if (!jiraEvent[0]) break; //No event
-    let obj = jiraEvent[0];
-    hookId = _.get(obj, 'Id');
-    this.processJiraHookData(hookId, obj.message).then(x => {
-      this.processTFSHookData(hookId, obj.message).then(y => {
-        return x || y;
+    while (true) {
+      let jiraEvent = await this.getHookData();
+      if (!jiraEvent[0]) {
+        return true;
+      }
+      //   if (!jiraEvent[0]) break; //No event
+      let obj = jiraEvent[0];
+      hookId = _.get(obj, 'Id');
+      this.processJiraHookData(hookId, obj.message).then(x => {
+        // this.processTFSHookData(hookId, obj.message).then(y => {
+        //   return x || y;
+        // });
       });
-    });
-
-    //    } //~while
+    } //~while
   }
 
-  async processJiraHookData(hookId: number, jdata: any): Promise<Boolean> {
+  async processJiraHookData(hookId: number, jdata: string): Promise<Boolean> {
     try {
       // eslint-disable-next-line no-constant-condition
+      // - is having problem in processing
+
       let jd: JiraData = new JiraData();
-      let obj = JSON.parse(jdata);
+      //  console.log(jdata);
+      // eslint-disable-next-line no-useless-escape
+      let x = jdata.replace(/[^a-zA-Z0-9$@#!\&\*\"\'\:\,\/\_\.\\\]\[\}\{\- ]/g, '');
+    
+      // console.log(x);
+
+      let obj = JSON.parse(x);
       let wEvent = _.get(obj, 'webhookEvent');
       if (!wEvent) {
         //Not Jira event - skip for now
@@ -744,10 +752,12 @@ class SQLRepository {
         jd.CreatedDate = new Date(_.get(obj, 'issue.fields.created'));
         jd.UpdatedDate = new Date(_.get(obj, 'issue.fields.updated'));
         //Get The Story points
-        //jd.Story  = _.get(obj, 'issue.fields.updated');
+        let storyCustomColName = 'customfield_10721';
+        jd.Story = _.get(obj, `issue.fields.${storyCustomColName}`);
         return this.updateJiraData(hookId, jd);
       }
     } catch (ex) {
+      this.saveStatus('processJiraHookData', 'processJiraHookData-FAIL', ex);
       console.log(`[E] processJiraHookData ${ex}`);
       return false;
     }
@@ -833,32 +843,37 @@ class SQLRepository {
   }
   //update Jira data and then delete the row from hooktable
   async updateJiraData(hookId: number, obj: JiraData): Promise<Boolean> {
-    await this.createPool();
-    const request = await this.pool.request();
-    request.input('Id', sql.Int, obj.Id);
-    request.input('key', sql.VarChar(this.ORG_LEN), obj.Key);
+    try {
+      await this.createPool();
+      const request = await this.pool.request();
+      request.input('Id', sql.Int, obj.Id);
+      request.input('key', sql.VarChar(this.ORG_LEN), obj.Key);
 
-    request.input('Title', sql.VarChar(5000), obj.Title);
-    request.input('Priority', sql.VarChar(50), obj.Priority);
-    request.input('Assignee', sql.VarChar(this.ORG_LEN), obj.Assignee);
-    request.input('Reporter', sql.VarChar(this.ORG_LEN), obj.Reporter);
-    request.input('CreatedDate', sql.Date, obj.CreatedDate);
-    request.input('UpdatedDate', sql.Date, obj.UpdatedDate);
-    request.input('IssueType', sql.VarChar(50), obj.IssueType);
-    request.input('Priority', sql.VarChar(50), obj.Priority);
-    request.input('Story', sql.Int, obj.Story);
-    request.input('ReporterAvatarUrl', sql.VarChar(1000), obj.ReporterAvatarUrl);
-    request.input('AssigneeAvatarUrl', sql.VarChar(1000), obj.AssigneeAvatarUrl);
-    request.input('Status', sql.VarChar(50), obj.Status);
-    request.input('ProjectName', sql.VarChar(1000), obj.ProjectName);
-    request.input('Org', sql.VarChar(200), obj.JiraOrg);
-    request.input('AssigneeId', sql.VarChar(500), obj.AssigneeId);
-    request.input('Summary', sql.VarChar(2000), obj.Summary);
+      request.input('Title', sql.VarChar(5000), obj.Title);
+      request.input('Priority', sql.VarChar(50), obj.Priority);
+      request.input('Assignee', sql.VarChar(this.ORG_LEN), obj.Assignee);
+      request.input('Reporter', sql.VarChar(this.ORG_LEN), obj.Reporter);
+      request.input('CreatedDate', sql.Date, obj.CreatedDate);
+      request.input('UpdatedDate', sql.Date, obj.UpdatedDate);
+      request.input('IssueType', sql.VarChar(50), obj.IssueType);
+      request.input('Priority', sql.VarChar(50), obj.Priority);
+      request.input('Story', sql.Int, obj.Story);
+      request.input('ReporterAvatarUrl', sql.VarChar(1000), obj.ReporterAvatarUrl);
+      request.input('AssigneeAvatarUrl', sql.VarChar(1000), obj.AssigneeAvatarUrl);
+      request.input('Status', sql.VarChar(50), obj.Status);
+      request.input('ProjectName', sql.VarChar(1000), obj.ProjectName);
+      request.input('Org', sql.VarChar(200), obj.JiraOrg);
+      request.input('AssigneeId', sql.VarChar(500), obj.AssigneeId);
+      request.input('Summary', sql.VarChar(2000), obj.Summary);
 
-    const recordSet = await request.execute('SetJiraData');
-    if (recordSet.rowsAffected[0] === 1) {
-      return this.deleteHookData(hookId);
-    } else {
+      const recordSet = await request.execute('SetJiraData');
+      if (recordSet.rowsAffected[0] === 1) {
+        return await this.deleteHookData(hookId);
+      } else {
+        return false;
+      }
+    } catch (ex) {
+      this.saveStatus('updateJiraData', 'updateJiraData-FAIL', ex);
       return false;
     }
   }
@@ -875,15 +890,19 @@ class SQLRepository {
   }
 
   async deleteHookData(hookId: number): Promise<Boolean> {
-    await this.createPool();
-    const request = await this.pool.request();
-    request.input('HookId', sql.Int, hookId);
-    const recordSet = await request.execute('DeleteHookData');
-    if (recordSet.rowsAffected[0] === 1) {
-      return true;
-    } else return false;
+    try {
+      await this.createPool();
+      const request = await this.pool.request();
+      request.input('HookId', sql.Int, hookId);
+      const recordSet = await request.execute('DeleteHookData');
+      if (recordSet.rowsAffected[0] === 1) {
+        return true;
+      } else return false;
+    } catch (ex) {
+      this.saveStatus('deleteHookData', 'deleteHookData-FAIL', ex);
+      return false;
+    }
   }
-  //
 
   async GetJiraData(org: string, userName: string, day = 1, bustTheCache: boolean = false) {
     if (!org) {
@@ -1596,11 +1615,10 @@ class SQLRepository {
 
   async GetSR4User4Review(userId: string, org: string, status: number, userFilter: string = null, dateFilter: string = null, bustTheCache: boolean) {
     //is user MSRAdmin then turn status into 1000
-     let YorN = await  this.isUserMSRAdmin(userId, org, false);
-     if (YorN) {
-        status = 1000; //User is MSRAdmin get him all the reports
-      }
-    
+    let YorN = await this.isUserMSRAdmin(userId, org, false);
+    if (YorN) {
+      status = 1000; //User is MSRAdmin get him all the reports
+    }
 
     if (isNullOrUndefined(userFilter)) {
       userFilter = 'null';
@@ -1840,6 +1858,7 @@ class SQLRepository {
     }
   }
 
+  //Obselete No one cares
   async saveDevs(org: string, devs: string[]) {
     try {
       if (devs === undefined) return;

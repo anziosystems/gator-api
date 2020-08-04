@@ -66,7 +66,50 @@ current-org is Tenant Org.
 
 As use clicks on Git/Jira and TFS, current-context changes accordingly.
 
+# MSR - Reporting
+At the time out insert ReportCreationDate is updated.
+Every action on MSR table is logged into RSR table. RSR is Report table for Status Reports.
+RSR table keeps the reportId, and who has changed the report last.
+
+ManagerStatus has the following values
+
+ACHIEVED = 3;
+NEEDIMPROVEMENT = 1;
+EXCEED = 7;
+
+To get the history of all the report change look at SR_R_View. SR_R_View ReviewerId has one reviewer per row. MSR Reviewer has both the reviewers.
+
+
+# User Roles
+So far there are two roles -  Admin and MSRAdmin.Roles are kept in USerRoles.
+
+## Admin 
+Admin can change the Org Tree. Add other admins. Run the hydrate function for the org.
+
+## MSRAdmin
+
+MSRAdmin see all the reports in the org. 
+
+They also see all the reviews.
+
+
+
+
 # How the hooks work
+
+## Hook Data Flow
+Jira send the data to Hook endpoint and TFS send the data to TFSHook endpoint
+
+https://gator-api-ppe.azurewebsites.net/service/Hook
+
+https://gator-api-ppe.azurewebsites.net/service/TFSHook
+
+These API save the data into HookRawData Table. (JIRA and TFS Should have a separate tables)
+
+Service/Hook -> saveRawHookData -> Saves the data and then calls ->  processAllHookData
+
+processAllHookData -> processJiraHookData -> processTFSHookData -> updateJiraData -> Deleted the data from HookRawData if successfull.
+
 
 ## JIRA 
 All Jira hooks send the data to HookRawData table. 

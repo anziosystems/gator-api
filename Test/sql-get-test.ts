@@ -12,7 +12,7 @@ import {GitRepository} from '../Lib/GitRepository';
 
 //processAllJiraHookData
 
-describe('processAllJiraHookData', () => {
+describe.only('processAllJiraHookData', () => {
   it('should return true', async () => {
     const sqlRepositoy = new SQLRepository(null);
 
@@ -34,7 +34,7 @@ describe('getClientSecret', () => {
   });
 });
 
-describe.only('isUserMSRAdmin', () => {
+describe('isUserMSRAdmin', () => {
   it('should return true', async () => {
     const sqlRepositoy = new SQLRepository(null);
     const org = 'axleinfo.com';
@@ -44,7 +44,6 @@ describe.only('isUserMSRAdmin', () => {
     });
   });
 });
-
 
 describe('IsXYAllowed', () => {
   it('should return true', async () => {

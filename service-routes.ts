@@ -888,6 +888,18 @@ router.post('/Hook', (req: any, res: any) => {
     });
 });
 
+router.post('/TFSHook', (req: any, res: any) => {
+  sqlRepository
+    .saveRawHookData(JSON.stringify(req.body))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch((ex: any) => {
+      console.log(ex);
+    });
+});
+
+
 router.get('/getOrgChart', validateUser, (req: any, res: any) => {
   if (!req.query.day) {
     req.query.day = '1';
