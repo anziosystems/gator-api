@@ -1,4 +1,4 @@
-/****** Object:  Database [Gator]    Script Date: 8/3/2020 7:37:29 PM ******/
+/****** Object:  Database [Gator]    Script Date: 8/5/2020 9:22:17 AM ******/
 CREATE DATABASE [Gator]  (EDITION = 'Standard', SERVICE_OBJECTIVE = 'S2', MAXSIZE = 250 GB) WITH CATALOG_COLLATION = SQL_Latin1_General_CP1_CI_AS;
 GO
 ALTER DATABASE [Gator] SET ANSI_NULL_DEFAULT OFF 
@@ -41,14 +41,14 @@ ALTER DATABASE [Gator] SET QUERY_STORE = ON
 GO
 ALTER DATABASE [Gator] SET QUERY_STORE (OPERATION_MODE = READ_WRITE, CLEANUP_POLICY = (STALE_QUERY_THRESHOLD_DAYS = 30), DATA_FLUSH_INTERVAL_SECONDS = 900, INTERVAL_LENGTH_MINUTES = 60, MAX_STORAGE_SIZE_MB = 100, QUERY_CAPTURE_MODE = AUTO, SIZE_BASED_CLEANUP_MODE = AUTO)
 GO
-/****** Object:  User [rafat]    Script Date: 8/3/2020 7:37:29 PM ******/
+/****** Object:  User [rafat]    Script Date: 8/5/2020 9:22:17 AM ******/
 CREATE USER [rafat] FOR LOGIN [rafat] WITH DEFAULT_SCHEMA=[dbo]
 GO
 sys.sp_addrolemember @rolename = N'db_owner', @membername = N'rafat'
 GO
 sys.sp_addrolemember @rolename = N'db_securityadmin', @membername = N'rafat'
 GO
-/****** Object:  Table [dbo].[UserOrg]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[UserOrg]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -67,7 +67,7 @@ CREATE TABLE [dbo].[UserOrg](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Users]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[Users]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -90,7 +90,7 @@ CREATE TABLE [dbo].[Users](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  View [dbo].[vwTenantOrg]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  View [dbo].[vwTenantOrg]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -101,7 +101,7 @@ SELECT   dbo.Users.Email, dbo.Users.UserName, dbo.Users.DisplayName, dbo.Users.P
 FROM         dbo.UserOrg INNER JOIN
                          dbo.Users ON dbo.UserOrg.Email = dbo.Users.Email
 GO
-/****** Object:  Table [dbo].[ActiveUser]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[ActiveUser]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -115,7 +115,7 @@ CREATE TABLE [dbo].[ActiveUser](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  View [dbo].[vwActiveTenants]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  View [dbo].[vwActiveTenants]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -127,7 +127,7 @@ FROM     dbo.UserOrg INNER JOIN
                   dbo.Users ON dbo.UserOrg.UserId = dbo.Users.Id INNER JOIN
                   dbo.ActiveUser ON dbo.UserOrg.UserId = dbo.ActiveUser.UserId
 GO
-/****** Object:  Table [dbo].[PullRequestDetails]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[PullRequestDetails]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -153,7 +153,7 @@ CREATE TABLE [dbo].[PullRequestDetails](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  View [dbo].[vwOpenClosedPR]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  View [dbo].[vwOpenClosedPR]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -169,7 +169,7 @@ FROM         dbo.PullRequestDetails INNER JOIN
                          dbo.Users ON dbo.PullRequestDetails.Login = dbo.Users.GitUserName
 WHERE     (dbo.PullRequestDetails.State IN ('closed', 'open', 'opened', 'close', 'commit')) AND (dbo.PullRequestDetails.Created_At > GETDATE() - 180)
 GO
-/****** Object:  View [dbo].[TopDevVw]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  View [dbo].[TopDevVw]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -183,7 +183,7 @@ SELECT DISTINCT
 FROM     dbo.vwOpenClosedPR INNER JOIN
                   dbo.Users ON dbo.vwOpenClosedPR.Login = dbo.Users.GitUserName
 GO
-/****** Object:  Table [dbo].[MSR]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[MSR]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -207,7 +207,7 @@ CREATE TABLE [dbo].[MSR](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[RSR]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[RSR]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -225,7 +225,7 @@ CREATE TABLE [dbo].[RSR](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  View [dbo].[SR_R_View]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  View [dbo].[SR_R_View]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -237,7 +237,7 @@ SELECT dbo.RSR.ReviewerId, dbo.RSR.SRId, dbo.RSR.ReportDate, dbo.MSR.UserId, dbo
 FROM   dbo.RSR INNER JOIN
              dbo.MSR ON dbo.RSR.SRId = dbo.MSR.SRId
 GO
-/****** Object:  Table [dbo].[_Status]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[_Status]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -249,7 +249,7 @@ CREATE TABLE [dbo].[_Status](
 	[Message] [varchar](2000) NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[ErrorStatus]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[ErrorStatus]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -261,7 +261,7 @@ CREATE TABLE [dbo].[ErrorStatus](
 	[Message] [varchar](2000) NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[GitRepos]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[GitRepos]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -278,7 +278,7 @@ CREATE TABLE [dbo].[GitRepos](
 	[PR_sync_Date] [datetime] NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[HookRawData]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[HookRawData]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -286,10 +286,30 @@ GO
 CREATE TABLE [dbo].[HookRawData](
 	[Id] [int] IDENTITY(1,1) NOT NULL,
 	[message] [text] NOT NULL,
-	[DateUpdated] [date] NOT NULL
+	[DateUpdated] [date] NOT NULL,
+	[status] [tinyint] NULL,
+	[ProcessingDate] [date] NULL
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[JiraData]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[JIRAColumnMapping]    Script Date: 8/5/2020 9:22:18 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[JIRAColumnMapping](
+	[Org] [varchar](500) NOT NULL,
+	[JiraCustomColumnName] [varchar](200) NOT NULL,
+	[JiraMappingColumnName] [varchar](200) NOT NULL,
+	[LastUpdated] [date] NOT NULL,
+ CONSTRAINT [PK_JIRAColumnMapping] PRIMARY KEY CLUSTERED 
+(
+	[Org] ASC,
+	[JiraCustomColumnName] ASC,
+	[JiraMappingColumnName] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[JiraData]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -320,7 +340,7 @@ CREATE TABLE [dbo].[JiraData](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[JiraTenant]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[JiraTenant]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -342,7 +362,7 @@ CREATE TABLE [dbo].[JiraTenant](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[JiraUsers]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[JiraUsers]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -358,7 +378,7 @@ CREATE TABLE [dbo].[JiraUsers](
 	[GitId] [char](100) NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Kudos]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[Kudos]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -381,7 +401,7 @@ CREATE TABLE [dbo].[Kudos](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[MSR_audit]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[MSR_audit]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -402,7 +422,7 @@ CREATE TABLE [dbo].[MSR_audit](
 	[activity] [varchar](50) NULL
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[OrgChart]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[OrgChart]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -419,7 +439,7 @@ CREATE TABLE [dbo].[OrgChart](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[OrgLink]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[OrgLink]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -435,7 +455,7 @@ CREATE TABLE [dbo].[OrgLink](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Subscriptions]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[Subscriptions]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -456,7 +476,7 @@ CREATE TABLE [dbo].[Subscriptions](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[TFSData]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[TFSData]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -486,7 +506,7 @@ CREATE TABLE [dbo].[TFSData](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[UserOrgOverride]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[UserOrgOverride]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -504,7 +524,7 @@ CREATE TABLE [dbo].[UserOrgOverride](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[UserRoles]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[UserRoles]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -522,7 +542,7 @@ CREATE TABLE [dbo].[UserRoles](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[VDevTeam]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[VDevTeam]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -535,7 +555,7 @@ CREATE TABLE [dbo].[VDevTeam](
 	[LastUpdated] [datetime] NOT NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[VRepoTeam]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[VRepoTeam]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -548,7 +568,7 @@ CREATE TABLE [dbo].[VRepoTeam](
 	[LastUpdated] [datetime] NOT NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[WatchPR]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Table [dbo].[WatchPR]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -571,7 +591,7 @@ CREATE TABLE [dbo].[WatchPR](
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [IX_JiraData]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Index [IX_JiraData]    Script Date: 8/5/2020 9:22:18 AM ******/
 CREATE NONCLUSTERED INDEX [IX_JiraData] ON [dbo].[JiraData]
 (
 	[Assignee] ASC
@@ -579,7 +599,7 @@ CREATE NONCLUSTERED INDEX [IX_JiraData] ON [dbo].[JiraData]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [IX_JiraData_1]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Index [IX_JiraData_1]    Script Date: 8/5/2020 9:22:18 AM ******/
 CREATE NONCLUSTERED INDEX [IX_JiraData_1] ON [dbo].[JiraData]
 (
 	[Assignee] ASC,
@@ -588,7 +608,7 @@ CREATE NONCLUSTERED INDEX [IX_JiraData_1] ON [dbo].[JiraData]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [IX_PullRequestDetails]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  Index [IX_PullRequestDetails]    Script Date: 8/5/2020 9:22:18 AM ******/
 CREATE NONCLUSTERED INDEX [IX_PullRequestDetails] ON [dbo].[PullRequestDetails]
 (
 	[Org] ASC,
@@ -604,6 +624,8 @@ GO
 ALTER TABLE [dbo].[GitRepos] ADD  CONSTRAINT [DF_GitRepositories_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
 GO
 ALTER TABLE [dbo].[HookRawData] ADD  CONSTRAINT [DF_HookRawData_DateUpdated]  DEFAULT (getdate()) FOR [DateUpdated]
+GO
+ALTER TABLE [dbo].[JIRAColumnMapping] ADD  CONSTRAINT [DF_JIRAColumnMapping_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
 GO
 ALTER TABLE [dbo].[JiraData] ADD  CONSTRAINT [DF_JiraData_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
 GO
@@ -645,7 +667,7 @@ ALTER TABLE [dbo].[WatchPR] ADD  CONSTRAINT [DF_WatchPR_LastUpdated]  DEFAULT (g
 GO
 ALTER TABLE [dbo].[WatchPR] ADD  CONSTRAINT [DF_WatchPR_WatchStartDate]  DEFAULT (getdate()) FOR [WatchStartDate]
 GO
-/****** Object:  StoredProcedure [dbo].[_GetSR4User4Review]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[_GetSR4User4Review]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -778,7 +800,7 @@ END
 	
 END
 GO
-/****** Object:  StoredProcedure [dbo].[_SaveJiraHook]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[_SaveJiraHook]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -805,7 +827,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[ActivateSubscriptionDetails]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[ActivateSubscriptionDetails]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -824,7 +846,7 @@ BEGIN
 		where Id = @Id
 END
 GO
-/****** Object:  StoredProcedure [dbo].[CheckJiraTenant]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[CheckJiraTenant]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -857,7 +879,7 @@ ELSE
 	WHERE Id= trim(@Id)
 	END
 GO
-/****** Object:  StoredProcedure [dbo].[CheckTenant]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[CheckTenant]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -887,7 +909,7 @@ ELSE
 	WHERE Id= @Id
 END
 GO
-/****** Object:  StoredProcedure [dbo].[CheckUser]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[CheckUser]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -917,7 +939,7 @@ ELSE
 	WHERE Email = @Email
 END
 GO
-/****** Object:  StoredProcedure [dbo].[DeleteHookData]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[DeleteHookData]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -933,7 +955,7 @@ BEGIN
 	
 END
 GO
-/****** Object:  StoredProcedure [dbo].[DeleteUserRole]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[DeleteUserRole]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -951,7 +973,7 @@ BEGIN
 	
 END
 GO
-/****** Object:  StoredProcedure [dbo].[FixDoubleLogins]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[FixDoubleLogins]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -993,7 +1015,7 @@ DECLARE @Jira varchar(200)
    DEALLOCATE User_Cursor
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetAllRepoCollection4TenantOrg]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetAllRepoCollection4TenantOrg]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1017,7 +1039,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetAllUSers]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetAllUSers]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1054,7 +1076,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetClientSecret]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetClientSecret]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1076,7 +1098,7 @@ SELECT Secrets
    
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetDormentUser]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetDormentUser]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1098,7 +1120,7 @@ BEGIN
 			 AND T.id not in ( Select UserId from ActiveUser where LastUpdated < GETDATE () - 7 )
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetGraphData4XDays]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetGraphData4XDays]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1132,7 +1154,7 @@ BEGIN
 	END
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetHookData]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetHookData]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1142,12 +1164,21 @@ GO
 CREATE PROCEDURE [dbo].[GetHookData]
 	
 AS
+Declare @Id integer
+
 BEGIN
-    select top 1 * from HookRawData where message like '%subscriptionId%' order by dateUpdated desc
+    select top 1 @Id = Id from HookRawData where [status] is null  order by dateUpdated desc
+
+	Update HookRawData 
+		Set [Status] = 1, 
+		ProcessingDate = getdate() 
+		   where Id = @Id
+
+	Select * from HookRawData where Id = @Id 
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetJiraData]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetJiraData]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1186,7 +1217,7 @@ BEGIN
 	order by [CreatedDate] desc
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetJiraOrg]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetJiraOrg]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1207,7 +1238,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetJiraTenant]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetJiraTenant]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1231,7 +1262,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetJiraUsers]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetJiraUsers]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1261,7 +1292,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetKudos]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetKudos]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1287,7 +1318,7 @@ SELECT [Sender]
   -- AND GitOrgName = @GitOrg  ignore gitOrg Name for the Kudos
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetKudos4User]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetKudos4User]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1311,7 +1342,7 @@ SELECT [Sender]
   FROM [dbo].Kudos Where Target = @Target
 END
 GO
-/****** Object:  StoredProcedure [dbo].[getLoggedInUSerDetails]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[getLoggedInUSerDetails]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1331,7 +1362,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetOrg4UserId]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetOrg4UserId]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1357,7 +1388,7 @@ Select LinkedOrg from OrgLink where Org in (  select Org from userOrg where Emai
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[getOrgChart]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[getOrgChart]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1372,7 +1403,7 @@ BEGIN
    select * from OrgChart where org = @org  
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetPR4Id]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetPR4Id]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1404,7 +1435,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetPR4Repo]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetPR4Repo]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1426,7 +1457,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetRepoCollectionByName]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetRepoCollectionByName]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1449,7 +1480,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetRepoParticipation4Login]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetRepoParticipation4Login]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1475,7 +1506,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetRepoPR]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetRepoPR]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1511,7 +1542,7 @@ BEGIN
 	ORDER BY sortonthis DESC
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetRepos]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetRepos]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1532,7 +1563,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[getRole4Org]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[getRole4Org]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1550,7 +1581,7 @@ BEGIN
 	
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetSR4Id]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetSR4Id]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1571,7 +1602,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetSR4User]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetSR4User]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1594,7 +1625,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetSR4User4Review2]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetSR4User4Review2]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1729,7 +1760,7 @@ END
 	
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetTFSData]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetTFSData]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1768,7 +1799,7 @@ BEGIN
 	order by [CreatedDate] 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetTopRepos4XDays]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetTopRepos4XDays]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1801,7 +1832,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetUser]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetUser]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1823,7 +1854,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetUser4Org]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetUser4Org]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1853,7 +1884,7 @@ FROM     dbo.UserOrg INNER JOIN
 	 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetUserRole]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetUserRole]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1870,7 +1901,7 @@ BEGIN
 	
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GetWatcher]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GetWatcher]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1897,7 +1928,7 @@ SELECT [Watcher]
   -- GitOrgName = @GitOrg  AND
 END
 GO
-/****** Object:  StoredProcedure [dbo].[GitDev4Org]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[GitDev4Org]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1923,7 +1954,7 @@ BEGIN
 	 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[IsAdmin]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[IsAdmin]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1946,7 +1977,7 @@ BEGIN
 	return @result  
 END
 GO
-/****** Object:  StoredProcedure [dbo].[IsMSRAdmin]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[IsMSRAdmin]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1973,7 +2004,7 @@ BEGIN
 	
 END
 GO
-/****** Object:  StoredProcedure [dbo].[LongestPR]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[LongestPR]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2005,7 +2036,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[MissingMSR]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[MissingMSR]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2029,7 +2060,7 @@ SELECT [UserId]
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[PR4Devs]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[PR4Devs]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2135,7 +2166,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[PR4LastXDays]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[PR4LastXDays]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2165,7 +2196,7 @@ BEGIN
 	return @ctr
 END
 GO
-/****** Object:  StoredProcedure [dbo].[PRCount4LastXDays]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[PRCount4LastXDays]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2241,7 +2272,7 @@ BEGIN
 	END
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SaveActiveTenant]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SaveActiveTenant]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2274,7 +2305,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SaveActiveUser]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SaveActiveUser]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2307,7 +2338,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SaveJiraTenant]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SaveJiraTenant]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2355,7 +2386,7 @@ BEGIN
 		(@Id, @email, @UserName, @DisplayName, @ProfileUrl, @Photo, @AuthToken, @RefreshToken, GETDATE(), @accessibleResources);
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SaveJiraUsers]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SaveJiraUsers]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2392,7 +2423,7 @@ BEGIN
 	END
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SaveMSR]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SaveMSR]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2473,7 +2504,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SaveOrgChart]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SaveOrgChart]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2512,7 +2543,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SaveOrgLink]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SaveOrgLink]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2536,7 +2567,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SavePR4Repo]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SavePR4Repo]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2617,7 +2648,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[saveRawHookData]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[saveRawHookData]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2644,7 +2675,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SaveRepos]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SaveRepos]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2716,7 +2747,7 @@ BEGIN
 	*/
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SaveSignupToken]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SaveSignupToken]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2747,7 +2778,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SaveStatus2]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SaveStatus2]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2772,7 +2803,7 @@ BEGIN
 	
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SaveUser]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SaveUser]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2816,7 +2847,7 @@ BEGIN
 		( @email, @UserName, @DisplayName, @ProfileUrl, @Photo, @AuthToken, @RefreshToken, GETDATE());
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SaveUserOrg]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SaveUserOrg]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2865,7 +2896,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SaveUserRole]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SaveUserRole]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2893,7 +2924,7 @@ BEGIN
 	
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SetJiraData]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SetJiraData]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2992,7 +3023,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SetKudos]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SetKudos]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -3014,7 +3045,7 @@ BEGIN
 			(@sender,@target, @Org, @gitOrg, @kudos);
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SetRepoCollection]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SetRepoCollection]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -3065,7 +3096,7 @@ WHILE @@FETCH_STATUS = 0
 	FETCH NEXT FROM RepoCur INTO @Repo
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SetTFSData]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SetTFSData]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -3164,7 +3195,7 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SetWatcher]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[SetWatcher]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -3185,7 +3216,7 @@ BEGIN
 			(@watcher,@target, @Org, @gitOrg);
 END
 GO
-/****** Object:  StoredProcedure [dbo].[TopDevForLastXDays]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[TopDevForLastXDays]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -3230,7 +3261,59 @@ BEGIN
 						*/
 END
 GO
-/****** Object:  StoredProcedure [dbo].[UpDateR4SR]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[TopDevForLastXDays2]    Script Date: 8/5/2020 9:22:18 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[TopDevForLastXDays2]
+	(
+	-- Add the parameters for the stored procedure here
+	@Day int = 1,
+	@Org VARCHAR(200),
+	@Context VARCHAR(100) = ''
+)
+AS
+BEGIN
+	SET NOCOUNT ON
+	if (@Context = 'DashBoard')
+		SELECT distinct Login, Name, Avatar_Url,  UserName, DisplayName as UserDisplayName, Email, GitUserName,JiraUserName, TfsUserName , LastUpdated
+		FROM [TopDevVw] where  Org = @org ANd UserName is not null
+		Order by LastUpdated desc  
+	else
+		SELECT distinct Login, Name, Avatar_Url,  UserName, DisplayName as UserDisplayName, Email, GitUserName,JiraUserName, TfsUserName 
+		FROM [TopDevVw] where  Org = @org ANd UserName is not null
+		Order by UserDisplayName  
+	
+	
+/*
+	SELECT distinct 
+	dbo.Users.Id
+	, dbo.PullRequestDetails.Login
+	, dbo.Users.DisplayName AS Name
+	, dbo.PullRequestDetails.Avatar_Url
+	, dbo.Users.UserName
+	, dbo.Users.DisplayName AS UserDisplayName, dbo.Users.Email, 
+                  dbo.Users.GitUserName, dbo.Users.JiraUserName, dbo.Users.TfsUserName
+	FROM dbo.Users INNER JOIN
+                  dbo.UserOrg ON dbo.Users.Id = dbo.UserOrg.UserId 
+				  LEFT OUTER  JOIN
+                  dbo.PullRequestDetails ON dbo.Users.GitUserName = dbo.PullRequestDetails.Login
+				  INNER JOIN 
+				  dbo.OrgLink ON dbo.OrgLink.Org  =   UserOrg.Org
+				  WHERE dbo.OrgLink.LinkedOrg = @org AND UserName is not null
+						ORDER BY UserDisplayName ASC 
+
+						*/
+END
+GO
+/****** Object:  StoredProcedure [dbo].[UpDateR4SR]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -3255,7 +3338,7 @@ CREATE PROCEDURE  [dbo].[UpDateR4SR]
  
 
 GO
-/****** Object:  StoredProcedure [dbo].[UpdateSubscriptionDetails]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[UpdateSubscriptionDetails]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -3278,7 +3361,7 @@ BEGIN
 		where Id = @Id
 END
 GO
-/****** Object:  StoredProcedure [dbo].[updateUserConnectIds]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[updateUserConnectIds]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -3306,7 +3389,7 @@ BEGIN
 	
 END
 GO
-/****** Object:  StoredProcedure [dbo].[UsersSRStuckInProgress]    Script Date: 8/3/2020 7:37:30 PM ******/
+/****** Object:  StoredProcedure [dbo].[UsersSRStuckInProgress]    Script Date: 8/5/2020 9:22:18 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON

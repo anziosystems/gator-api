@@ -362,7 +362,7 @@ router.get('/TopDevForLastXDays', validateUser, (req: any, res: any) => {
     req.query.day = '1';
   }
   sqlRepository
-    .getTopDev4LastXDays(req.query.org, req.query.day)
+    .getTopDev4LastXDays(req.query.org, req.query.day, req.query.context)
     .then(result => {
       return res.json(result);
     })

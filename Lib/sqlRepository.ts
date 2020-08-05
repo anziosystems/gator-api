@@ -952,7 +952,7 @@ class SQLRepository {
     else return;
   }
 
-  async getTopDev4LastXDays(org: string, day = 1) {
+  async getTopDev4LastXDays(org: string, day = 1, context: string = '') {
     const cacheKey = 'getTopDev4LastXDays' + org + day;
     try {
       const val = this.myCache.get(cacheKey);
@@ -967,7 +967,8 @@ class SQLRepository {
       }
       request.input('Org', sql.VarChar(this.ORG_LEN), org);
       request.input('Day', sql.Int, day);
-      const recordSet = await request.execute('TopDevForLastXDays');
+      request.input('Context', sql.VarChar(100), context);
+      const recordSet = await request.execute('TopDevForLastXDays2');
       if (recordSet.recordset) {
         this.myCache.set(cacheKey, recordSet.recordset);
         return recordSet.recordset;

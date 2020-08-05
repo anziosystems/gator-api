@@ -962,7 +962,7 @@ class SQLRepository {
                 return;
         });
     }
-    getTopDev4LastXDays(org, day = 1) {
+    getTopDev4LastXDays(org, day = 1, context = '') {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'getTopDev4LastXDays' + org + day;
             try {
@@ -977,7 +977,8 @@ class SQLRepository {
                 }
                 request.input('Org', sql.VarChar(this.ORG_LEN), org);
                 request.input('Day', sql.Int, day);
-                const recordSet = yield request.execute('TopDevForLastXDays');
+                request.input('Context', sql.VarChar(100), context);
+                const recordSet = yield request.execute('TopDevForLastXDays2');
                 if (recordSet.recordset) {
                     this.myCache.set(cacheKey, recordSet.recordset);
                     return recordSet.recordset;
