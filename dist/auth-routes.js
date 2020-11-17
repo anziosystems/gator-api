@@ -14,9 +14,9 @@ dotenv.config();
 const callbackURL = process.env.CALL_BACK_URL; //'https://gator-ui.azurewebsites.net/callback';
 const callbackURL_LSUATH = process.env.CALL_BACK_LSAUTH_URL;
 //This method is not called any more, it is here for the test
-router.get('/login', () => {
+router.get('/login', (req, res) => {
     console.log('login is called.');
-    return 'login is called';
+    res.send('login is called');
 });
 //https://localhost:3000/auth/lsauth
 // router.get(

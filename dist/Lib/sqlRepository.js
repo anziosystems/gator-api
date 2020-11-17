@@ -582,7 +582,8 @@ class SQLRepository {
                 request.input('userId', sql.VarChar(this.LOGIN_LEN), userId);
                 request.input('orgChart', sql.VarChar, orgChart);
                 const recordSet = yield request.execute('SaveOrgChart');
-                if (recordSet.recordset.length > 0) {
+                if (recordSet.rowsAffected[0] > 0) {
+                    console.log(`[S]  SaveOrgChart:  Success`);
                     //Org Chart is updated lets drop the cache
                     let cacheKey = 'getOrgTree' + org + userId;
                     let v = this.myCache.get(cacheKey);
@@ -594,7 +595,8 @@ class SQLRepository {
                     if (v) {
                         this.myCache.del(cacheKey);
                     }
-                    return recordSet.recordset;
+                    this.UpdateTreeTable(org, userId);
+                    return recordSet.rowsAffected[0];
                 }
                 else {
                     return 0;
@@ -1613,6 +1615,7 @@ class SQLRepository {
             }
         });
     }
+    //srId for MSR Table
     getSR4Id(srId, bustTheCache) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'getMSR4Id' + srId;
@@ -2171,7 +2174,8 @@ class SQLRepository {
             }
         });
     }
-    getOrgTree(currentOrg, userId, bustTheCache) {
+    getOrgTree(currentOrg, userId, //Caller ID
+    bustTheCache) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'getOrgTree' + currentOrg + userId;
             if (!bustTheCache) {
@@ -2282,6 +2286,82 @@ class SQLRepository {
             }); //Promise
         });
     }
+    //This method reads the Org JSON data and then update OrgTree Table
+    //This table is used by various alerts. Table has manager and employee relationship
+    UpdateTreeTable(currentOrg, userId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let tree = yield this.getOrgTree(currentOrg, userId, false);
+            //Now Traverse the tree and save the node
+            /*
+                  0: TNode
+                    children: Array(3)
+                      0: TNode
+                          children: (5) [TNode, TNode, TNode, TNode, TNode]
+                      collapsedIcon: "pi"
+                      data: "rafat.sarosh@axleinfo.com"
+                      expandedIcon: "pi"
+                      label: "Rafat Sarosh"
+                      __proto__: Object
+                1: TNode {children: Array(1), label: "Nathan Hotaling", data: "Nathan.Hotaling@labshare.org", expandedIcon: "pi", collapsedIcon: "pi"}
+                2: TNode {children: Array(3), label: "Reid Simon", data: "reid.simon@axleinfo.com", expandedIcon: "pi", collapsedIcon: "pi"}
+                */
+            this.processAllNodes(tree, 'null', currentOrg);
+        });
+    }
+    saveTreeNode(emp, mgr, org) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (mgr === undefined || mgr === null) {
+                    mgr = 'null';
+                }
+                request.input('Emp', sql.VarChar(this.LOGIN_LEN), emp);
+                request.input('Mgr', sql.VarChar(this.LOGIN_LEN), mgr);
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                const recordSet = yield request.execute('SaveOrgTreeNode');
+                return recordSet.rowsAffected[0];
+            }
+            catch (ex) {
+                console.log(`[E]  saveTreeNode: ${emp} ${mgr} ${org} ${ex}`);
+                return ex;
+            }
+        });
+    }
+    //recursive function
+    processAllNodes(tree, manager, currentOrg) {
+        return __awaiter(this, void 0, void 0, function* () {
+            //first node is "Engineering" which does not have any c.data,
+            //this is the top root node, hence we start with the childrens
+            var shadowTree;
+            if (tree[0].data == undefined || tree[0].data === null)
+                shadowTree = tree[0].children;
+            else
+                shadowTree = tree;
+            for (const c of shadowTree) {
+                this.saveTreeNode(c.data, manager, currentOrg);
+                if (c.children) {
+                    this.processAllNodes(c.children, c.data, currentOrg);
+                }
+            }
+            return true;
+        });
+    }
+    DeleteOrgTree(org) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                const recordSet = yield request.execute('DeleteOrgTree');
+                return recordSet.rowsAffected[0];
+            }
+            catch (ex) {
+                console.log(`[E]  DeleteOrgTree:  ${org} ${ex}`);
+                return ex;
+            }
+        });
+    }
     //Is Y in tree of X -> Is X Manager of Y?
     IsXYAllowed(currentOrg, userId, X, Y) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -2296,6 +2376,7 @@ class SQLRepository {
             return false;
         });
     }
+    //recursive function
     SearchAllNodes(user, tree) {
         for (const c of tree) {
             if (c.data === user) {
@@ -2308,6 +2389,7 @@ class SQLRepository {
         }
         return false;
     }
+    //Get the node for a user, it searches the whole tree for the node
     GetNode4User(user, tree) {
         for (const c of tree) {
             if (c.data === user) {

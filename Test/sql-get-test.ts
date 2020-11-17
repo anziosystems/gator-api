@@ -12,7 +12,25 @@ import {GitRepository} from '../Lib/GitRepository';
 
 //processAllJiraHookData
 
-describe.only('processAllJiraHookData', () => {
+describe.only('DeleteOrgTree', () => {
+  it('should return true', async () => {
+    const sqlRepositoy = new SQLRepository(null);
+    await sqlRepositoy.DeleteOrgTree('axleinfo.com').then(result => {
+      expect(result).greaterThan(0);
+    });
+  });
+});
+
+describe('UpdateTreeTable', () => {
+  it('should return true', async () => {
+    const sqlRepositoy = new SQLRepository(null);
+    await sqlRepositoy.UpdateTreeTable('axleinfo.com', 'rafat.sarosh@axleinfo.com').then(result => {
+      expect(result).true;
+    });
+  });
+});
+
+describe('processAllJiraHookData', () => {
   it('should return true', async () => {
     const sqlRepositoy = new SQLRepository(null);
 
