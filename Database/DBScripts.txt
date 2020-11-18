@@ -1,0 +1,3511 @@
+/****** Object:  Database [Gator]    Script Date: 11/17/2020 8:59:56 AM ******/
+CREATE DATABASE [Gator]  (EDITION = 'Standard', SERVICE_OBJECTIVE = 'S2', MAXSIZE = 250 GB) WITH CATALOG_COLLATION = SQL_Latin1_General_CP1_CI_AS;
+GO
+ALTER DATABASE [Gator] SET ANSI_NULL_DEFAULT OFF 
+GO
+ALTER DATABASE [Gator] SET ANSI_NULLS OFF 
+GO
+ALTER DATABASE [Gator] SET ANSI_PADDING OFF 
+GO
+ALTER DATABASE [Gator] SET ANSI_WARNINGS OFF 
+GO
+ALTER DATABASE [Gator] SET ARITHABORT OFF 
+GO
+ALTER DATABASE [Gator] SET AUTO_SHRINK OFF 
+GO
+ALTER DATABASE [Gator] SET AUTO_UPDATE_STATISTICS ON 
+GO
+ALTER DATABASE [Gator] SET CURSOR_CLOSE_ON_COMMIT OFF 
+GO
+ALTER DATABASE [Gator] SET CONCAT_NULL_YIELDS_NULL OFF 
+GO
+ALTER DATABASE [Gator] SET NUMERIC_ROUNDABORT OFF 
+GO
+ALTER DATABASE [Gator] SET QUOTED_IDENTIFIER OFF 
+GO
+ALTER DATABASE [Gator] SET RECURSIVE_TRIGGERS OFF 
+GO
+ALTER DATABASE [Gator] SET AUTO_UPDATE_STATISTICS_ASYNC OFF 
+GO
+ALTER DATABASE [Gator] SET ALLOW_SNAPSHOT_ISOLATION ON 
+GO
+ALTER DATABASE [Gator] SET PARAMETERIZATION SIMPLE 
+GO
+ALTER DATABASE [Gator] SET READ_COMMITTED_SNAPSHOT OFF 
+GO
+ALTER DATABASE [Gator] SET  MULTI_USER 
+GO
+ALTER DATABASE [Gator] SET ENCRYPTION ON
+GO
+ALTER DATABASE [Gator] SET QUERY_STORE = ON
+GO
+ALTER DATABASE [Gator] SET QUERY_STORE (OPERATION_MODE = READ_WRITE, CLEANUP_POLICY = (STALE_QUERY_THRESHOLD_DAYS = 30), DATA_FLUSH_INTERVAL_SECONDS = 900, INTERVAL_LENGTH_MINUTES = 60, MAX_STORAGE_SIZE_MB = 100, QUERY_CAPTURE_MODE = AUTO, SIZE_BASED_CLEANUP_MODE = AUTO)
+GO
+/****** Object:  User [rafat]    Script Date: 11/17/2020 8:59:56 AM ******/
+CREATE USER [rafat] FOR LOGIN [rafat] WITH DEFAULT_SCHEMA=[dbo]
+GO
+sys.sp_addrolemember @rolename = N'db_owner', @membername = N'rafat'
+GO
+sys.sp_addrolemember @rolename = N'db_securityadmin', @membername = N'rafat'
+GO
+/****** Object:  Table [dbo].[UserOrg]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[UserOrg](
+	[Org] [varchar](200) NOT NULL,
+	[LastUpdated] [datetime] NULL,
+	[DisplayName] [varchar](200) NULL,
+	[Active] [bit] NULL,
+	[OrgType] [nchar](10) NOT NULL,
+	[Email] [varchar](200) NOT NULL,
+ CONSTRAINT [PK_UserOrg] PRIMARY KEY CLUSTERED 
+(
+	[Email] ASC,
+	[Org] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Users]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Users](
+	[Email] [varchar](100) NOT NULL,
+	[UserName] [varchar](100) NULL,
+	[DisplayName] [varchar](200) NULL,
+	[ProfileUrl] [varchar](2000) NULL,
+	[LastUpdated] [datetime] NOT NULL,
+	[Auth_Token] [varchar](4000) NULL,
+	[Refresh_Token] [varchar](4000) NULL,
+	[Photo] [varchar](2000) NULL,
+	[GitUserName] [varchar](200) NULL,
+	[JiraUserName] [varchar](200) NULL,
+	[TfsUserName] [varchar](200) NULL,
+	[IsMSRNeeded] [bit] NULL,
+ CONSTRAINT [PK_Users] PRIMARY KEY CLUSTERED 
+(
+	[Email] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  View [dbo].[vwTenantOrg]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE VIEW [dbo].[vwTenantOrg]
+AS
+SELECT   dbo.Users.Email, dbo.Users.UserName, dbo.Users.DisplayName, dbo.Users.ProfileUrl, dbo.Users.Photo, dbo.UserOrg.Org, dbo.UserOrg.DisplayName AS Expr1
+FROM         dbo.UserOrg INNER JOIN
+                         dbo.Users ON dbo.UserOrg.Email = dbo.Users.Email
+GO
+/****** Object:  Table [dbo].[ActiveUser]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[ActiveUser](
+	[UserId] [int] NOT NULL,
+	[LastUpdated] [datetime] NULL,
+ CONSTRAINT [PK_ActiveUser] PRIMARY KEY CLUSTERED 
+(
+	[UserId] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  View [dbo].[vwActiveTenants]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE VIEW [dbo].[vwActiveTenants]
+AS
+SELECT DISTINCT dbo.Users.Email, dbo.Users.UserName, dbo.Users.DisplayName, dbo.UserOrg.UserId, dbo.ActiveUser.LastUpdated
+FROM     dbo.UserOrg INNER JOIN
+                  dbo.Users ON dbo.UserOrg.UserId = dbo.Users.Id INNER JOIN
+                  dbo.ActiveUser ON dbo.UserOrg.UserId = dbo.ActiveUser.UserId
+GO
+/****** Object:  Table [dbo].[PullRequestDetails]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[PullRequestDetails](
+	[Id] [varchar](200) NOT NULL,
+	[Org] [varchar](200) NOT NULL,
+	[Repo] [varchar](200) NOT NULL,
+	[url] [varchar](2000) NOT NULL,
+	[State] [varchar](50) NOT NULL,
+	[Action] [varchar](50) NULL,
+	[Title] [varchar](2000) NULL,
+	[Created_At] [datetime] NOT NULL,
+	[Body] [varchar](2000) NOT NULL,
+	[Login] [varchar](100) NOT NULL,
+	[Avatar_Url] [varchar](2000) NOT NULL,
+	[User_Url] [varchar](2000) NOT NULL,
+	[LastUpdated] [datetime] NULL,
+ CONSTRAINT [PK_PullRequestDetails_1] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC,
+	[State] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  View [dbo].[vwOpenClosedPR]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Script for SELECTTopNRows command FROM SSMS  ******/
+CREATE VIEW [dbo].[vwOpenClosedPR]
+AS
+SELECT DISTINCT 
+                         dbo.PullRequestDetails.State, dbo.PullRequestDetails.Action, dbo.PullRequestDetails.Created_At, dbo.PullRequestDetails.Repo, dbo.PullRequestDetails.Avatar_Url, 
+                         CAST(CAST(dbo.PullRequestDetails.LastUpdated AS VARCHAR(12)) AS DATEtIME) AS LastUpdated, dbo.PullRequestDetails.url, dbo.PullRequestDetails.Org, 
+                         dbo.PullRequestDetails.Login, dbo.Users.DisplayName AS Name
+FROM         dbo.PullRequestDetails INNER JOIN
+                         dbo.Users ON dbo.PullRequestDetails.Login = dbo.Users.GitUserName
+WHERE     (dbo.PullRequestDetails.State IN ('closed', 'open', 'opened', 'close', 'commit')) AND (dbo.PullRequestDetails.Created_At > GETDATE() - 180)
+GO
+/****** Object:  View [dbo].[TopDevVw]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/*Order by LastUpdated desc*/
+CREATE VIEW [dbo].[TopDevVw]
+AS
+SELECT DISTINCT 
+                  TOP (100) PERCENT dbo.vwOpenClosedPR.Login, dbo.vwOpenClosedPR.Avatar_Url, dbo.vwOpenClosedPR.LastUpdated, dbo.vwOpenClosedPR.Org, dbo.Users.UserName, dbo.Users.DisplayName, dbo.Users.Email, dbo.Users.ProfileUrl, 
+                  dbo.Users.GitUserName, dbo.Users.JiraUserName, dbo.Users.TfsUserName, dbo.Users.DisplayName AS Name
+FROM     dbo.vwOpenClosedPR INNER JOIN
+                  dbo.Users ON dbo.vwOpenClosedPR.Login = dbo.Users.GitUserName
+GO
+/****** Object:  View [dbo].[vwActiveUser]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE VIEW [dbo].[vwActiveUser]
+AS
+SELECT        TOP (1000) Email, UserName, DisplayName, LastUpdated, GitUserName, JiraUserName, TfsUserName
+FROM            dbo.Users
+ORDER BY LastUpdated DESC
+GO
+/****** Object:  Table [dbo].[MSR]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[MSR](
+	[SRId] [int] IDENTITY(1,1) NOT NULL,
+	[UserId] [varchar](100) NOT NULL,
+	[Org] [varchar](250) NOT NULL,
+	[StatusDetails] [nvarchar](max) NOT NULL,
+	[Reviewer] [varchar](500) NULL,
+	[Status] [int] NOT NULL,
+	[Links] [varchar](1000) NULL,
+	[ManagerComment] [nvarchar](max) NULL,
+	[Manager] [varchar](100) NULL,
+	[ManagerStatus] [int] NULL,
+	[LastUpdated] [datetime] NOT NULL,
+	[ReportCreationDate] [datetime] NULL,
+ CONSTRAINT [PK_MSR] PRIMARY KEY CLUSTERED 
+(
+	[SRId] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[RSR]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[RSR](
+	[ReviewerId] [varchar](100) NOT NULL,
+	[SRId] [int] NOT NULL,
+	[ReportDate] [datetime] NOT NULL,
+	[LastUpdated] [datetime] NOT NULL,
+ CONSTRAINT [PK_RSR] PRIMARY KEY CLUSTERED 
+(
+	[ReviewerId] ASC,
+	[SRId] ASC,
+	[ReportDate] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  View [dbo].[SR_R_View]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE VIEW [dbo].[SR_R_View]
+AS
+SELECT dbo.RSR.ReviewerId, dbo.RSR.SRId, dbo.RSR.ReportDate, dbo.MSR.UserId, dbo.MSR.Org, dbo.MSR.StatusDetails, dbo.MSR.Reviewer, dbo.MSR.Status, dbo.MSR.Links, dbo.MSR.ManagerComment, dbo.MSR.Manager, dbo.MSR.ManagerStatus, dbo.MSR.ReportCreationDate, 
+             dbo.MSR.LastUpdated
+FROM   dbo.RSR INNER JOIN
+             dbo.MSR ON dbo.RSR.SRId = dbo.MSR.SRId
+GO
+/****** Object:  Table [dbo].[_Status]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[_Status](
+	[TenantId] [int] NOT NULL,
+	[Status] [char](50) NOT NULL,
+	[LastUpdated] [datetime] NOT NULL,
+	[Message] [varchar](2000) NULL
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[ErrorStatus]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[ErrorStatus](
+	[TenantId] [char](100) NOT NULL,
+	[Status] [char](50) NOT NULL,
+	[LastUpdated] [datetime] NOT NULL,
+	[Message] [varchar](2000) NULL
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[GitRepos]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[GitRepos](
+	[RepoName] [varchar](200) NOT NULL,
+	[LastUpdated] [datetime] NOT NULL,
+	[Org] [varchar](200) NOT NULL,
+	[ID] [varchar](100) NOT NULL,
+	[Desc] [varchar](200) NULL,
+	[HomePage] [varchar](2000) NULL,
+	[Created_At] [datetime] NULL,
+	[PR_Sync] [bit] NULL,
+	[PR_sync_Date] [datetime] NULL
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[HookRawData]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[HookRawData](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[message] [text] NOT NULL,
+	[DateUpdated] [date] NOT NULL,
+	[status] [tinyint] NULL,
+	[ProcessingDate] [date] NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[JIRAColumnMapping]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[JIRAColumnMapping](
+	[Org] [varchar](500) NOT NULL,
+	[JiraCustomColumnName] [varchar](200) NOT NULL,
+	[JiraMappingColumnName] [varchar](200) NOT NULL,
+	[LastUpdated] [date] NOT NULL,
+ CONSTRAINT [PK_JIRAColumnMapping] PRIMARY KEY CLUSTERED 
+(
+	[Org] ASC,
+	[JiraCustomColumnName] ASC,
+	[JiraMappingColumnName] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[JiraData]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[JiraData](
+	[Id] [int] NOT NULL,
+	[key] [varchar](200) NOT NULL,
+	[Title] [varchar](5000) NOT NULL,
+	[Reporter] [varchar](200) NOT NULL,
+	[Assignee] [varchar](200) NULL,
+	[CreatedDate] [date] NOT NULL,
+	[UpdatedDate] [date] NULL,
+	[IssueType] [varchar](50) NULL,
+	[Priority] [varchar](50) NULL,
+	[Story] [int] NULL,
+	[LastUpdated] [date] NOT NULL,
+	[ReporterAvatarUrl] [varchar](1000) NULL,
+	[AssigneeAvatarUrl] [varchar](1000) NULL,
+	[Status] [varchar](50) NULL,
+	[ProjectName] [varchar](1000) NULL,
+	[Org] [varchar](200) NULL,
+	[AssigneeId] [varchar](500) NULL,
+	[Summary] [varchar](2000) NULL,
+ CONSTRAINT [PK_JiraData] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC,
+	[key] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[JiraTenant]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[JiraTenant](
+	[Id] [char](50) NOT NULL,
+	[Email] [char](100) NULL,
+	[UserName] [varchar](100) NULL,
+	[DisplayName] [varchar](200) NULL,
+	[ProfileUrl] [char](500) NULL,
+	[LastUpdated] [datetime] NOT NULL,
+	[Auth_Token] [varchar](4000) NULL,
+	[Refresh_Token] [varchar](4000) NULL,
+	[Photo] [char](500) NULL,
+	[AccessibleResources] [text] NULL,
+ CONSTRAINT [PK_JiraTenant] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[JiraUsers]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[JiraUsers](
+	[TenantId] [char](50) NOT NULL,
+	[Org] [char](200) NOT NULL,
+	[AccountId] [char](100) NOT NULL,
+	[DisplayName] [nchar](100) NOT NULL,
+	[AvatarUrls] [char](1000) NULL,
+	[Self] [char](1000) NULL,
+	[LastUpdated] [datetime] NULL,
+	[GitId] [char](100) NULL
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Kudos]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Kudos](
+	[Sender] [varchar](200) NOT NULL,
+	[Target] [varchar](200) NOT NULL,
+	[GitOrgName] [varchar](200) NOT NULL,
+	[LastUpdated] [datetime] NOT NULL,
+	[OrgName] [varchar](200) NOT NULL,
+	[Kudos] [varchar](5000) NOT NULL,
+	[AlertSend] [bit] NULL,
+	[AlertSendDate] [datetime] NULL,
+ CONSTRAINT [PK_Kudos] PRIMARY KEY CLUSTERED 
+(
+	[Sender] ASC,
+	[Target] ASC,
+	[GitOrgName] ASC,
+	[OrgName] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[MSR_audit]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[MSR_audit](
+	[SRId] [int] NOT NULL,
+	[UserId] [varchar](100) NOT NULL,
+	[Org] [varchar](250) NOT NULL,
+	[StatusDetails] [nvarchar](max) NOT NULL,
+	[Reviewer] [varchar](500) NULL,
+	[Status] [int] NOT NULL,
+	[Links] [varchar](1000) NULL,
+	[ManagerComment] [nvarchar](max) NULL,
+	[Manager] [varchar](100) NULL,
+	[ManagerStatus] [int] NULL,
+	[LastUpdated] [datetime] NOT NULL,
+	[ReportCreationDate] [datetime] NULL,
+	[activity] [varchar](50) NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[OrgChart]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[OrgChart](
+	[Org] [varchar](250) NOT NULL,
+	[UserId] [varchar](250) NOT NULL,
+	[OrgChart] [varchar](max) NOT NULL,
+	[LastUpdated] [datetime] NOT NULL,
+ CONSTRAINT [PK_OrgChart] PRIMARY KEY CLUSTERED 
+(
+	[Org] ASC,
+	[UserId] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[OrgLink]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[OrgLink](
+	[Org] [varchar](200) NOT NULL,
+	[LinkedOrg] [varchar](200) NOT NULL,
+	[LastUpdated] [date] NOT NULL,
+ CONSTRAINT [PK_OrgLink] PRIMARY KEY CLUSTERED 
+(
+	[Org] ASC,
+	[LinkedOrg] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[OrgTree]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[OrgTree](
+	[Employee] [varchar](200) NOT NULL,
+	[Manager] [varchar](200) NOT NULL,
+	[Org] [varchar](200) NOT NULL,
+	[LastUpdated] [datetime] NOT NULL,
+ CONSTRAINT [PK_OrgTree] PRIMARY KEY CLUSTERED 
+(
+	[Employee] ASC,
+	[Manager] ASC,
+	[Org] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Subscriptions]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Subscriptions](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[AzureMPToken] [varchar](2000) NOT NULL,
+	[ADToken] [varchar](2000) NULL,
+	[SubscriptionDetails] [varchar](5000) NULL,
+	[SubscriptionActivated] [bit] NULL,
+	[SubscriptionDate] [datetime] NULL,
+	[PlanId] [varchar](200) NULL,
+	[Quantity] [int] NULL,
+	[LastUpdated] [datetime] NULL,
+ CONSTRAINT [PK_Signup] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[TFSData]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[TFSData](
+	[Id] [int] NOT NULL,
+	[key] [varchar](200) NOT NULL,
+	[Title] [varchar](5000) NOT NULL,
+	[Reporter] [varchar](200) NOT NULL,
+	[Assignee] [varchar](200) NULL,
+	[CreatedDate] [date] NOT NULL,
+	[UpdatedDate] [date] NULL,
+	[IssueType] [varchar](50) NULL,
+	[Priority] [varchar](50) NULL,
+	[Story] [int] NULL,
+	[LastUpdated] [date] NOT NULL,
+	[ReporterAvatarUrl] [varchar](1000) NULL,
+	[AssigneeAvatarUrl] [varchar](1000) NULL,
+	[Status] [varchar](50) NULL,
+	[ProjectName] [varchar](1000) NULL,
+	[Org] [varchar](200) NULL,
+	[AssigneeId] [varchar](500) NULL,
+	[Summary] [varchar](2000) NULL,
+ CONSTRAINT [PK_TFSData_1] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[UserOrgOverride]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[UserOrgOverride](
+	[Org] [varchar](200) NOT NULL,
+	[LastUpdated] [datetime] NULL,
+	[DisplayName] [varchar](200) NULL,
+	[Active] [bit] NULL,
+	[Email] [varchar](200) NOT NULL,
+ CONSTRAINT [PK_UserOrgOverride] PRIMARY KEY CLUSTERED 
+(
+	[Email] ASC,
+	[Org] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[UserRoles]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[UserRoles](
+	[Email] [varchar](100) NOT NULL,
+	[Org] [varchar](200) NOT NULL,
+	[Role] [varchar](100) NOT NULL,
+	[LastUpdated] [datetime] NOT NULL,
+ CONSTRAINT [PK_UserRoles] PRIMARY KEY CLUSTERED 
+(
+	[Email] ASC,
+	[Org] ASC,
+	[Role] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[VDevTeam]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[VDevTeam](
+	[VirtualTeamId] [int] IDENTITY(1,1) NOT NULL,
+	[TeamName] [varchar](100) NOT NULL,
+	[TenantId] [varchar](50) NOT NULL,
+	[login] [varchar](100) NOT NULL,
+	[LastUpdated] [datetime] NOT NULL
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[VRepoTeam]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[VRepoTeam](
+	[VirtualTeamId] [int] IDENTITY(1,1) NOT NULL,
+	[TeamName] [varchar](100) NOT NULL,
+	[TenantId] [varchar](50) NOT NULL,
+	[Repo] [varchar](200) NOT NULL,
+	[LastUpdated] [datetime] NOT NULL
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[WatchPR]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[WatchPR](
+	[Watcher] [varchar](200) NOT NULL,
+	[Target] [varchar](200) NOT NULL,
+	[GitOrgName] [varchar](200) NOT NULL,
+	[LastUpdated] [datetime] NOT NULL,
+	[WatchStartDate] [datetime] NOT NULL,
+	[OrgName] [varchar](200) NOT NULL,
+ CONSTRAINT [PK_WatchPR] PRIMARY KEY CLUSTERED 
+(
+	[Watcher] ASC,
+	[Target] ASC,
+	[GitOrgName] ASC,
+	[OrgName] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+/****** Object:  Index [IX_JiraData]    Script Date: 11/17/2020 8:59:57 AM ******/
+CREATE NONCLUSTERED INDEX [IX_JiraData] ON [dbo].[JiraData]
+(
+	[Assignee] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, DROP_EXISTING = OFF, ONLINE = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+/****** Object:  Index [IX_JiraData_1]    Script Date: 11/17/2020 8:59:57 AM ******/
+CREATE NONCLUSTERED INDEX [IX_JiraData_1] ON [dbo].[JiraData]
+(
+	[Assignee] ASC,
+	[Status] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, DROP_EXISTING = OFF, ONLINE = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+/****** Object:  Index [IX_PullRequestDetails]    Script Date: 11/17/2020 8:59:57 AM ******/
+CREATE NONCLUSTERED INDEX [IX_PullRequestDetails] ON [dbo].[PullRequestDetails]
+(
+	[Org] ASC,
+	[Repo] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, DROP_EXISTING = OFF, ONLINE = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[_Status] ADD  CONSTRAINT [DF_Status_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[ActiveUser] ADD  CONSTRAINT [DF_ActiveUser_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[ErrorStatus] ADD  CONSTRAINT [DF_ErrorStatus_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[GitRepos] ADD  CONSTRAINT [DF_GitRepositories_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[HookRawData] ADD  CONSTRAINT [DF_HookRawData_DateUpdated]  DEFAULT (getdate()) FOR [DateUpdated]
+GO
+ALTER TABLE [dbo].[JIRAColumnMapping] ADD  CONSTRAINT [DF_JIRAColumnMapping_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[JiraData] ADD  CONSTRAINT [DF_JiraData_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[JiraTenant] ADD  CONSTRAINT [DF_JiraTenant_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[JiraUsers] ADD  CONSTRAINT [DF_JiraUsers_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[Kudos] ADD  CONSTRAINT [DF_Kudos_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[MSR] ADD  CONSTRAINT [DF_MSR_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[OrgChart] ADD  CONSTRAINT [DF_OrgChart_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[OrgLink] ADD  CONSTRAINT [DF_OrgLink_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[OrgTree] ADD  CONSTRAINT [DF_OrgTree_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[PullRequestDetails] ADD  CONSTRAINT [DF_PullRequestDetails_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[RSR] ADD  CONSTRAINT [DF_RSR_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[Subscriptions] ADD  CONSTRAINT [DF_Subscriptions_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[TFSData] ADD  CONSTRAINT [DF_TFSData_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[UserOrg] ADD  CONSTRAINT [DF_UserOrg_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[UserOrg] ADD  CONSTRAINT [DF_TUserOrg_Active]  DEFAULT ((1)) FOR [Active]
+GO
+ALTER TABLE [dbo].[UserOrg] ADD  CONSTRAINT [DF_UserOrg_OrgType]  DEFAULT (N'git') FOR [OrgType]
+GO
+ALTER TABLE [dbo].[UserOrgOverride] ADD  CONSTRAINT [DF_UserOrgOverride_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[UserOrgOverride] ADD  CONSTRAINT [DF_UserOrgOverride_Active]  DEFAULT ((1)) FOR [Active]
+GO
+ALTER TABLE [dbo].[UserRoles] ADD  CONSTRAINT [DF_UserRoles_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[Users] ADD  CONSTRAINT [DF_Users_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[Users] ADD  CONSTRAINT [DF_Users_IsMSRNeeded]  DEFAULT ((0)) FOR [IsMSRNeeded]
+GO
+ALTER TABLE [dbo].[WatchPR] ADD  CONSTRAINT [DF_WatchPR_LastUpdated]  DEFAULT (getdate()) FOR [LastUpdated]
+GO
+ALTER TABLE [dbo].[WatchPR] ADD  CONSTRAINT [DF_WatchPR_WatchStartDate]  DEFAULT (getdate()) FOR [WatchStartDate]
+GO
+/****** Object:  StoredProcedure [dbo].[_GetSR4User4Review]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[_GetSR4User4Review]
+	(
+	 
+	@userId varchar(100),
+	@Status int, --2 for in review 99 means get all the reports for the reviewer, 1000 means call is for MSRAdmin, show all the reports
+	@UserFilter varchar(max),
+	@DateFilter varchar(50)
+)
+AS
+BEGIN
+
+ DECLARE @args   TABLE (args VARCHAR(255))
+ DECLARE @stringStart INT 
+ DECLARE @stringLength INT
+ DECLARE @stringValue VARCHAR(255)
+ 
+ if @UserFilter = 'null'
+	BEGIN
+		select @UserFilter = null
+	END
+
+if @DateFilter = 'null'
+	BEGIN
+		select @DateFilter = null
+	END
+
+
+ IF @UserFilter is NOT NULL
+ BEGIN
+	SET @stringStart = 0
+	WHILE @stringStart < LEN(@UserFilter)
+	BEGIN
+	  SET @stringLength = (CHARINDEX(',', @UserFilter, @stringStart) - @stringStart)
+	  IF @stringLength < 0
+	  BEGIN
+	   SET @stringLength = (LEN(@UserFilter) - @stringStart) + 1
+	  END
+	  SET @stringValue = TRIM(SUBSTRING(@UserFilter, @stringStart, @stringLength))
+	  IF LEN(@stringValue) > 0 
+	  BEGIN
+		INSERT INTO @args
+		VALUES ( LOWER(TRIM( @stringValue)))
+	  END
+	  SET @stringStart = (@stringStart + @stringLength) + 1
+	END
+END
+
+/* Status 1000 for MSRAdmin, so dont filter on reviewer but show all the reports */
+
+	if (@status = 1000 AND (@UserFilter is NULL AND @DateFilter IS NULL))
+	begin
+			-- Get all the reports for the reviewers
+			SELECT SRId, [Status], UserId, ReportCreationDate as  ReportDate
+				FROM [dbo].[SR_R_View]
+				order by ReportCreationDate desc
+			return
+	end
+
+
+	IF @status = 1000 AND @UserFilter is not Null
+	BEGIN
+	 
+					SELECT SRId, [Status], UserId, ReportCreationDate as  ReportDate
+						FROM [dbo].SR_R_View
+							where UserId in (select * from  @args  )
+								order by ReportCreationDate desc
+								return
+	END
+
+	IF @status = 1000 AND @DateFilter is not null
+	BEGIN
+						SELECT SRId, [Status], UserId, ReportCreationDate as  ReportDate
+						FROM [dbo].SR_R_View
+								where  DATEPART(MM, ReportCreationDate)  = DATEPART(MM, @DateFilter) 
+								AND DATEPART(YYYY, ReportCreationDate)  = DATEPART(YYYY, @DateFilter) 
+								order by ReportCreationDate desc
+								return
+	END
+
+
+	if (@status = 99 AND (@UserFilter is NULL AND @DateFilter IS NULL))
+	begin
+			-- Get all the reports for the reviewers
+			SELECT SRId, [Status], UserId, ReportCreationDate as  ReportDate
+				FROM [dbo].[SR_R_View]
+				WHERE  reviewerId = @userId
+				order by ReportCreationDate desc
+			return
+	end
+	
+	if @UserFilter is NULL  AND @DateFilter IS NULL
+	BEGIN
+				SELECT SRId, [Status], UserId, ReportCreationDate as  ReportDate
+					FROM [dbo].SR_R_View
+						WHERE  reviewerid = @userId 
+							AND 
+					[Status] = @Status --InReview
+						order by ReportCreationDate desc
+						return 
+	END
+
+	IF @UserFilter is not Null
+	BEGIN
+	 
+					SELECT SRId, [Status], UserId, ReportCreationDate as  ReportDate
+						FROM [dbo].SR_R_View
+							WHERE  reviewerid = @userId 
+								AND UserId in (select * from  @args  )
+								order by ReportCreationDate desc
+								return
+	END
+
+	IF @DateFilter is not null
+	BEGIN
+						SELECT SRId, [Status], UserId, ReportCreationDate as  ReportDate
+						FROM [dbo].SR_R_View
+							WHERE  reviewerid = @userId 
+								AND DATEPART(MM, ReportCreationDate)  = DATEPART(MM, @DateFilter) 
+								AND DATEPART(YYYY, ReportCreationDate)  = DATEPART(YYYY, @DateFilter) 
+								order by ReportCreationDate desc
+	END
+
+
+		
+
+	
+END
+GO
+/****** Object:  StoredProcedure [dbo].[_SaveJiraHook]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[_SaveJiraHook]
+	(
+	 
+	@Message TEXT
+)
+AS
+BEGIN
+
+		Insert into HookRawData
+			 ([Message])
+		Values
+			(  @Message);
+ 
+
+
+
+
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[ActivateSubscriptionDetails]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[ActivateSubscriptionDetails]
+ @Id integer,
+ @IsActivated BIT
+AS
+BEGIN
+    -- SET NOCOUNT ON added to prevent extra result sets from
+    -- interfering with SELECT statements.
+    SET NOCOUNT ON
+	 Update [dbo].[Subscriptions] 
+		Set [SubscriptionActivated] = @IsActivated , [SubscriptionDate] = Getdate()
+		where Id = @Id
+END
+GO
+/****** Object:  StoredProcedure [dbo].[CheckJiraTenant]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+
+
+CREATE PROCEDURE [dbo].[CheckJiraTenant]
+	@Id CHAR(150)
+AS
+Declare @Result int
+
+SELECT @Result = 1
+	FROM [dbo].[JiraTenant]
+		WHERE Id= trim(@Id)
+
+IF(@Result is NULL)
+	Begin
+		SELECT 0 as Result
+		RETURN;
+	END
+ELSE 
+	BEGIN
+	SELECT CASE
+			WHEN DATEDIFF(d,LastUpdated , GETDATE()) > 7 THEN 0 
+	     	ELSE 1
+		END AS Result
+	FROM [dbo].[JiraTenant]
+	WHERE Id= trim(@Id)
+	END
+GO
+/****** Object:  StoredProcedure [dbo].[CheckTenant]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Script for SELECTTopNRows command FROM SSMS  ******/
+CREATE PROCEDURE [dbo].[CheckTenant]
+	@Id INT
+AS
+Declare @Result int
+
+SELECT @Result = Id
+	FROM [dbo].[Users]
+		WHERE Id= @Id
+
+IF(@Result is NULL)
+	Begin
+	SELECT 0 as Result
+	return;
+END
+ELSE 
+	BEGIN
+	SELECT CASE
+			WHEN DATEDIFF(d,LastUpdated , GETDATE()) > 7 THEN 0 
+	     	ELSE 1
+		END AS Result
+	FROM [dbo].[Users]
+	WHERE Id= @Id
+END
+GO
+/****** Object:  StoredProcedure [dbo].[CheckUser]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Script for SELECTTopNRows command FROM SSMS  ******/
+CREATE PROCEDURE [dbo].[CheckUser]
+	@Email varchar(200) 
+AS
+Declare @Result int
+
+SELECT @Result = 1
+	FROM [dbo].[Users]
+		WHERE Email = @Email
+
+IF(@Result is NULL)
+	Begin
+	SELECT 0 as Result
+	return;
+END
+ELSE 
+	BEGIN
+	SELECT CASE
+			WHEN DATEDIFF(d,LastUpdated , GETDATE()) > 7 THEN 0 
+	     	ELSE 1
+		END AS Result
+	FROM [dbo].[Users]
+	WHERE Email = @Email
+END
+GO
+/****** Object:  StoredProcedure [dbo].[DeleteHookData]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[DeleteHookData]
+(
+	@HookId int
+)
+AS
+BEGIN
+	DELETE from [dbo].[HookRawData] where  [Id] = @HookId
+	
+END
+GO
+/****** Object:  StoredProcedure [dbo].[DeleteOrgTree]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[DeleteOrgTree] 
+(
+ 	@org as varchar(200)
+)
+AS
+BEGIN
+    
+    Delete from OrgTree where Org = @org 
+END
+GO
+/****** Object:  StoredProcedure [dbo].[DeleteOrgTreeNode]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[DeleteOrgTreeNode]
+(
+    @Emp as varchar(200),
+	@Manager as varchar(200),
+	@org as varchar(200)
+)
+AS
+BEGIN
+    
+    Delete from OrgTree where
+				 Employee = @Emp and Manager = @Manager
+						and Org = @org 
+END
+GO
+/****** Object:  StoredProcedure [dbo].[DeleteUserRole]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[DeleteUserRole]
+(
+    @login varchar(100),
+	@Org varchar(200)	, 
+	@Role varchar(100)
+)
+AS
+BEGIN
+	DELETE from [UserRoles] where  Email = @login and Org = @Org and [Role] = @Role
+	
+END
+GO
+/****** Object:  StoredProcedure [dbo].[FixDoubleLogins]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      <Author, , Name>
+-- Create Date: <Create Date, , >
+-- Description: <Description, , >
+-- =============================================
+CREATE PROCEDURE [dbo].[FixDoubleLogins]
+AS
+BEGIN
+
+DECLARE @ID int
+DECLARE @Email varchar(200)
+DECLARE @ID2 int
+DECLARE @Git varchar(200)
+DECLARE @Jira varchar(200)
+
+
+    DECLARE User_Cursor CURSOR 
+	FOR select ID, Email, GitUserName, JiraUserName  from users 
+			order by Id desc
+	OPEN User_Cursor
+	FETCH NEXT FROM User_Cursor INTO @ID, @EMail, @Git, @Jira
+	WHILE @@FETCH_STATUS = 0
+		BEGIN
+			SET @Id2 = null
+			SET @Git = null
+			Select  @ID2 = ID, @JIRA = JiraUserName , @git =GitUserName from Users where Email = @Email and ID <> @ID AND GitUserName is not null
+			if (@ID2 is not null and @Git is not null)
+			BEGIN
+				Update Users set JiraUserName = @Jira , GitUserName = @Git where Id = @Id
+				print 'update ' +  cast (@id as varchar(20)) + ' with git: ' + @git +  ' <-' +  cast (@id2 as varchar(20))
+			END
+			FETCH NEXT FROM User_Cursor INTO @ID, @EMail, @Git, @Jira
+		END
+   CLOSE User_Cursor
+   DEALLOCATE User_Cursor
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetAllRepoCollection4TenantOrg]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[GetAllRepoCollection4TenantOrg]
+	(
+	@TenantId VARCHAR (50),
+	@Org VARCHAR (200)
+)
+AS
+BEGIN
+
+	SELECT *
+	FROM RepoCollections
+	WHERE TenantId = @TenantId AND ORG = @Org
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetAllUSers]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[GetAllUSers]
+	(
+
+	@Org VARCHAR(200)
+)
+AS
+BEGIN
+	SET NOCOUNT ON
+
+
+	SELECT distinct 
+	 dbo.PullRequestDetails.Login
+	, dbo.Users.DisplayName AS Name
+	, dbo.PullRequestDetails.Avatar_Url
+	, dbo.Users.UserName
+	, dbo.Users.DisplayName AS UserDisplayName, dbo.Users.Email, 
+                  dbo.Users.GitUserName, dbo.Users.JiraUserName, dbo.Users.TfsUserName
+	FROM dbo.Users INNER JOIN
+                  dbo.UserOrg ON dbo.Users.Email = dbo.UserOrg.Email 
+				  LEFT OUTER  JOIN
+                  dbo.PullRequestDetails ON dbo.Users.GitUserName = dbo.PullRequestDetails.Login
+				  WHERE UserOrg.Org = @org AND UserName is not null
+						ORDER BY UserDisplayName ASC 
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetClientSecret]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[GetClientSecret]
+(
+    @Tenant varchar(200) 
+	 
+ )
+AS
+BEGIN
+    -- SET NOCOUNT ON added to prevent extra result sets from
+    -- interfering with SELECT statements.
+    SET NOCOUNT ON
+
+SELECT Secrets
+  FROM TenantSecret where Tenant = @Tenant
+   
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetDormentUser]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      <Author, , Name>
+-- Create Date: <Create Date, , >
+-- Description: <Description, , >
+-- =============================================
+CREATE PROCEDURE [dbo].[GetDormentUser]
+ 
+AS
+BEGIN
+    -- SET NOCOUNT ON added to prevent extra result sets from
+    -- interfering with SELECT statements.
+    SET NOCOUNT ON
+		select T.Email, T.DisplayName, T.userName  from [Users] T 
+			where T.email is not null AND  LEN (TRIM(T.Email)) > 0
+			 AND T.id not in ( Select UserId from ActiveUser where LastUpdated < GETDATE () - 7 )
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetGraphData4XDays]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ 
+CREATE PROCEDURE [dbo].[GetGraphData4XDays]
+(
+    @Day int, -- It goes back 7, 30 , all back from today - To get all use 999
+	@Org varchar(200),
+	@Login varchar(100)
+)
+AS
+BEGIN
+ 
+    SET NOCOUNT ON
+
+	IF @login is null
+	BEGIN
+		 select cast (LastUpdated as char(11)) as [Date], count(*) Ctr, [State]  as [State]
+			from [dbo].[vwOpenClosedPR] where LastUpdated > getdate() - @day and (state = 'closed' or state='open')  and Org = @org group by LastUpdated , State
+
+	END			
+	ELSE
+	BEGIN
+		select cast (LastUpdated as char(11)) as [Date], count(*) Ctr, [State]  as [State]
+			from [dbo].[vwOpenClosedPR] where 
+				LastUpdated > getdate() - @day and (state = 'closed' or state='open')  and Org = @org 
+					and Login = @login 
+						group by LastUpdated , State
+
+	END
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetHookData]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE PROCEDURE [dbo].[GetHookData]
+	
+AS
+Declare @Id integer
+
+BEGIN
+    select top 1 @Id = Id from HookRawData where [status] is null  order by dateUpdated desc
+
+	Update HookRawData 
+		Set [Status] = 1, 
+		ProcessingDate = getdate() 
+		   where Id = @Id
+
+	Select * from HookRawData where Id = @Id 
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetJiraData]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      <Author, , Name>
+-- Create Date: <Create Date, , >
+-- Description: <Description, , >
+-- =============================================
+CREATE PROCEDURE [dbo].[GetJiraData] (
+	@UserName varchar(200),
+	@Org varchar(200) = null,
+	@Day int = 50
+ )
+AS
+BEGIN
+ 
+    SET NOCOUNT ON
+
+    SELECT top 50
+	'https://' + [Org] + '.atlassian.net/jira/people/' + [AssigneeId] AS UserLink
+	,'https://' + [Org] + '.atlassian.net/browse/' + [key] as PullRequestUrl
+	,[Key] as 'Key'
+	,title as 'Title'
+	,[CreatedDate] as CreatedDate
+	,[UpdatedDate] as UpdatedDate
+	,[Title] as Description
+	,[Assignee] as Assignee
+	,[Status] as 'Status'
+	,Org as OrgName
+	,Summary as Summary
+	,Story 
+
+	from JiraData Where  [Assignee] = @UserName AND LOWER (Org) in (
+	   select LOWER (LinkedOrg) from OrgLink where Org = LOWER (@Org)
+	)
+	order by [CreatedDate] desc
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetJiraOrg]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[GetJiraOrg]
+	(
+	-- Add the parameters for the stored procedure here
+	@TenantId CHAR(50)
+)
+AS
+BEGIN
+
+	SELECT AccessibleResources
+	FROM [dbo].[JiraTenant]
+	WHERE Id = @TenantId
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetJiraTenant]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+
+
+CREATE PROCEDURE [dbo].[GetJiraTenant]
+	(
+	-- Add the parameters for the stored procedure here
+	@Id Char (50)
+)
+AS
+BEGIN
+    -- exec dbo.SaveActiveTenant @id
+
+	SELECT *
+	FROM JiraTenant
+	WHERE Id = @Id
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetJiraUsers]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+Create PROCEDURE [dbo].[GetJiraUsers]
+	(
+	-- Add the parameters for the stored procedure here
+	@TenantId CHAR(50),
+	@org Char (200)
+
+	
+)
+AS
+BEGIN
+
+	SELECT *
+	FROM [dbo].[JiraUsers]
+	WHERE TenantId = @TenantId and Org = @Org
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetKudos]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[GetKudos]
+(
+    @Org varchar(200),
+	@GitOrg Varchar(200)
+ )
+AS
+BEGIN
+    -- SET NOCOUNT ON added to prevent extra result sets from
+    -- interfering with SELECT statements.
+    SET NOCOUNT ON
+
+SELECT [Sender]
+      ,[Target]
+      ,[GitOrgName]
+      ,[LastUpdated]
+       ,[OrgName], Kudos
+  FROM [dbo].Kudos Where  OrgName = @Org and LastUpdated > getdate() - 60
+  -- AND GitOrgName = @GitOrg  ignore gitOrg Name for the Kudos
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetKudos4User]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[GetKudos4User]
+(
+    @Target varchar(200)
+ )
+AS
+BEGIN
+    -- SET NOCOUNT ON added to prevent extra result sets from
+    -- interfering with SELECT statements.
+    SET NOCOUNT ON
+
+SELECT [Sender]
+      ,[Target]
+      ,[GitOrgName]
+      ,[LastUpdated]
+       ,[OrgName], Kudos
+  FROM [dbo].Kudos Where Target = @Target
+END
+GO
+/****** Object:  StoredProcedure [dbo].[getLoggedInUSerDetails]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[getLoggedInUSerDetails]
+	(
+	@Email varchar(200)
+)
+AS
+BEGIN
+
+	SELECT  Email, UserName, DisplayName, Photo, ProfileUrl, [GitUserName],[JiraUserName],[TfsUserName]
+	FROM [dbo].[Users]
+	WHERE Email  = @Email
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetOrg4UserId]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[GetOrg4UserId]
+	(
+	-- Add the parameters for the stored procedure here
+	@Email VARCHAR(200)
+)
+AS
+BEGIN
+
+select Org, DisplayName, Trim(OrgType) as OrgType from userOrg where Email = @Email
+union
+select distinct Org, DisplayName,  Trim(OrgType) as OrgType from userOrg where Org in ( 
+Select LinkedOrg from OrgLink where Org in (  select Org from userOrg where Email = @Email))
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[getOrgChart]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[getOrgChart]
+	(
+	@Org VARCHAR(200) 
+)
+AS
+BEGIN
+ SET NOCOUNT ON
+   select * from OrgChart where org = @org  
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetPR4Id]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[GetPR4Id]
+	(
+	-- Add the parameters for the stored procedure here
+	@Id int,
+	@Org VARCHAR(200)
+)
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON
+
+	SELECT *
+	FROM [dbo].[PullRequestDetails]
+	where [Id] = @Id AND Org = @Org
+
+
+
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetPR4Repo]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE PROCEDURE [dbo].[GetPR4Repo]
+	(
+	@org VARCHAR(200) ,
+	@repo VARCHAR(200)
+)
+AS
+BEGIN
+
+	SELECT top 50
+		*
+	FROM [dbo].[PullRequestDetails]
+	WHERE org = @org AND Repo = @repo order by LastUpdated Desc 
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetRepoCollectionByName]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[GetRepoCollectionByName]
+	(
+	@CollectionName VARCHAR(200)
+)
+AS
+BEGIN
+
+	SELECT *
+	FROM RepoCollections
+	WHERE CollectionName = @CollectionName
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetRepoParticipation4Login]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ 
+CREATE PROCEDURE [dbo].[GetRepoParticipation4Login]
+	(
+	-- Add the parameters for the stored procedure here
+	@login VARCHAR(100),
+	@org VARCHAR(200),
+	@days INT
+)
+AS
+BEGIN
+
+	select  Repo,  count(*) ctr
+		from [dbo].[PullRequestDetails] 
+				where created_at between getdate() - @days and   getdate() and 
+					[login] = @login and org = @org
+							group by Repo 
+							 order by ctr desc
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetRepoPR]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[GetRepoPR]
+	(
+	-- Add the parameters for the stored procedure here
+	@Day INT = 1,
+	@Org VARCHAR(200),
+	@Repo VARCHAR(200),
+	@PageSize INT
+
+)
+AS
+BEGIN
+	SELECT DISTINCT TopRow.*, Pr.title as title, pr.Body as body,
+		pr.Url as pullrequesturl,
+		CAST(pr.Created_At as char(12)) as created_at, pr.Created_At as sortonthis
+	FROM (
+						SELECT * , ROW_NUMBER () Over (partition by Org ORDER BY   [LastUpdated] desc) as [ROW NUMBER]
+		FROM [vwOpenClosedPR]
+		WHERE LastUpdated BETWEEN  CAST( CAST(GETDATE() - @Day as char(12)) AS DateTime) AND  CAST( CAST (GETDATE() as char(12)) as DateTime)
+			AND Org = @Org AND Repo = @Repo
+						
+						) AS TopRow JOIN PullRequestDetails PR ON 
+							PR.Url = TopRow.Url
+	WHERE  TopRow.[ROW NUMBER] <= @pageSize
+	ORDER BY sortonthis DESC
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetRepos]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE PROCEDURE [dbo].[GetRepos]
+	(
+ 
+	@Org VARCHAR(200)
+
+)
+AS
+BEGIN
+	SELECT *
+	FROM GitRepos
+	WHERE  Org = @Org
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[getRole4Org]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[getRole4Org]
+(
+	@Org varchar(200) 
+)
+AS
+BEGIN
+	SELECT UR.Email, UR.Org, UR.Role, U.DisplayName as UserDisplayName  from [UserRoles] UR  Join Users U
+		on UR.Email = U.Email
+	where UR.Org = @Org
+	
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetSR4Id]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+Create PROCEDURE [dbo].[GetSR4Id]
+	(
+	-- Add the parameters for the stored procedure here
+	@Id int
+)
+AS
+BEGIN
+
+	SELECT *
+	FROM [dbo].[MSR]
+	WHERE SRId = @Id
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetSR4User]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+/* Gets all the reports for the User */
+CREATE PROCEDURE [dbo].[GetSR4User]
+	(
+	-- Add the parameters for the stored procedure here
+	@userId varchar(100)
+)
+AS
+BEGIN
+
+	SELECT SRId, [Status], org, [StatusDetails], [Reviewer], [ManagerComment],[Manager],[ManagerStatus], ReportCreationDate as  ReportDate
+	FROM [dbo].[MSR]
+	WHERE UserId = @userId  order by LastUpdated desc
+
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetSR4User4Review2]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[GetSR4User4Review2]
+	(
+	 
+	@userId varchar(100),
+	@Status int, --2 for in review 99 means get all the reports for the reviewer, 1000 means call is for MSRAdmin, show all the reports
+	@Org varchar(200), --Org comes in picture only for MSRAdmin ... and the reports are no more filtered by User
+	@UserFilter varchar(max),
+	@DateFilter varchar(50)
+)
+AS
+BEGIN
+
+ DECLARE @args   TABLE (args VARCHAR(255))
+ DECLARE @stringStart INT 
+ DECLARE @stringLength INT
+ DECLARE @stringValue VARCHAR(255)
+ 
+ if @UserFilter = 'null'
+	BEGIN
+		select @UserFilter = null
+	END
+
+if @DateFilter = 'null'
+	BEGIN
+		select @DateFilter = null
+	END
+
+
+ IF @UserFilter is NOT NULL
+ BEGIN
+	SET @stringStart = 0
+	WHILE @stringStart < LEN(@UserFilter)
+	BEGIN
+	  SET @stringLength = (CHARINDEX(',', @UserFilter, @stringStart) - @stringStart)
+	  IF @stringLength < 0
+	  BEGIN
+	   SET @stringLength = (LEN(@UserFilter) - @stringStart) + 1
+	  END
+	  SET @stringValue = TRIM(SUBSTRING(@UserFilter, @stringStart, @stringLength))
+	  IF LEN(@stringValue) > 0 
+	  BEGIN
+		INSERT INTO @args
+		VALUES ( LOWER(TRIM( @stringValue)))
+	  END
+	  SET @stringStart = (@stringStart + @stringLength) + 1
+	END
+END
+
+/* Status 1000 for MSRAdmin, so dont filter on reviewer but show all the reports */
+
+	if (@status = 1000 AND (@UserFilter is NULL AND @DateFilter IS NULL))
+	begin
+			-- Get all the reports for the reviewers
+			SELECT top 1000  SRId, [Status], UserId, ReportCreationDate as  ReportDate
+				FROM [dbo].[SR_R_View] Where Org = @Org 
+				order by UserId asc
+			return
+	end
+
+
+	IF @status = 1000 AND @UserFilter is not Null
+	BEGIN
+	 
+					SELECT distinct SRId, [Status], UserId, ReportCreationDate as  ReportDate
+						FROM [dbo].SR_R_View
+							where UserId in (select * from  @args  ) AND  Org = @Org 
+								order by UserId asc
+								return
+	END
+
+	IF @status = 1000 AND @DateFilter is not null
+	BEGIN
+						SELECT distinct SRId, [Status], UserId, ReportCreationDate as  ReportDate
+						FROM [dbo].SR_R_View
+								where   Org = @Org  AND 
+								DATEPART(MM, ReportCreationDate)  = DATEPART(MM, @DateFilter) 
+								AND DATEPART(YYYY, ReportCreationDate)  = DATEPART(YYYY, @DateFilter) 
+								order by UserId asc
+								return
+	END
+
+
+	if (@status = 99 AND (@UserFilter is NULL AND @DateFilter IS NULL))
+	begin
+			-- Get all the reports for the reviewers
+			SELECT distinct SRId, [Status], UserId, ReportCreationDate as  ReportDate
+				FROM [dbo].[SR_R_View]
+				WHERE  reviewerId = @userId
+				order by ReportCreationDate desc
+			return
+	end
+	
+	if @UserFilter is NULL  AND @DateFilter IS NULL
+	BEGIN
+				SELECT distinct SRId, [Status], UserId, ReportCreationDate as  ReportDate
+					FROM [dbo].SR_R_View
+						WHERE  reviewerid = @userId 
+							AND 
+					[Status] = @Status --InReview
+						order by ReportCreationDate desc
+						return 
+	END
+
+	IF @UserFilter is not Null
+	BEGIN
+	 
+					SELECT distinct SRId, [Status], UserId, ReportCreationDate as  ReportDate
+						FROM [dbo].SR_R_View
+							WHERE  reviewerid = @userId 
+								AND UserId in (select * from  @args  )
+								order by ReportCreationDate desc
+								return
+	END
+
+	IF @DateFilter is not null
+	BEGIN
+						SELECT distinct SRId, [Status], UserId, ReportCreationDate as  ReportDate
+						FROM [dbo].SR_R_View
+							WHERE  reviewerid = @userId 
+								AND DATEPART(MM, ReportCreationDate)  = DATEPART(MM, @DateFilter) 
+								AND DATEPART(YYYY, ReportCreationDate)  = DATEPART(YYYY, @DateFilter) 
+								order by ReportCreationDate desc
+	END
+
+
+		
+
+	
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetTFSData]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      <Author, , Name>
+-- Create Date: <Create Date, , >
+-- Description: <Description, , >
+-- =============================================
+CREATE PROCEDURE [dbo].[GetTFSData] (
+	@UserName varchar(200),
+	@Org varchar(200) = null,
+	@Day int = 50
+ )
+AS
+BEGIN
+ 
+    SET NOCOUNT ON
+
+    SELECT top 50
+	'https://' + [Org] + '.atlassian.net/jira/people/' + [AssigneeId] AS UserLink
+	,'https://' + [Org] + '.atlassian.net/browse/' + [key] as PullRequestUrl
+	,[Key] as 'Key'
+	,title as 'Title'
+	,[CreatedDate] as CreatedDate
+	,[UpdatedDate] as UpdatedDate
+	,[Title] as Description
+	,[Assignee] as Assignee
+	,[Status] as 'Status'
+	,Org as OrgName
+	,Summary as Summary
+
+	from TFSData Where  [Assignee] = @UserName AND LOWER (Org) in (
+	   select LOWER (LinkedOrg) from OrgLink where Org = LOWER (@Org)
+	)
+	order by [CreatedDate] 
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetTopRepos4XDays]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[GetTopRepos4XDays]
+	(
+	-- Add the parameters for the stored procedure here
+	@Day int = 1,
+	@Org VARCHAR(200)
+)
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON
+
+	SELECT [Repo], count(*) ctr
+	FROM [vwOpenClosedPR]
+	WHERE 
+			LastUpdated BETWEEN  CAST( CAST(GETDATE() - @Day as char(12)) AS DateTime) AND  CAST( CAST (GETDATE() as char(12)) as DateTime)
+		AND Org = @Org
+	GROUP BY  [Repo]
+	ORDER BY   ctr desc
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetUser]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE PROCEDURE [dbo].[GetUser]
+	(
+	-- Add the parameters for the stored procedure here
+	@Email varchar(200)
+)
+AS
+BEGIN
+  --  exec dbo.SaveActiveUser @id
+
+	SELECT *
+	FROM [Users]
+	WHERE Email = @Email order by UserName
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetUser4Org]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[GetUser4Org]
+	(
+	@Org VARCHAR(200)
+)
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON
+ 
+SELECT   dbo.Users.Email, dbo.Users.UserName, dbo.UserOrg.Org, dbo.UserOrg.DisplayName as OrgDisplayName, 
+dbo.Users.DisplayName AS UserDisplayName, 
+dbo.Users.JiraUserName, dbo.Users.GitUserName, dbo.Users.TfsUserName,
+dbo.UserOrg.Active, dbo.UserOrg.OrgType
+FROM     dbo.UserOrg INNER JOIN
+                  dbo.Users ON dbo.UserOrg.Email = dbo.Users.Email
+				  where dbo.UserOrg.Org = @Org order by dbo.users.userName 
+	 
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetUserRole]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[GetUserRole]
+(
+    @login varchar(100),
+	@Org varchar(200) 
+)
+AS
+BEGIN
+	SELECT [Role] from [UserRoles] where [Email] = @login and Org = @Org
+	
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GetWatcher]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[GetWatcher]
+(
+    @Org varchar(200),
+	@GitOrg Varchar(200)
+ )
+AS
+BEGIN
+    -- SET NOCOUNT ON added to prevent extra result sets from
+    -- interfering with SELECT statements.
+    SET NOCOUNT ON
+
+SELECT [Watcher]
+      ,[Target]
+      ,[GitOrgName]
+      ,[LastUpdated]
+      ,[WatchStartDate]
+      ,[OrgName]
+  FROM [dbo].[WatchPR] Where  OrgName = @Org
+  -- GitOrgName = @GitOrg  AND
+END
+GO
+/****** Object:  StoredProcedure [dbo].[GitDev4Org]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[GitDev4Org]
+	(
+	@Org VARCHAR(200)
+)
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON
+ 
+	SELECT distinct  Email, login, ISNULL(Name, login) as Name, AvatarUrl, org 
+	FROM Developers where  Org = @org 
+	order by Name desc
+	 
+END
+GO
+/****** Object:  StoredProcedure [dbo].[IsAdmin]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[IsAdmin]
+(
+    @login varchar(100),
+	@Org varchar(200)
+)
+AS
+BEGIN
+    -- SET NOCOUNT ON added to prevent extra result sets from
+    -- interfering with SELECT statements.
+    SET NOCOUNT ON
+	declare @result int
+
+    -- Insert statements for procedure here
+    SELECT @result = count(*) from [UserRoles] where Email = @login and Org = @Org and  Role = 'Admin' 
+	return @result  
+END
+GO
+/****** Object:  StoredProcedure [dbo].[IsMSRAdmin]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[IsMSRAdmin]
+(
+    @login varchar(200),
+	@Org varchar(200)
+)
+AS
+BEGIN
+    -- SET NOCOUNT ON added to prevent extra result sets from
+    -- interfering with SELECT statements.
+    SET NOCOUNT ON
+	declare @result int
+
+    -- Insert statements for procedure here
+    SELECT @result = count(*) from [UserRoles] where Email = @login and Org = @Org and  Role = 'MSRAdmin' 
+	IF @result > 0 
+		RETURN 1
+	ELSE
+		RETURN 0
+	
+END
+GO
+/****** Object:  StoredProcedure [dbo].[LongestPR]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[LongestPR]
+	(
+	-- Add the parameters for the stored procedure here
+	@Day int = 1,
+	@Org VARCHAR(200)
+)
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON
+
+	SELECT [Id], DATEDIFF(day, [Created_At], [LastUpdated] ) duration
+	FROM [dbo].[PullRequestDetails]
+	where state = 'closed' AND Org = @Org AND LastUpdated BETWEEN GETDATE() - @Day AND GETDATE()
+	ORDER BY   duration desc
+
+
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[MissingMSR]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      <Author, , Name>
+-- Create Date: <Create Date, , >
+-- Description: <Description, , >
+-- =============================================
+CREATE PROCEDURE [dbo].[MissingMSR]
+AS
+BEGIN
+    SET NOCOUNT ON
+
+/****** Script for SelectTopNRows command from SSMS  ******/
+select distinct DisplayName as Name, Email from Users where Email not in (
+SELECT [UserId]
+  FROM [dbo].[MSR] 
+  where month(ReportCreationDate) = month (getdate()) 
+  ) and isMSRNeeded = 1
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[PR4Devs]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+/* IFstate is null then get all the pull Request */
+CREATE PROCEDURE [dbo].[PR4Devs]
+	(
+	@Org VARCHAR(200),
+	@login VARCHAR(100),
+	@Action VARCHAR(50),
+	@day int,
+	@pageSize int
+)
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON
+
+	IF( @Action = 'null')
+		BEGIN
+		IF(@login = 'null' )
+				BEGIN
+			-- No login no action (for all pr )
+			SELECT DISTINCT TopRow.*, Pr.title as title, pr.Body as body,
+				pr.Url as pullrequesturl,
+				CAST(pr.Created_At as char(12)) as created_at, pr.Created_At as sortonthis
+			FROM (
+						SELECT * , ROW_NUMBER () Over (partition by Org ORDER BY   [LastUpdated] desc) as [ROW NUMBER]
+				FROM [vwOpenClosedPR]
+				WHERE LastUpdated BETWEEN  CAST( CAST(GETDATE() - @Day as char(12)) AS DateTime) AND  CAST( CAST (GETDATE() as char(12)) as DateTime)
+					AND Org = @Org
+						
+						) AS TopRow JOIN PullRequestDetails PR ON 
+							PR.Url = TopRow.Url
+			WHERE  TopRow.[ROW NUMBER] <= @pageSize
+			ORDER BY sortonthis DESC
+		END
+		 ELSE  
+				BEGIN
+			-- all (open AND closed) pr per dev
+
+			SELECT DISTINCT TopRow.*, Pr.title as title, pr.Body as body,
+				pr.Url as pullrequesturl,
+				CAST(pr.Created_At as char(12)) as created_at, pr.Created_At as sortonthis
+			FROM (
+						SELECT * , ROW_NUMBER () Over (partition by Org ORDER BY   [LastUpdated] desc) as [ROW NUMBER]
+				FROM [vwOpenClosedPR]
+				WHERE LastUpdated BETWEEN  CAST( CAST(GETDATE() - @Day as char(12)) AS DateTime) AND  CAST( CAST (GETDATE() as char(12)) as DateTime)
+					AND Org = @Org
+					AND login = @login
+					AND (State = 'opened' OR State = 'open' OR State = 'closed' OR State = 'close' OR State = 'commit') 
+						) AS TopRow JOIN PullRequestDetails PR ON 
+							PR.Url = TopRow.Url
+			WHERE  TopRow.[ROW NUMBER] <= @pageSize
+			ORDER BY sortonthis DESC
+
+
+		END
+	END
+	 ELSE  
+		-- action is not null
+		BEGIN
+		IF(@login = 'null' )
+				BEGIN
+			-- No login but Action (for all pr )
+			SELECT DISTINCT TopRow.*, Pr.title as title, pr.Body as body,
+				pr.Url as pullrequesturl,
+				CAST(pr.Created_At as char(12)) as created_at, pr.Created_At as sortonthis
+			FROM (
+						SELECT * , ROW_NUMBER () Over (partition by Org ORDER BY   [LastUpdated] desc) as [ROW NUMBER]
+				FROM [vwOpenClosedPR]
+				WHERE LastUpdated BETWEEN  CAST( CAST(GETDATE() - @Day as char(12)) AS DateTime) AND  CAST( CAST (GETDATE() as char(12)) as DateTime)
+					AND Org = @Org
+					AND (State = 'opened' OR State = 'open' OR State = 'closed' OR State = 'close' OR State = 'commit') 
+						) AS TopRow JOIN PullRequestDetails PR ON 
+							PR.Url = TopRow.Url
+			WHERE  TopRow.[ROW NUMBER] <= @pageSize
+			ORDER BY sortonthis DESC
+		END
+				 ELSE  
+				BEGIN
+			-- login AND  Action (for all pr  for particluar dev)
+			SELECT DISTINCT TopRow.*, Pr.title as title, pr.Body as body,
+				pr.Url as pullrequesturl,
+				CAST(pr.Created_At as char(12)) as created_at, pr.Created_At as sortonthis
+			FROM (
+						SELECT * , ROW_NUMBER () Over (partition by Org ORDER BY   [LastUpdated] desc) as [ROW NUMBER]
+				FROM [vwOpenClosedPR]
+				WHERE LastUpdated BETWEEN  CAST( CAST(GETDATE() - @Day as char(12)) AS DateTime) AND  CAST( CAST (GETDATE() as char(12)) as DateTime)
+					AND Org = @Org
+					AND login = @login
+					AND (State = 'opened' OR State = 'open' OR State = 'closed' OR State = 'close' OR State = 'commit') 
+						) AS TopRow JOIN PullRequestDetails PR ON 
+							PR.Url = TopRow.Url
+			WHERE  TopRow.[ROW NUMBER] <= @pageSize
+			ORDER BY sortonthis DESC
+
+		END
+	END
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[PR4LastXDays]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[PR4LastXDays]
+	(
+	-- Add the parameters for the stored procedure here
+	@Day int = 1,
+	@Org VARCHAR(200)
+)
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON
+	declare @ctr int
+	SELECT *
+	FROM [vwOpenClosedPR]
+	WHERE 
+			LastUpdated BETWEEN  CAST( CAST(GETDATE() - @Day as char(12)) AS DateTime) AND  CAST( CAST (GETDATE() as char(12)) as DateTime)
+		AND Org = @Org
+	return @ctr
+END
+GO
+/****** Object:  StoredProcedure [dbo].[PRCount4LastXDays]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[PRCount4LastXDays]
+	(
+	-- Add the parameters for the stored procedure here
+	@Day int = 1,
+	@Org VARCHAR(200),
+	@Login VARCHAR(100)
+)
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON
+
+	IF @Login is null or LEN (TRIM(@login)) = 0 or @login = 'null'
+	BEGIN
+			IF (@Day = 1 )
+				BEGIN
+					SELECT state, count(*) ctr
+					FROM (
+						SELECT state
+							FROM [vwOpenClosedPR]
+								Where 
+									LastUpdated >  cast ( cast ( dateadd (HOUR, -4, GETDATE() - 1) as char(12)) as datetime) --fixing UTC quick rollover of the day
+										AND Org = @Org and (state = 'closed' or state='open')) T 
+								GROUP BY  state
+		
+				END
+			ELSE
+				BEGIN
+					SELECT state, count(*) ctr
+					FROM (
+					SELECT state
+						FROM [vwOpenClosedPR]
+						Where 
+							LastUpdated BETWEEN  CAST( CAST(GETDATE() - @Day  as char(12)) AS DateTime) AND  CAST( CAST (GETDATE()  as char(12)) as DateTime)
+							AND Org = @Org and (state = 'closed' or state='open')) T
+					GROUP BY  state
+			END
+	END
+	BEGIN
+		IF (@Day = 1 )
+				BEGIN
+					SELECT state, count(*) ctr
+					FROM (
+						SELECT state
+							FROM [vwOpenClosedPR]
+								Where 
+									LastUpdated >  cast ( cast ( dateadd (HOUR, -4, GETDATE() - 1) as char(12)) as datetime) --fixing UTC quick rollover of the day
+										AND Org = @Org and login = @login and (state = 'closed' or state='open')) T 
+								GROUP BY  state
+		
+				END
+			ELSE
+				BEGIN
+					SELECT state, count(*) ctr
+					FROM (
+					SELECT state
+						FROM [vwOpenClosedPR]
+						Where 
+							LastUpdated BETWEEN  CAST( CAST(GETDATE() - @Day  as char(12)) AS DateTime) AND  CAST( CAST (GETDATE()  as char(12)) as DateTime)
+							AND Org = @Org  and login = @login  and (state = 'closed' or state='open')) T
+					GROUP BY  state
+			END
+	END
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SaveActiveTenant]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[SaveActiveTenant]
+	(
+	-- Add the parameters for the stored procedure here
+	@TenantId INT
+
+)
+AS
+BEGIN
+
+	IF NOT EXISTS ( SELECT * FROM [dbo].[ActiveTenant] WHERE TenantId = @TenantId  )   
+	    BEGIN
+		Insert into [ActiveTenant]  
+			(TenantId, LastUpdated)
+		Values
+			(@TenantId, GETDATE());
+		END
+	ELSE
+		BEGIN
+			UPDATE [ActiveTenant] SET LastUpdated = GETDATE() WHERE TenantId = @TenantId 
+		END
+
+
+
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SaveActiveUser]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[SaveActiveUser]
+	(
+	-- Add the parameters for the stored procedure here
+	@UserId INT
+
+)
+AS
+BEGIN
+
+	IF NOT EXISTS ( SELECT * FROM [dbo].[ActiveUser] WHERE UserId = @UserId  )   
+	    BEGIN
+		Insert into [ActiveUser]  
+			(UserId, LastUpdated)
+		Values
+			(@UserId, GETDATE());
+		END
+	ELSE
+		BEGIN
+			UPDATE [ActiveUser] SET LastUpdated = GETDATE() WHERE UserId = @UserId 
+		END
+
+
+
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SaveJiraTenant]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[SaveJiraTenant]
+	(
+	-- Add the parameters for the stored procedure here
+	@Id CHAR(50),
+	@email VARCHAR (200),
+	@UserName VARCHAR(200),
+	@DisplayName VARCHAR(200),
+	@ProfileUrl CHAR(500),
+	@AuthToken VARCHAR(2000),
+	@RefreshToken VARCHAR(2000),
+	@Photo CHAR(500),
+	@accessibleResources Char(2000)
+)
+AS
+BEGIN
+
+	IF EXISTS ( SELECT *
+	FROM JiraTenant
+	WHERE Id = @Id)   
+		Update JiraTenant Set Auth_Token = @AuthToken, 
+						  Email = @email,
+						  Refresh_Token = @RefreshToken ,
+						  UserName = @UserName,
+						  DisplayName = @DisplayName,
+						  ProfileUrl = @ProfileUrl,
+						  LastUpdated = GETDATE(),
+						  Photo = @Photo,
+						  AccessibleResources = @accessibleResources
+							where Id = @Id
+	Else
+		Insert into JiraTenant
+		(Id, email, UserName, DisplayName, ProfileUrl, Photo, Auth_Token, Refresh_token, LastUpdated, AccessibleResources)
+	Values
+		(@Id, @email, @UserName, @DisplayName, @ProfileUrl, @Photo, @AuthToken, @RefreshToken, GETDATE(), @accessibleResources);
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SaveJiraUsers]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE PROCEDURE [dbo].[SaveJiraUsers]
+	(
+	-- Add the parameters for the stored procedure here
+	@TenantId CHAR(50),
+	@Org VARCHAR(200),
+	@accountId VARCHAR(100),
+	@displayName VARCHAR(200),
+	@avatarUrls VARCHAR(5000),
+	@self VARCHAR(500)
+)
+AS
+BEGIN
+
+	IF EXISTS ( SELECT *
+		FROM [dbo].JiraUsers
+			WHERE TenantId = @TenantId AND Org = @org AND AccountId = @accountId)   
+		BEGIN
+		update JiraUsers
+			 set displayName = @displayName, [self] = @self, avatarUrls = @avatarUrls , LastUpdated = GETDATE()  
+					WHERE TenantId = @TenantId AND Org = @org AND AccountId = @accountId
+	END
+	 ELSE  
+		BEGIN
+		Insert into JiraUsers
+			(TenantId,Org, AccountId, [displayName], avatarUrls, [self], LastUpdated)
+		Values
+			(@TenantId, @Org, @accountId, @displayName, @avatarUrls, @self, GETDATE());
+	END
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SaveMSR]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+/*
+	IN_PROGRESS: number = 1;
+	IN_REVIEW: number = 2;
+	CLOSED: number = 3;
+	REJECTED: number = 4;
+	ARCHIVED: number = 5;
+	DELETE: number = 6;
+	ALL: number = 99;
+  */
+
+
+CREATE PROCEDURE [dbo].[SaveMSR]
+	(
+	@SRId int,
+	@UserId VARCHAR(100), 
+	@Org VARCHAR(200), 
+	@StatusDetails varchar(max),
+	@Reviewer varchar(500),
+	@Status int,  -- 1=inProgress, 2=InReviw, 3=closed 4=Rejected 5=Archived 
+	@Links VARCHAR(1000) , 
+	@Manager varchar(100),
+	@ManagerComment varchar(4000),
+	@ManagerStatus int
+)
+AS
+BEGIN
+   DECLARE 
+   @SR int,
+   @R varchar(1000),
+   @RDate DateTime
+
+	if (@Status = 6) 
+	begin
+		Delete from MSR WHERE SRId = @SRId 
+		RETURN
+	end
+	IF @SrId = -1  
+		BEGIN
+		Insert into MSR  
+			(UserId,Org, StatusDetails, Reviewer, [Status], Links, [ReportCreationDate])
+		Values
+			(@UserId,@Org, @StatusDetails, @Reviewer, @Status, @Links, GETDATE());
+		
+		SELECT @SR = SCOPE_IDENTITY()
+		SELECT @RDate = GETDATE()
+
+		EXEC  [dbo].[UpDateR4SR]  @Reviewer,	@SR, @RDate
+		END
+	ELSE
+		BEGIN
+
+			Delete from dbo.RSR where SRId = @SRId ;
+			SELECT @RDate = GETDATE()
+			EXEC [dbo].[UpDateR4SR] @Reviewer, @SRId, @RDate
+
+			UPDATE MSR SET 
+			-- UserId = @UserId, userId should be updated only when the first time report is created. This can never change later. userId is author
+			Org = @Org, 
+			StatusDetails = @StatusDetails, 
+			Reviewer= @Reviewer, 
+			[Status] = @Status, 
+			[Links] = @Links,
+			Manager = @Manager,
+			ManagerComment = @ManagerComment,
+			ManagerStatus = @ManagerStatus,
+			LastUpdated = getdate()
+			WHERE SRId = @SRId  ;
+
+			
+		END
+
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SaveOrgChart]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[SaveOrgChart]
+	(
+	 
+	@UserId VARCHAR(100), 
+	@Org VARCHAR(200), 
+	@OrgChart varchar(max)
+)
+AS
+BEGIN
+   DECLARE 
+   @SR int,
+   @R varchar(1000),
+   @RDate DateTime
+
+	
+	IF not exists (select * from OrgChart where org = @org and UserId = @UserId )
+		BEGIN
+		Insert into OrgChart  
+			(UserId,Org, OrgChart, LastUpdated)
+		Values
+			(@UserId,@Org, @OrgChart, GETDATE());
+		
+		END
+	ELSE
+		BEGIN
+			UPDATE OrgChart SET 
+			-- UserId = @UserId, userId should be updated only when the first time report is created. This can never change later. userId is author
+			OrgChart = @OrgChart,
+			LastUpdated = getdate()
+			WHERE  org = @org and UserId = @UserId
+		END
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SaveOrgLink]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[SaveOrgLink]
+	(
+	@Org VARCHAR(200), 
+	@GitOrg varchar(200)
+)
+AS
+BEGIN
+  
+	IF not exists (select * from OrgLink where org = @org and LinkedOrg = @GitOrg )
+		BEGIN
+		Insert into OrgLink  
+			(Org, LinkedOrg, LastUpdated)
+		Values
+			(@Org, @GitOrg, GETDATE());
+		
+		END
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SaveOrgTreeNode]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE PROCEDURE [dbo].[SaveOrgTreeNode]
+(
+    @Emp as varchar(200),
+	@Mgr as varchar(200),
+	@org as varchar(200)
+)
+AS
+BEGIN
+    
+    If exists (select * from OrgTree where Employee = @Emp and Manager = @Mgr
+		and Org = @org ) 
+		Begin 
+			update OrgTree set LastUpdated = getdate() where
+				 Employee = @Emp and Manager = @Mgr
+						and Org = @org 
+		end
+	else
+		begin
+			insert into OrgTree (Employee, Manager, Org) values 
+			(@Emp, @Mgr, @Org)
+		end
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SavePR4Repo]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[SavePR4Repo]
+	(
+	@Id VARCHAR(200),
+	@Org VARCHAR(200),
+	@Repo VARCHAR(200),
+	@Url VARCHAR(2000),
+	@State VARCHAR(50),
+	@Action VARCHAR(50),
+	@Title VARCHAR(2000),
+	@Created_At VARCHAR(20),
+	@body VARCHAR(2000),
+	@Login VARCHAR(100),
+	@Avatar_url VARCHAR(2000),
+	@User_url VARCHAR(2000)
+
+)
+AS
+BEGIN
+
+
+	IF EXISTS ( SELECT *
+	FROM [dbo].[PullRequestDetails]
+	WHERE Id = @Id AND [State] = @state)   
+			BEGIN
+		UPDATE [PullRequestDetails]  
+					SET LastUpdated = getDate(),
+						Created_At =  CAST(@Created_At as DATETIME),
+						Org = @Org,
+						Repo = @Repo,
+						[url] = @Url,
+						[State] = @State,
+						[Action] = @Action,
+						Title = @Title,
+						Body = @Body,
+						[Login] = @Login,
+						Avatar_Url = @Avatar_url,
+						User_Url = @User_Url 
+								WHERE Id = @Id
+	END
+		ELSE
+			BEGIN
+		INSERT INTO [PullRequestDetails]
+			(
+			Id,
+			Org ,
+			Repo,
+			[Url] ,
+			[State],
+			[Action],
+			Title ,
+			Created_At ,
+			body ,
+			[Login],
+			Avatar_url ,
+			User_url
+			)
+		VALUES
+			(
+				@Id,
+				@Org ,
+				@Repo,
+				@Url ,
+				@State,
+				@Action,
+				@Title ,
+				CAST(@Created_At as DATETIME) ,
+				@body ,
+				@Login,
+				@Avatar_url ,
+				@User_url 
+			)
+	END
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[saveRawHookData]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[saveRawHookData]
+	(
+	 
+	@Message TEXT
+)
+AS
+BEGIN
+
+		Insert into HookRawData
+			 ([Message])
+		Values
+			(  @Message);
+ 
+
+
+
+
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SaveRepos]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[SaveRepos]
+	(
+	@Org VARCHAR(200),
+	@Id VARCHAR(100),
+	@name VARCHAR(200),
+	@desc VARCHAR(1000),
+	@HomePage VARCHAR(1000),
+	@CreatedAt VARCHAR(10)
+
+)
+AS
+BEGIN
+
+	/*	DECLARE @ID VARCHAR(100)
+	DECLARE @Name VARCHAR(200)
+	DECLARE @Desc VARCHAR(1000)
+	DECLARE @HomePage VARCHAR(1000)
+	DECLARE @CreatedAt DateTime
+
+	CREATE TABLE #T1 (
+		id VARCHAR(100),
+		[name] VARCHAR(200),
+		[desc] VARCHAR(1000),
+		HomePage VARCHAR(1000),
+		CreatedAt VARCHAR(12),
+
+	)
+	INSERT INTO #t1  SELECT VALUE FROM  STRING_SPLIT (@Repository, ',')  
+		
+	DECLARE RepoCur CURSOR READ_ONLY
+      FOR
+      SELECT * FROM #T1
+	OPEN RepoCur
+	FETCH NEXT FROM RepoCur INTO @ID, @Name, @Desc, @HomePage, @CreatedAt
+
+	WHILE @@FETCH_STATUS = 0
+	BEGIN
+	*/
+	IF EXISTS ( SELECT *
+		FROM GitRepos
+		WHERE   RepoName = @Name AND Org = @Org)   
+		BEGIN
+			UPDATE GitRepos  
+				SET 
+					LastUpdated = getDate(),
+						RepoName = @Name,
+						ID = @ID,
+						[Desc] = @Desc,
+						HomePage = @HomePage,
+						Created_At =  CAST (@CreatedAt as DATETIME)
+						WHERE  RepoName = @Name AND Org = @Org
+		END
+	ELSE
+
+		INSERT INTO GitRepos
+		(RepoName, Org, ID, [Desc], HomePage, Created_At)
+	VALUES
+		(@Name, @Org, @ID, @Desc, @HomePage, CAST(@CreatedAt as DateTime));
+
+/*	FETCH NEXT FROM RepoCur INTO @ID, @Name, @Desc, @HomePage, @CreatedAt
+	END
+	CLOSE RepoCur
+	DEALLOCATE RepoCur
+	*/
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SaveSignupToken]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[SaveSignupToken]
+	(
+	@Token VARCHAR(2000)
+)
+AS
+BEGIN
+
+		Insert into subscriptions
+			( AzureMPToken )
+			OUTPUT Inserted.ID
+		Values
+			(  @Token);
+	 
+	 
+
+
+
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SaveStatus2]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[SaveStatus2]
+	(
+	-- Add the parameters for the stored procedure here
+	@TenantId CHAR(100),
+	@Status CHAR(50),
+	@Message VARCHAR(2000)
+)
+AS
+BEGIN
+
+			INSERT INTO [ErrorStatus]
+				(TenantId,[Status], [Message], lastUpdated)
+			Values
+				(@TenantId, @Status, @Message,  GETDATE());
+
+			delete from [ErrorStatus] where DATEDIFF(day , getdate(), LastUpdated ) > 10
+	
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SaveUser]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[SaveUser]
+	(
+	-- Add the parameters for the stored procedure here
+	--@Id INT,  --Remove it after fixing the code - No one is using it
+	@email VARCHAR (200),
+	@UserName VARCHAR(200),
+	@DisplayName VARCHAR(200),
+	@ProfileUrl VARCHAR(2000),
+	@AuthToken VARCHAR(4000),
+	@RefreshToken VARCHAR(4000),
+	@Photo VARCHAR(2000)
+)
+AS
+BEGIN
+
+	IF EXISTS ( SELECT *
+	FROM [Users]
+	WHERE Email = @email)   
+		Update [Users] Set Auth_Token = @AuthToken, 
+						  Email = @email,
+						  Refresh_Token = @RefreshToken ,
+						  UserName = @UserName,
+						  DisplayName = @DisplayName,
+						  ProfileUrl = @ProfileUrl,
+						  LastUpdated = GETDATE(),
+						  Photo = @Photo
+							where Email = @email
+	Else
+		Insert into [Users]
+		(email, UserName, DisplayName, ProfileUrl, Photo, Auth_Token, Refresh_token, LastUpdated)
+	Values
+		( @email, @UserName, @DisplayName, @ProfileUrl, @Photo, @AuthToken, @RefreshToken, GETDATE());
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SaveUserOrg]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[SaveUserOrg]
+	(
+	@Email Varchar(200),
+	@Org VARCHAR(200), 
+	@DisplayName VARCHAR(200) ,
+	@OrgType VARCHAR(5)
+)
+AS
+BEGIN
+	Declare @OverrideOrg varchar(200)
+
+	select @OverrideOrg = Org from UserOrgOverride where Email = @Email
+
+	set @Org = ISNULL (@OverrideOrg, @Org)
+	
+	if (Trim(@org) = 'labshare.org')   --Folding different Org into one
+		SET @org = 'axleinfo.com'
+
+	IF NOT EXISTS ( SELECT *
+		FROM [dbo].[UserOrg]
+			WHERE Email = @Email AND Org = @org)   
+
+		BEGIN
+		Insert into UserOrg  
+			(Email,Org,DisplayName, OrgType)
+		Values
+			(@Email, @Org, @DisplayName, @OrgType);
+		END
+	ELSE
+		BEGIN
+			UPDATE UserOrg SET DisplayName = @DisplayName , OrgType=  @OrgType WHERE  Email = @Email AND Org = @org 
+		END
+
+
+
+
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SaveUserRole]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[SaveUserRole]
+(
+    @login varchar(100),
+	@Org varchar(200),
+	@role varchar(100)
+)
+AS
+BEGIN
+    SET NOCOUNT ON
+    IF NOT EXISTS ( SELECT 1 from [UserRoles] where Email = @login and Org = @Org and  [Role] = @role )
+	BEGIN
+		INSERT INTO [UserRoles] (Email, Org, [role], LastUpdated )
+		VALUES (@login, @Org, @Role, GetDate())
+	END
+	ELSE 
+	BEGIN
+		-- User is getting kicked out of a role
+		UPDATE [UserRoles] SET [Role] = @Role, LastUpdated = GetDate() where Email = @login and [Org] = @Org 
+	END
+	
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SetJiraData]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[SetJiraData]
+	(
+	 
+	@Id int,
+	@Key VARCHAR(200),
+	@Title VARCHAR(5000),
+	@Reporter VARCHAR(200),
+	@Assignee VARCHAR(200),
+	@CreatedDate Date,
+	@UpdatedDate Date,
+	@IssueType VARCHAR(50),
+	@Priority VARCHAR(50),
+	@Story int,
+	@ReporterAvatarUrl VARCHAR(1000),
+	@AssigneeAvatarUrl  VARCHAR(1000),
+	@Status  VARCHAR(50),
+	@ProjectName  VARCHAR(1000),
+	@Org VARCHAR(200) = null,
+	@AssigneeId varchar(500) = null,
+	@Summary varchar(2000) = null
+)
+AS
+BEGIN
+
+	IF EXISTS ( SELECT *
+	FROM   [dbo].[JiraData]
+	WHERE  Id = @Id AND [Key] = @Key)
+		BEGIN
+		update [dbo].[JiraData]
+			 set 
+			  [Title] = @Title,
+			  [Reporter] = @Reporter,
+			  [Assignee] = @Assignee,
+			  [CreatedDate] = @CreatedDate,
+			  [UpdatedDate] = @UpdatedDate,
+			  [IssueType] = @IssueType,
+			  [Priority] = @Priority,
+			  [Story] = @Story,
+		      [ReporterAvatarUrl] = @ReporterAvatarUrl ,
+			[AssigneeAvatarUrl] = @AssigneeAvatarUrl,
+			[Status] = @Status,
+			[ProjectName] = @ProjectName,
+			[Org] = @Org,
+			AssigneeId = @AssigneeId,
+			Summary = @Summary,
+			LastUpdated = GETDATE()  WHERE  Id = @Id AND [Key] = @Key
+	END
+	 ELSE  
+		BEGIN
+		Insert into [JiraData]
+			( [Id], [key]
+			,[Title]
+			,[Reporter]
+			,[Assignee]
+			,[CreatedDate]
+			,[UpdatedDate]
+			,[IssueType]
+			,[Priority]
+			,[Story]
+			,[ReporterAvatarUrl]
+			,[AssigneeAvatarUrl]
+			,[Status]
+			,[ProjectName]
+			,Org
+			,AssigneeId
+			,Summary
+			,lastUpdated)
+		Values
+			( @Id, @Key 
+			,@Title
+			,@Reporter
+			,@Assignee
+			,@CreatedDate
+			,@UpdatedDate
+			,@IssueType
+			,@Priority
+			,@Story
+			,@ReporterAvatarUrl
+			,@AssigneeAvatarUrl
+			,@Status
+			,@ProjectName
+			,@Org
+			,@AssigneeId
+			,@Summary
+			, GETDATE());
+	END
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SetKudos]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[SetKudos]
+	(
+	@sender VARCHAR(200), 
+	@target VARCHAR(200), 
+	@Org VARCHAR(200), 
+	@gitOrg VARCHAR(200) ,
+	@kudos VARCHAR(5000)
+)
+AS
+BEGIN
+		Insert into Kudos
+			([sender],[Target], [OrgName] , [GitOrgName], kudos)
+		Values
+			(@sender,@target, @Org, @gitOrg, @kudos);
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SetRepoCollection]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[SetRepoCollection]
+	(
+	@TenantId VARCHAR (50),
+	@Org VARCHAR (200),
+	@Repos VARCHAR (200),
+	@CollectionName VARCHAR (200)
+)
+AS
+DECLARE @Repo VARCHAR (200)
+
+CREATE TABLE #T1
+(
+	val VARCHAR(200),
+)
+INSERT INTO #t1
+SELECT VALUE
+FROM STRING_SPLIT (@Repos, ',')
+
+DECLARE RepoCur CURSOR READ_ONLY
+      FOR
+      SELECT val
+FROM #T1
+
+OPEN RepoCur
+
+FETCH NEXT FROM RepoCur INTO @Repo
+
+WHILE @@FETCH_STATUS = 0
+	BEGIN
+		IF NOT EXISTS ( SELECT *
+		FROM RepoCollections
+		WHERE TenantId = @TenantId AND ORG = @Org AND CollectionName = @CollectionName AND Repo = @Repo)
+				BEGIN
+			INSERT INTO RepoCollections
+				([TenantId],[Org],[Repo],[CollectionName])
+			VALUES
+				(@TenantId, @Org, @Repo, @CollectionName)
+	END
+	FETCH NEXT FROM RepoCur INTO @Repo
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SetTFSData]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[SetTFSData]
+	(
+	 
+	@Id int,
+	@Key VARCHAR(200),
+	@Title VARCHAR(5000),
+	@Reporter VARCHAR(200),
+	@Assignee VARCHAR(200),
+	@CreatedDate Date,
+	@UpdatedDate Date,
+	@IssueType VARCHAR(50),
+	@Priority VARCHAR(50),
+	@Story int,
+	@ReporterAvatarUrl VARCHAR(1000) = null,
+	@AssigneeAvatarUrl  VARCHAR(1000) = null,
+	@Status  VARCHAR(50),
+	@ProjectName  VARCHAR(1000),
+	@Org VARCHAR(200) = null,
+	@AssigneeId varchar(500) = null,
+	@Summary varchar(2000) = null
+)
+AS
+BEGIN
+
+	IF EXISTS ( SELECT *
+	FROM   [dbo].[TFSData]
+	WHERE  Id = @Id )
+		BEGIN
+		update [dbo].[TFSData]
+			 set 
+			  [Title] = @Title,
+			  [Reporter] = @Reporter,
+			  [Assignee] = @Assignee,
+			  [CreatedDate] = @CreatedDate,
+			  [UpdatedDate] = @UpdatedDate,
+			  [IssueType] = @IssueType,
+			  [Priority] = @Priority,
+			  [Story] = @Story,
+		      [ReporterAvatarUrl] = @ReporterAvatarUrl ,
+			[AssigneeAvatarUrl] = @AssigneeAvatarUrl,
+			[Status] = @Status,
+			[ProjectName] = @ProjectName,
+			[Org] = @Org,
+			AssigneeId = @AssigneeId,
+			Summary = @Summary,
+			LastUpdated = GETDATE()  WHERE  Id = @Id 
+	END
+	 ELSE  
+		BEGIN
+		Insert into [TFSData]
+			( [Id], [key]
+			,[Title]
+			,[Reporter]
+			,[Assignee]
+			,[CreatedDate]
+			,[UpdatedDate]
+			,[IssueType]
+			,[Priority]
+			,[Story]
+			,[ReporterAvatarUrl]
+			,[AssigneeAvatarUrl]
+			,[Status]
+			,[ProjectName]
+			,Org
+			,AssigneeId
+			,Summary
+			,lastUpdated)
+		Values
+			( @Id, @Key 
+			,@Title
+			,@Reporter
+			,@Assignee
+			,@CreatedDate
+			,@UpdatedDate
+			,@IssueType
+			,@Priority
+			,@Story
+			,@ReporterAvatarUrl
+			,@AssigneeAvatarUrl
+			,@Status
+			,@ProjectName
+			,@Org
+			,@AssigneeId
+			,@Summary
+			, GETDATE());
+	END
+
+END
+GO
+/****** Object:  StoredProcedure [dbo].[SetWatcher]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[SetWatcher]
+	(
+	@watcher VARCHAR(200), 
+	@target VARCHAR(200), 
+	@Org VARCHAR(200), 
+	@gitOrg VARCHAR(200) 
+)
+AS
+BEGIN
+		Insert into WatchPR
+			([Watcher],[Target], [OrgName] , [GitOrgName])
+		Values
+			(@watcher,@target, @Org, @gitOrg);
+END
+GO
+/****** Object:  StoredProcedure [dbo].[TopDevForLastXDays]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[TopDevForLastXDays]
+	(
+	-- Add the parameters for the stored procedure here
+	@Day int = 1,
+	@Org VARCHAR(200)
+)
+AS
+BEGIN
+	SET NOCOUNT ON
+
+	SELECT distinct Login, Name, Avatar_Url,  UserName, DisplayName as UserDisplayName, Email, GitUserName,JiraUserName, TfsUserName 
+	FROM [TopDevVw] where  Org = @org ANd UserName is not null
+	Order by UserDisplayName  
+	
+/*
+	SELECT distinct 
+	dbo.Users.Id
+	, dbo.PullRequestDetails.Login
+	, dbo.Users.DisplayName AS Name
+	, dbo.PullRequestDetails.Avatar_Url
+	, dbo.Users.UserName
+	, dbo.Users.DisplayName AS UserDisplayName, dbo.Users.Email, 
+                  dbo.Users.GitUserName, dbo.Users.JiraUserName, dbo.Users.TfsUserName
+	FROM dbo.Users INNER JOIN
+                  dbo.UserOrg ON dbo.Users.Id = dbo.UserOrg.UserId 
+				  LEFT OUTER  JOIN
+                  dbo.PullRequestDetails ON dbo.Users.GitUserName = dbo.PullRequestDetails.Login
+				  INNER JOIN 
+				  dbo.OrgLink ON dbo.OrgLink.Org  =   UserOrg.Org
+				  WHERE dbo.OrgLink.LinkedOrg = @org AND UserName is not null
+						ORDER BY UserDisplayName ASC 
+
+						*/
+END
+GO
+/****** Object:  StoredProcedure [dbo].[TopDevForLastXDays2]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[TopDevForLastXDays2]
+	(
+	-- Add the parameters for the stored procedure here
+	@Day int = 1,
+	@Org VARCHAR(200),
+	@Context VARCHAR(100) = ''
+)
+AS
+BEGIN
+	SET NOCOUNT ON
+	if (@Context = 'DashBoard')
+		SELECT distinct Login, Name, Avatar_Url,  UserName, DisplayName as UserDisplayName, Email, GitUserName,JiraUserName, TfsUserName , LastUpdated
+		FROM [TopDevVw] where  Org = @org ANd UserName is not null
+		Order by LastUpdated desc  
+	else
+		SELECT distinct Login, Name, Avatar_Url,  UserName, DisplayName as UserDisplayName, Email, GitUserName,JiraUserName, TfsUserName 
+		FROM [TopDevVw] where  Org = @org ANd UserName is not null
+		Order by UserDisplayName  
+	
+	
+/*
+	SELECT distinct 
+	dbo.Users.Id
+	, dbo.PullRequestDetails.Login
+	, dbo.Users.DisplayName AS Name
+	, dbo.PullRequestDetails.Avatar_Url
+	, dbo.Users.UserName
+	, dbo.Users.DisplayName AS UserDisplayName, dbo.Users.Email, 
+                  dbo.Users.GitUserName, dbo.Users.JiraUserName, dbo.Users.TfsUserName
+	FROM dbo.Users INNER JOIN
+                  dbo.UserOrg ON dbo.Users.Id = dbo.UserOrg.UserId 
+				  LEFT OUTER  JOIN
+                  dbo.PullRequestDetails ON dbo.Users.GitUserName = dbo.PullRequestDetails.Login
+				  INNER JOIN 
+				  dbo.OrgLink ON dbo.OrgLink.Org  =   UserOrg.Org
+				  WHERE dbo.OrgLink.LinkedOrg = @org AND UserName is not null
+						ORDER BY UserDisplayName ASC 
+
+						*/
+END
+GO
+/****** Object:  StoredProcedure [dbo].[UpDateR4SR]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE  [dbo].[UpDateR4SR] 
+	@R varchar(1000), --reviewer
+	@SR int,
+	@RDate DateTime
+	AS
+		drop table #TempTable
+		
+		-- Split the reviewer in a tempTable  
+		SELECT  value, @SR as SR, @RDate as RDate into #TempTable
+				FROM STRING_SPLIT(@R, ',') 
+					WHERE RTRIM(value) <> '' 
+
+		-- old data had just -, and new data has -- hence all this drama of replace etc
+		INSERT INTO RSR ([ReviewerId], [SRId], [ReportDate]) 
+				select TRIM(REPLACE(trim (substring (value,PATINDEX ('%-%', value) + 1, 100)),
+				'-', '')), SR, RDate  from #TempTable
+
+ 
+
+GO
+/****** Object:  StoredProcedure [dbo].[UpdateSubscriptionDetails]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[UpdateSubscriptionDetails]
+ @Id integer,
+ @SubscriptionDetails varchar(8000),
+ @planId VARCHAR(200),
+ @Quantity int
+AS
+BEGIN
+    -- SET NOCOUNT ON added to prevent extra result sets from
+    -- interfering with SELECT statements.
+    SET NOCOUNT ON
+	 Update [dbo].[Subscriptions] 
+		Set [SubscriptionDetails] = @SubscriptionDetails,
+		[PlanId] = @PlanId, 
+		[Quantity] = @Quantity
+		where Id = @Id
+END
+GO
+/****** Object:  StoredProcedure [dbo].[updateUserConnectIds]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:      Rafat Sarosh
+-- Create Date: 1/5/2019
+-- Description:  
+-- =============================================
+CREATE PROCEDURE [dbo].[updateUserConnectIds]
+	(
+	-- Add the parameters for the stored procedure here
+	@Email varchar(200),
+	@GitUserName VARCHAR (200),
+	@TFSUserName VARCHAR (200),
+	@JiraUserName VARCHAR (200)
+)
+AS
+BEGIN
+
+		Update [Users] Set GitUserName = @GitUserName,
+						TfsUserName = @TFSUserName,
+						JiraUserName = @JiraUserName
+						  where Email = @Email
+	
+END
+GO
+/****** Object:  StoredProcedure [dbo].[UsersSRStuckInProgress]    Script Date: 11/17/2020 8:59:57 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[UsersSRStuckInProgress]
+ 
+AS
+BEGIN
+    -- SET NOCOUNT ON added to prevent extra result sets from
+    -- interfering with SELECT statements.
+    SET NOCOUNT ON
+
+    select distinct m.userId, d.email from MSR m join Developers D  on d.login = m.userid where m.status = 1
+END
+GO
+ALTER DATABASE [Gator] SET  READ_WRITE 
+GO

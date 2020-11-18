@@ -28,7 +28,7 @@ class LSAuthRepository {
                     console.log('[E] makeLSAuthRequestHeader uri cannot be empty');
                     return null;
                 }
-                const token = 'Bearer ' + (yield this.sqlRepository.getToken4User(Number(userId)));
+                const token = 'Bearer ' + (yield this.sqlRepository.getToken4User(userId));
                 let header = {
                     method: method,
                     uri: `https://a.labshare.org/_api/auth/${gUri}`,

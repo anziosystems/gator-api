@@ -17,6 +17,8 @@ const NodeCache = require('node-cache');
 const dotenv = require('dotenv');
 dotenv.config();
 const CryptoJS = require('crypto-js');
+class JiraData {
+}
 class ErrorObj {
     constructor(code, message) {
         this.code = code;
@@ -24,6 +26,16 @@ class ErrorObj {
     }
 }
 exports.ErrorObj = ErrorObj;
+class Node {
+    constructor() {
+        this.child = new Array();
+    }
+}
+class TNode {
+    constructor() {
+        this.children = new Array();
+    }
+}
 class PullRequest {
 }
 class GUser {
@@ -38,7 +50,7 @@ exports.JiraUser = JiraUser;
 class SQLRepository {
     constructor(obj) {
         this.sqlConfigSetting = {};
-        this.CACHE_DURATION_SEC = 6000; //50 min
+        this.CACHE_DURATION_SEC = process.env.CACHE_DURATION_SEC; //50 min
         this.MESSAGE_LEN = 2000;
         this.TENANT_LEN = 50;
         this.ORG_LEN = 200;
@@ -88,9 +100,9 @@ class SQLRepository {
         });
     }
     //return 0 if not a valid user or the token more than 7 days old
-    checkUser(userId) {
+    checkUser(email) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = 'CheckUser: ' + userId;
+            const cacheKey = 'CheckUser: ' + email;
             try {
                 const val = this.myCache.get(cacheKey);
                 if (val) {
@@ -98,8 +110,8 @@ class SQLRepository {
                 }
                 yield this.createPool();
                 const request = yield this.pool.request();
-                request.input('Id', sql.Int, userId);
-                const recordSet = yield request.execute('CheckTenant');
+                request.input('Email', sql.VarChar(200), email);
+                const recordSet = yield request.execute('CheckUser');
                 if (recordSet) {
                     this.myCache.set(cacheKey, recordSet.recordset[0].Result === 1);
                     return recordSet.recordset[0].Result === 1;
@@ -113,9 +125,9 @@ class SQLRepository {
             }
         });
     }
-    getLoggedInUSerDetails(userId, bustTheCache = false) {
+    getLoggedInUSerDetails(email, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = 'getLoggedInUSerDetails: ' + userId;
+            const cacheKey = 'getLoggedInUSerDetails: ' + email;
             try {
                 if (!bustTheCache) {
                     const val = this.myCache.get(cacheKey);
@@ -125,7 +137,7 @@ class SQLRepository {
                 }
                 yield this.createPool();
                 const request = yield this.pool.request();
-                request.input('UserId', sql.Int, userId);
+                request.input('Email', sql.VarChar(200), email);
                 const recordSet = yield request.execute('getLoggedInUSerDetails');
                 if (recordSet) {
                     this.myCache.set(cacheKey, recordSet.recordset[0]);
@@ -156,6 +168,10 @@ class SQLRepository {
     //return 0 if not a valid user or the token more than 7 days old
     checkJiraToken(tenantId) {
         return __awaiter(this, void 0, void 0, function* () {
+            if (!tenantId) {
+                console.log(`[E] checkJiraToken tenantId is empty.`);
+                return;
+            }
             const cacheKey = 'CheckJiraToken: ' + tenantId;
             try {
                 tenantId = tenantId.trim();
@@ -313,8 +329,8 @@ class SQLRepository {
                 }
                 request.input('status', sql.VarChar(this.STATUS_LEN), status);
                 request.input('message', sql.VarChar(this.MESSAGE_LEN), message);
-                request.input('TenantId', sql.Int, Number(tenantId));
-                const recordSet = yield request.execute('saveStatus');
+                request.input('TenantId', sql.VarChar(this.LOGIN_LEN), tenantId);
+                const recordSet = yield request.execute('saveStatus2');
                 if (recordSet) {
                     return recordSet.rowsAffected.length;
                 }
@@ -328,9 +344,9 @@ class SQLRepository {
             }
         });
     }
-    getRepo(tenantId, org, bustTheCache = false) {
+    getRepo(org, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = `GetRepo: tenantId: ${tenantId} org: ${org}`;
+            const cacheKey = `GetRepo: tenantId:  org: ${org}`;
             try {
                 if (bustTheCache) {
                     this.myCache.del(cacheKey);
@@ -341,7 +357,6 @@ class SQLRepository {
                 }
                 yield this.createPool();
                 const request = yield this.pool.request();
-                request.input('TenantId', sql.Int, Number(tenantId));
                 request.input('Org', sql.VarChar(this.ORG_LEN), org);
                 const recordSet = yield request.execute('GetRepos');
                 if (recordSet) {
@@ -356,20 +371,22 @@ class SQLRepository {
         });
     }
     //returbs   // [{"Org":"LabShare","DisplayName":"LabShare",OrgType: git ot Org}
-    getOrg4UserId(userId, bustTheCache = false) {
+    getOrg4UserId(email, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = 'getOrg4UserId' + userId;
+            const cacheKey = 'getOrg4UserId: ' + email;
             try {
                 if (bustTheCache) {
                     this.myCache.del(cacheKey);
                 }
                 const val = this.myCache.get(cacheKey);
                 if (val) {
-                    return val;
+                    if (val.length > 0) {
+                        return val;
+                    }
                 }
                 yield this.createPool();
                 const request = yield this.pool.request();
-                request.input('UserId', sql.Int, Number(userId));
+                request.input('Email', sql.VarChar(200), email);
                 const recordSet = yield request.execute('GetOrg4UserId');
                 if (recordSet.recordset) {
                     this.myCache.set(cacheKey, recordSet.recordset);
@@ -471,17 +488,17 @@ class SQLRepository {
         });
     }
     //Token will return UserName, DisplayName, ProfileURL, AuthToken, LastUpdated and Photo (URL)
-    getUser(id) {
+    getUser(email) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const cacheKey = 'getUser-' + id;
+                const cacheKey = 'getUser-' + email;
                 const val = this.myCache.get(cacheKey);
                 if (val) {
                     return val;
                 }
                 yield this.createPool();
                 const request = yield this.pool.request();
-                request.input('Id', sql.Int, id);
+                request.input('Email', sql.VarChar(200), email);
                 const recordSet = yield request.execute('GetUser');
                 if (recordSet.recordset.length > 0) {
                     this.myCache.set(cacheKey, recordSet.recordset);
@@ -491,7 +508,7 @@ class SQLRepository {
                     return 0;
             }
             catch (ex) {
-                console.log(`[E] getUser id: ${id} Error: ${ex}`);
+                console.log(`[E] getUser id: ${email} Error: ${ex}`);
                 return 0;
             }
         });
@@ -526,7 +543,7 @@ class SQLRepository {
     getPR4Repo(org, repo, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();
-            const cacheKey = 'GetPR4Repo -' + org + repo;
+            const cacheKey = 'GetPR4Repo: ' + org + ' ' + repo;
             try {
                 if (bustTheCache) {
                     this.myCache.del(cacheKey);
@@ -565,8 +582,21 @@ class SQLRepository {
                 request.input('userId', sql.VarChar(this.LOGIN_LEN), userId);
                 request.input('orgChart', sql.VarChar, orgChart);
                 const recordSet = yield request.execute('SaveOrgChart');
-                if (recordSet.recordset.length > 0) {
-                    return recordSet.recordset;
+                if (recordSet.rowsAffected[0] > 0) {
+                    console.log(`[S]  SaveOrgChart:  Success`);
+                    //Org Chart is updated lets drop the cache
+                    let cacheKey = 'getOrgTree' + org + userId;
+                    let v = this.myCache.get(cacheKey);
+                    if (v) {
+                        this.myCache.del(cacheKey);
+                    }
+                    cacheKey = 'getOrgChart -' + org;
+                    v = this.myCache.get(cacheKey);
+                    if (v) {
+                        this.myCache.del(cacheKey);
+                    }
+                    this.UpdateTreeTable(org, userId);
+                    return recordSet.rowsAffected[0];
                 }
                 else {
                     return 0;
@@ -578,7 +608,25 @@ class SQLRepository {
             }
         });
     }
-    //saveOrgChart
+    //saveOrgLinks
+    saveOrgLinks(org, gitOrgs) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                gitOrgs.forEach((gitOrg) => __awaiter(this, void 0, void 0, function* () {
+                    request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                    //request.input('Org', sql.VarChar(this.ORG_LEN), org.url.substr('https://github.com/'.length));
+                    request.input('GitOrg', sql.VarChar(this.ORG_LEN), gitOrg.url.substr('https://github.com/'.length));
+                    let recordSet = yield request.execute('[SaveOrgLink]');
+                }));
+            }
+            catch (ex) {
+                console.log(`[E]  saveOrgLinks:  Error: ${ex}`);
+                return 0;
+            }
+        });
+    }
     getOrgChart(org, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.createPool();
@@ -610,15 +658,15 @@ class SQLRepository {
             }
         });
     }
-    getToken4User(id) {
+    getToken4User(email) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = 'getUser -' + id; //cacheKey is getUser because i am reading there cache value. This is different from norm
+            const cacheKey = 'getUser -' + email; //cacheKey is getUser because i am reading there cache value. This is different from norm
             const val = this.myCache.get(cacheKey);
             if (val) {
                 // return this.decrypt(val.recordset[0].Auth_Token, id.toString());
                 return val.recordset[0].Auth_Token;
             }
-            const recordSet = yield this.getUser(id);
+            const recordSet = yield this.getUser(email);
             if (recordSet) {
                 //return this.decrypt(recordSet[0].Auth_Token, id.toString());
                 return recordSet[0].Auth_Token;
@@ -627,31 +675,272 @@ class SQLRepository {
                 return;
         });
     }
-    getJiraToken(id) {
+    //
+    saveRawHookData(message) {
         return __awaiter(this, void 0, void 0, function* () {
-            const recordSet = yield this.getJiraTenant(id);
-            if (recordSet)
-                return recordSet[0].Auth_Token;
-            else
-                return;
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Message', sql.Text, message);
+                yield request.execute('SaveRawHookData');
+                return this.processAllHookData();
+            }
+            catch (ex) {
+                console.log(`[E]  saveRawHookData:  Error: ${ex.message}`);
+                return false;
+            }
         });
     }
-    getTopDev4LastXDays(org, day = 1) {
+    processAllHookData() {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = 'getTopDev4LastXDays' + org + day;
+            let hookId;
+            // eslint-disable-next-line no-constant-condition
+            while (true) {
+                let jiraEvent = yield this.getHookData();
+                if (!jiraEvent[0]) {
+                    return true;
+                }
+                //   if (!jiraEvent[0]) break; //No event
+                let obj = jiraEvent[0];
+                hookId = _.get(obj, 'Id');
+                this.processJiraHookData(hookId, obj.message).then(x => {
+                    // this.processTFSHookData(hookId, obj.message).then(y => {
+                    //   return x || y;
+                    // });
+                });
+            } //~while
+        });
+    }
+    processJiraHookData(hookId, jdata) {
+        return __awaiter(this, void 0, void 0, function* () {
             try {
-                const val = this.myCache.get(cacheKey);
-                if (val) {
-                    return val;
+                // eslint-disable-next-line no-constant-condition
+                // - is having problem in processing
+                let jd = new JiraData();
+                //  console.log(jdata);
+                // eslint-disable-next-line no-useless-escape
+                let x = jdata.replace(/[^a-zA-Z0-9$@#!\&\*\"\'\:\,\/\_\.\\\]\[\}\{\- ]/g, '');
+                // console.log(x);
+                let obj = JSON.parse(x);
+                let wEvent = _.get(obj, 'webhookEvent');
+                if (!wEvent) {
+                    //Not Jira event - skip for now
+                    return true;
+                }
+                else {
+                    jd.Id = _.get(obj, 'issue.id');
+                    jd.Key = _.get(obj, 'issue.key');
+                    let x = _.get(obj, 'issue.self'); // "self": "https://labshare.atlassian.net/rest/api/2/42065",
+                    let y = _.split(x, '.');
+                    let z = y[0].substr(8);
+                    jd.JiraOrg = z;
+                    jd.Priority = _.get(obj, 'issue.fields.priority.name');
+                    jd.Assignee = _.get(obj, 'issue.fields.assignee.displayName');
+                    jd.AssigneeId = _.get(obj, 'issue.fields.assignee.accountId');
+                    jd.Summary = _.get(obj, 'issue.fields.summary');
+                    jd.AssigneeAvatarUrl = _.get(obj, 'issue.fields.assignee.avatarUrls.48x48');
+                    jd.Status = _.get(obj, 'issue.fields.status.name');
+                    jd.Reporter = _.get(obj, 'issue.fields.reporter.displayName');
+                    jd.ReporterAvatarUrl = _.get(obj, 'issue.fields.reporter.avatarUrls.48x48');
+                    jd.IssueType = _.get(obj, 'issue.fields.issuetype.name');
+                    jd.ProjectName = _.get(obj, 'issue.fields.project.name');
+                    jd.Title = _.get(obj, 'issue.fields.summary');
+                    jd.CreatedDate = new Date(_.get(obj, 'issue.fields.created'));
+                    jd.UpdatedDate = new Date(_.get(obj, 'issue.fields.updated'));
+                    //Get The Story points
+                    let storyCustomColName = 'customfield_10721';
+                    jd.Story = _.get(obj, `issue.fields.${storyCustomColName}`);
+                    return this.updateJiraData(hookId, jd);
+                }
+            }
+            catch (ex) {
+                this.saveStatus('processJiraHookData', 'processJiraHookData-FAIL', ex);
+                console.log(`[E] processJiraHookData ${ex}`);
+                return false;
+            }
+        });
+    }
+    processTFSHookData(hookId, jdata) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                // eslint-disable-next-line no-constant-condition
+                let jd = new JiraData();
+                let obj = JSON.parse(jdata);
+                let wEvent = _.get(obj, 'subscriptionId');
+                if (!wEvent) {
+                    //Not a TFS Event skip it
+                    return true;
+                }
+                else {
+                    let eventType = _.get(obj, 'eventType');
+                    if (eventType === 'workitem.created') {
+                        jd.Id = _.get(obj, 'id');
+                        let fields = _.get(obj, 'resource.fields');
+                        jd.Key = fields['System.TeamProject'];
+                        let rc = _.get(obj, 'resourceContainers');
+                        let a = rc['account'];
+                        let x = a['baseUrl']; // "https://dev.azure.com/anzio/",
+                        let y = x.substr(22);
+                        let z = y.replace(`/`, ``);
+                        jd.JiraOrg = z;
+                        jd.Priority = fields['Microsoft.VSTS.Common.Priority'];
+                        jd.Assignee = fields['System.AssignedTo'];
+                        jd.AssigneeId = fields['System.AssignedTo'];
+                        jd.Title = fields['System.Title'];
+                        jd.CreatedDate = new Date(fields['System.CreatedDate']);
+                        jd.Summary = fields['System.Title'];
+                        // jd.AssigneeAvatarUrl = _.get(obj, 'issue.fields.assignee.avatarUrls.48x48');
+                        jd.Status = fields['System.State'];
+                        jd.Reporter = fields['System.CreatedBy'];
+                        // jd.ReporterAvatarUrl = _.get(obj, 'issue.fields.reporter.avatarUrls.48x48');
+                        jd.IssueType = fields['System.WorkItemType'];
+                        jd.ProjectName = fields['System.TeamProject'];
+                    }
+                    else {
+                        jd.Id = _.get(obj, 'id');
+                        let r = _.get(obj, 'resource');
+                        jd.UpdatedDate = new Date(r['revisedDate']);
+                    }
+                    //Get The Story points
+                    //jd.Story  = _.get(obj, 'issue.fields.updated');
+                    return this.updateTFSData(hookId, jd);
+                }
+            }
+            catch (ex) {
+                console.log(`[E] processTFSHookData ${ex}`);
+                return false;
+            }
+        });
+    }
+    updateTFSData(hookId, obj) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.createPool();
+            const request = yield this.pool.request();
+            request.input('Id', sql.Int, obj.Id);
+            request.input('key', sql.VarChar(this.ORG_LEN), obj.Key);
+            request.input('Title', sql.VarChar(5000), obj.Title);
+            request.input('Priority', sql.VarChar(50), obj.Priority);
+            request.input('Assignee', sql.VarChar(this.ORG_LEN), obj.Assignee);
+            request.input('Reporter', sql.VarChar(this.ORG_LEN), obj.Reporter);
+            request.input('CreatedDate', sql.Date, obj.CreatedDate);
+            request.input('UpdatedDate', sql.Date, obj.UpdatedDate);
+            request.input('IssueType', sql.VarChar(50), obj.IssueType);
+            request.input('Priority', sql.VarChar(50), obj.Priority);
+            request.input('Story', sql.Int, obj.Story);
+            request.input('ReporterAvatarUrl', sql.VarChar(1000), obj.ReporterAvatarUrl);
+            request.input('AssigneeAvatarUrl', sql.VarChar(1000), obj.AssigneeAvatarUrl);
+            request.input('Status', sql.VarChar(50), obj.Status);
+            request.input('ProjectName', sql.VarChar(1000), obj.ProjectName);
+            request.input('Org', sql.VarChar(200), obj.JiraOrg);
+            request.input('AssigneeId', sql.VarChar(500), obj.AssigneeId);
+            request.input('Summary', sql.VarChar(2000), obj.Summary);
+            const recordSet = yield request.execute('SetTFSData');
+            if (recordSet.rowsAffected[0] === 1) {
+                return this.deleteHookData(hookId);
+            }
+            else {
+                return false;
+            }
+        });
+    }
+    //update Jira data and then delete the row from hooktable
+    updateJiraData(hookId, obj) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Id', sql.Int, obj.Id);
+                request.input('key', sql.VarChar(this.ORG_LEN), obj.Key);
+                request.input('Title', sql.VarChar(5000), obj.Title);
+                request.input('Priority', sql.VarChar(50), obj.Priority);
+                request.input('Assignee', sql.VarChar(this.ORG_LEN), obj.Assignee);
+                request.input('Reporter', sql.VarChar(this.ORG_LEN), obj.Reporter);
+                request.input('CreatedDate', sql.Date, obj.CreatedDate);
+                request.input('UpdatedDate', sql.Date, obj.UpdatedDate);
+                request.input('IssueType', sql.VarChar(50), obj.IssueType);
+                request.input('Priority', sql.VarChar(50), obj.Priority);
+                request.input('Story', sql.Int, obj.Story);
+                request.input('ReporterAvatarUrl', sql.VarChar(1000), obj.ReporterAvatarUrl);
+                request.input('AssigneeAvatarUrl', sql.VarChar(1000), obj.AssigneeAvatarUrl);
+                request.input('Status', sql.VarChar(50), obj.Status);
+                request.input('ProjectName', sql.VarChar(1000), obj.ProjectName);
+                request.input('Org', sql.VarChar(200), obj.JiraOrg);
+                request.input('AssigneeId', sql.VarChar(500), obj.AssigneeId);
+                request.input('Summary', sql.VarChar(2000), obj.Summary);
+                const recordSet = yield request.execute('SetJiraData');
+                if (recordSet.rowsAffected[0] === 1) {
+                    return yield this.deleteHookData(hookId);
+                }
+                else {
+                    return false;
+                }
+            }
+            catch (ex) {
+                this.saveStatus('updateJiraData', 'updateJiraData-FAIL', ex);
+                return false;
+            }
+        });
+    }
+    getHookData() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.createPool();
+            const request = yield this.pool.request();
+            const recordSet = yield request.execute('getHookData');
+            if (recordSet.recordset) {
+                if (recordSet) {
+                    return recordSet.recordset;
+                }
+                else
+                    return null;
+            }
+        });
+    }
+    deleteHookData(hookId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('HookId', sql.Int, hookId);
+                const recordSet = yield request.execute('DeleteHookData');
+                if (recordSet.rowsAffected[0] === 1) {
+                    return true;
+                }
+                else
+                    return false;
+            }
+            catch (ex) {
+                this.saveStatus('deleteHookData', 'deleteHookData-FAIL', ex);
+                return false;
+            }
+        });
+    }
+    GetJiraData(org, userName, day = 1, bustTheCache = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!org) {
+                console.log('[E] org cannot be null');
+                return;
+            }
+            if (!userName) {
+                console.log('[E] userName cannot be null');
+                return;
+            }
+            const cacheKey = 'GetJiraData' + org + userName + day;
+            try {
+                if (bustTheCache) {
+                    this.myCache.del(cacheKey);
+                }
+                else {
+                    const val = this.myCache.get(cacheKey);
+                    if (val) {
+                        return val;
+                    }
                 }
                 yield this.createPool();
                 const request = yield this.pool.request();
-                if (!org) {
-                    throw new Error('tenant cannot be null');
-                }
                 request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                request.input('UserName', sql.VarChar(this.ORG_LEN), userName);
                 request.input('Day', sql.Int, day);
-                const recordSet = yield request.execute('TopDevForLastXDays');
+                const recordSet = yield request.execute('GetJiraData');
                 if (recordSet.recordset) {
                     this.myCache.set(cacheKey, recordSet.recordset);
                     return recordSet.recordset;
@@ -666,6 +955,128 @@ class SQLRepository {
             }
         });
     }
+    getJiraToken(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const recordSet = yield this.getJiraTenant(id);
+            if (recordSet)
+                return recordSet[0].Auth_Token;
+            else
+                return;
+        });
+    }
+    getTopDev4LastXDays(org, day = 1, context = '') {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getTopDev4LastXDays' + org + day;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!org) {
+                    throw new Error('org cannot be null');
+                }
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                request.input('Day', sql.Int, day);
+                request.input('Context', sql.VarChar(100), context);
+                const recordSet = yield request.execute('TopDevForLastXDays2');
+                if (recordSet.recordset) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else {
+                    return;
+                }
+            }
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return;
+            }
+        });
+    }
+    getAllUsers(org) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getAllUsers' + org;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!org) {
+                    throw new Error('Org (Tenant) cannot be null');
+                }
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                const recordSet = yield request.execute('GetAllUsers');
+                if (recordSet.recordset) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else {
+                    return;
+                }
+            }
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return;
+            }
+        });
+    }
+    //
+    saveSignUpToken(token) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                console.log(`[I] saveSignUpToken token: ${token}`);
+                request.input('Token', sql.VarChar(2000), token);
+                let result = yield request.execute('SaveSignupToken');
+                return result.recordsets[0][0].ID;
+            }
+            catch (ex) {
+                console.log(`[E] saveSignUpToken  Error: ${ex}`);
+                return;
+            }
+        });
+    }
+    //
+    UpdateSubscriptionDetails(subId, subDetails) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                let planId = subDetails.data.planId;
+                let quantity = subDetails.data.quantity;
+                request.input('Id', sql.Int, subId);
+                request.input('planId', sql.VarChar(200), planId);
+                request.input('Quantity', sql.Int, quantity);
+                request.input('SubscriptionDetails', sql.VarChar(8000), JSON.stringify(subDetails.data));
+                request.execute('UpdateSubscriptionDetails');
+            }
+            catch (ex) {
+                console.log(`[E] UpdateSubscriptionDetails  Error: ${ex}`);
+                return;
+            }
+        });
+    }
+    ActivateSubscriptionDetails(subId, IsActivated) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Id', sql.Int, subId);
+                request.input('IsActivated', sql.Bit, IsActivated);
+                request.execute('ActivateSubscriptionDetails');
+            }
+            catch (ex) {
+                console.log(`[E] ActivateSubscriptionDetails  Error: ${ex}`);
+                return;
+            }
+        });
+    }
+    //No one calls this
     getGitDev4Org(org) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'getGitDev4Org' + org;
@@ -681,6 +1092,121 @@ class SQLRepository {
                 }
                 request.input('Org', sql.VarChar(this.ORG_LEN), org);
                 const recordSet = yield request.execute('GitDev4Org');
+                if (recordSet.recordset) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else {
+                    return;
+                }
+            }
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return;
+            }
+        });
+    }
+    GetUser4Org(org) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getGitDev4Org' + org;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!org) {
+                    throw new Error('org cannot be null');
+                }
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                const recordSet = yield request.execute('GetUser4Org');
+                if (recordSet.recordset) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else {
+                    return;
+                }
+            }
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return;
+            }
+        });
+    }
+    getWatcher(org, gitOrg) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'GetWatcher' + org;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!org || !gitOrg) {
+                    throw new Error('org or GitOrg cannot be null');
+                }
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                request.input('GitOrg', sql.VarChar(this.ORG_LEN), gitOrg);
+                const recordSet = yield request.execute('GetWatcher');
+                if (recordSet.recordset) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else {
+                    return;
+                }
+            }
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return;
+            }
+        });
+    }
+    getKudos(org, gitOrg) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getKudos' + org + gitOrg;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!org || !gitOrg) {
+                    throw new Error('org or GitOrg cannot be null');
+                }
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                request.input('GitOrg', sql.VarChar(this.ORG_LEN), gitOrg);
+                const recordSet = yield request.execute('GetKudos');
+                if (recordSet.recordset) {
+                    this.myCache.set(cacheKey, recordSet.recordset);
+                    return recordSet.recordset;
+                }
+                else {
+                    return;
+                }
+            }
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return;
+            }
+        });
+    }
+    getKudos4User(target) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getKudos4User' + target;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Target', sql.VarChar(this.ORG_LEN), target);
+                const recordSet = yield request.execute('GetKudos4User');
                 if (recordSet.recordset) {
                     this.myCache.set(cacheKey, recordSet.recordset);
                     return recordSet.recordset;
@@ -785,6 +1311,7 @@ class SQLRepository {
             }
         });
     }
+    //Going to ignore org
     getPR4Dev(org, day = 1, login, action, pageSize) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!org) {
@@ -825,6 +1352,32 @@ class SQLRepository {
                     this.myCache.set(cacheKey, recordSet.recordset);
                 }
                 return recordSet.recordset;
+            }
+            catch (ex) {
+                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                return null;
+            }
+        });
+    }
+    getClientSecret(tenant) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getClientSecret' + tenant;
+            try {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (!tenant) {
+                    throw new Error('tenant cannot be null');
+                }
+                request.input('tenant', sql.VarChar(this.ORG_LEN), tenant);
+                const recordSet = yield request.execute('GetClientSecret');
+                if (recordSet.recordset.length > 0) {
+                    this.myCache.set(cacheKey, recordSet.recordset[0].Secrets);
+                }
+                return recordSet.recordset[0].Secrets;
             }
             catch (ex) {
                 console.log(`[E]  ${cacheKey}  Error: ${ex}`);
@@ -979,11 +1532,34 @@ class SQLRepository {
             }
         });
     }
+    //
+    updateUserConnectIds(user, org) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Email', sql.VarChar(200), user.UserName);
+                request.input('GitUserName', sql.VarChar(200), user.GitUserName);
+                request.input('TFSUserName', sql.VarChar(200), user.TfsUserName);
+                request.input('JiraUserName', sql.VarChar(200), user.JiraUserName);
+                const recordSet = yield request.execute('updateUserConnectIds');
+                return recordSet.rowsAffected[0];
+                //Now drop the cache
+                let _cacheKey = 'getUser-' + user.Id;
+                this.myCache.del(_cacheKey);
+                //getUSer4Org
+                _cacheKey = 'getGitDev4Org' + org;
+                this.myCache.del(_cacheKey);
+            }
+            catch (ex) {
+                console.log(`[E]  ${ex}`);
+                return 0;
+            }
+        });
+    }
     saveMSR(srId, userId, org, statusDetails, reviewer, status, links, manager, managerComment, managerStatus) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = 'saveMSR' + srId;
             try {
-                this.myCache.del(cacheKey);
                 const request = yield this.pool.request();
                 request.input('SRId', sql.Int, srId);
                 request.input('UserId', sql.VarChar(100), userId);
@@ -999,11 +1575,47 @@ class SQLRepository {
                 return recordSet.rowsAffected[0];
             }
             catch (ex) {
-                console.log(`[E]  ${cacheKey}  Error: ${ex}`);
+                console.log(`[E] saveMSR  Error: ${ex}`);
                 return 0;
             }
         });
     }
+    setWatcher(watcher, target, org, gitOrg) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const request = yield this.pool.request();
+                request.input('watcher', sql.VarChar(200), watcher);
+                request.input('target', sql.VarChar(200), target);
+                request.input('Org', sql.VarChar(200), org);
+                request.input('gitOrg', sql.VarChar(200), gitOrg);
+                const recordSet = yield request.execute('SetWatcher');
+                return recordSet.rowsAffected[0];
+            }
+            catch (ex) {
+                console.log(`[E]  setWatcher  Error: ${ex}`);
+                return 0;
+            }
+        });
+    }
+    setKudos(sender, target, org, gitOrg, kudos) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const request = yield this.pool.request();
+                request.input('sender', sql.VarChar(200), sender);
+                request.input('target', sql.VarChar(200), target);
+                request.input('Org', sql.VarChar(200), org);
+                request.input('gitOrg', sql.VarChar(200), gitOrg);
+                request.input('kudos', sql.VarChar(5000), kudos);
+                const recordSet = yield request.execute('setKudos');
+                return recordSet.rowsAffected[0];
+            }
+            catch (ex) {
+                console.log(`[E] setKudos  Error: ${ex}`);
+                return 0;
+            }
+        });
+    }
+    //srId for MSR Table
     getSR4Id(srId, bustTheCache) {
         return __awaiter(this, void 0, void 0, function* () {
             const cacheKey = 'getMSR4Id' + srId;
@@ -1052,18 +1664,42 @@ class SQLRepository {
             }
         });
     }
-    GetSR4User4Review(userId, status, userFilter = null, dateFilter = null, bustTheCache) {
+    GetSR4User4Review(userId, org, status, userFilter = null, dateFilter = null, bustTheCache) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = 'GetSR4User4Review' + userId + status;
+            //is user MSRAdmin then turn status into 1000
+            let YorN = yield this.isUserMSRAdmin(userId, org, false);
+            if (YorN) {
+                status = 1000; //User is MSRAdmin get him all the reports
+            }
+            if (util_1.isNullOrUndefined(userFilter)) {
+                userFilter = 'null';
+            }
+            else {
+                userFilter = userFilter.trim();
+                if (userFilter.length === 0) {
+                    userFilter = 'null';
+                }
+            }
+            if (util_1.isNullOrUndefined(dateFilter)) {
+                dateFilter = 'null';
+            }
+            else {
+                dateFilter = dateFilter.trim();
+                if (dateFilter.length === 0) {
+                    dateFilter = 'null';
+                }
+            }
+            const cacheKey = 'GetSR4User4Review' + userId + status + org;
             try {
                 userFilter = userFilter.trim();
                 dateFilter = dateFilter.trim();
                 const request = yield this.pool.request();
                 request.input('UserId', sql.VarChar(100), userId);
                 request.input('Status', sql.Int, status);
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
                 request.input('UserFilter', sql.VarChar, userFilter != 'null' ? userFilter : null);
                 request.input('DateFilter', sql.VarChar(50), dateFilter != 'null' ? dateFilter : null);
-                const recordSet = yield request.execute('GetSR4User4Review');
+                const recordSet = yield request.execute('GetSR4User4Review2');
                 if (recordSet) {
                     this.myCache.set(cacheKey, recordSet.recordset);
                 }
@@ -1088,7 +1724,7 @@ class SQLRepository {
                     user.DisplayName = '';
                 }
                 // const token = this.encrypt(user.AuthToken, user.Id.toString());
-                request.input('Id', sql.Int, user.Id);
+                //  request.input('Id', sql.Int, user.Id);
                 request.input('email', sql.VarChar(200), user.Email);
                 request.input('UserName', sql.VarChar(200), user.UserName);
                 request.input('DisplayName', sql.VarChar(200), user.DisplayName);
@@ -1096,7 +1732,7 @@ class SQLRepository {
                 request.input('AuthToken', sql.VarChar(4000), user.AuthToken);
                 request.input('RefreshToken', sql.VarChar(4000), user.RefreshToken);
                 request.input('Photo', sql.VarChar(1000), user.Photo);
-                const recordSet = yield request.execute('SaveTenant');
+                const recordSet = yield request.execute('SaveUser');
                 return recordSet.rowsAffected[0];
             }
             catch (ex) {
@@ -1131,16 +1767,16 @@ class SQLRepository {
                 let login;
                 let avatar_url;
                 let user_url;
+                let action;
                 const request = yield this.pool.request();
                 const nodes = pr.data.viewer.organization.repository.pullRequests.nodes;
                 if (nodes === undefined) {
-                    console.log(`[i] No PR found for org: ${org} Repo: ${repo}`);
+                    // console.log(`[I] savePR4Repo - No PR found for org: ${org} Repo: ${repo}`);
+                    return 0;
                 }
                 if (nodes.length === 0) {
-                    console.log(`[i] No PR found for org: ${org} Repo: ${repo}`);
-                }
-                if (nodes.length > 0) {
-                    console.log(`[i] ${nodes.length} PR found for org: ${org} Repo: ${repo}`);
+                    // console.log(`[I] savePR4Repo - No PR found for org: ${org} Repo: ${repo}`);
+                    return 0;
                 }
                 //nodes.forEach(async (elm: any) => {
                 for (const elm of nodes) {
@@ -1152,18 +1788,24 @@ class SQLRepository {
                         continue;
                     if (elm.author.login.startsWith('semantic-release-bot'))
                         continue;
-                    if (elm.action === 'opened' || elm.action === 'closed' || elm.action === 'edited') {
+                    if (elm.state.toLowerCase() === 'open' || elm.state.toLowerCase() === 'closed' || elm.state.toLowerCase() === 'commit') {
                         //move on
                     }
                     else {
+                        // console.log(elm.state);
+                        // console.log(`A => ${elm.action}`);
                         continue;
                     }
                     id = elm.id;
                     url = elm.url;
-                    state = elm.action; //Found out state has too much noise but action open and close is better
+                    state = elm.state.toLowerCase(); //Found out state has too much noise but action open and close is better
                     title = elm.title;
                     created_at = elm.createdAt;
                     pr_body = elm.body;
+                    if (elm.action)
+                        action = elm.action.toLowerCase();
+                    else
+                        action = elm.state.toLowerCase();
                     if (!pr_body) {
                         pr_body = ' ';
                     }
@@ -1178,6 +1820,7 @@ class SQLRepository {
                     request.input('Repo', sql.VarChar(this.REPO_LEN), repo);
                     request.input('Url', sql.VarChar(this.URL_LEN), url);
                     request.input('State', sql.VarChar(this.STATE_LEN), state);
+                    request.input('Action', sql.VarChar(this.STATE_LEN), action);
                     request.input('Title', sql.VarChar(this.TITLE_LEN), title);
                     request.input('Created_At', sql.VarChar(20), created_at);
                     request.input('Body', sql.VarChar(this.BODY_LEN), pr_body);
@@ -1186,34 +1829,36 @@ class SQLRepository {
                     request.input('User_Url', sql.VarChar(this.USER_URL_LEN), user_url);
                     try {
                         const x = yield request.execute('SavePR4Repo');
+                        // console.log(`[S] savePR4Repo success`);
                         return x.rowsAffected[0];
                     }
                     catch (ex) {
-                        console.log(`[E]  Error! While saving PR for org:${org} repo: ${repo} - ${ex}`);
+                        console.log(`[E] savePR4Repo While saving PR for org:${org} repo: ${repo} - ${ex}`);
                     }
                 }
             }
             catch (ex) {
-                console.log(`[E]  savePR4Repo ${org} ${repo}`);
+                console.log(`[E] savePR4Repo ${org} ${repo} - ${ex}`);
                 return false;
             }
             return true;
         });
     }
     /* return number of orgs */
-    saveUserOrg(userId, org) {
+    saveUserOrg(email, org, orgType = 'git') {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 yield this.createPool();
                 const request = yield this.pool.request();
-                request.input('UserId', sql.Int, Number(userId));
-                request.input('Org', sql.VarChar(this.ORG_LEN), org);
-                request.input('DisplayName', sql.VarChar(this.ORG_LEN), org);
+                request.input('Email', sql.VarChar(200), email);
+                request.input('Org', sql.VarChar(this.ORG_LEN), org.trim());
+                request.input('DisplayName', sql.VarChar(this.ORG_LEN), org.trim());
+                request.input('OrgType', sql.VarChar(5), orgType.trim());
                 yield request.execute('SaveUserOrg');
                 return org.length;
             }
             catch (ex) {
-                console.log(`[E]  saveUserOrg: ${userId} ${org} ${ex}`);
+                console.log(`[E]  saveUserOrg: ${email} ${org} ${ex}`);
                 return 0;
             }
         });
@@ -1273,6 +1918,7 @@ class SQLRepository {
             }
         });
     }
+    //Obselete No one cares
     saveDevs(org, devs) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -1303,7 +1949,7 @@ class SQLRepository {
             }
         });
     }
-    saveRepo(tenantId, org, repos) {
+    saveRepo(org, repos) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 if (repos === undefined)
@@ -1317,20 +1963,29 @@ class SQLRepository {
                 for (const r of repos) {
                     let repo = r;
                     const createdAt = String(repo.createdAt).substr(0, 10);
-                    // console.log(`SaveRepo = org: ${org} repo: ${repo.name}`);
-                    request.input('TenantId', sql.Int, Number(tenantId));
                     request.input('Org', sql.VarChar(this.ORG_LEN), org);
                     request.input('Id', sql.VarChar(this.REPO_ID_LEN), repo.id);
                     request.input('name', sql.VarChar(this.REPO_LEN), repo.name);
-                    request.input('desc', sql.VarChar(200), repo.description);
+                    if (repo.subscription) {
+                        let _subscription = repo.description.substr(0, 199);
+                        request.input('desc', sql.VarChar(200), _subscription);
+                    }
+                    else {
+                        request.input('desc', sql.VarChar(200), '');
+                    }
                     request.input('HomePage', sql.VarChar(200), repo.homepageUrl);
                     request.input('CreatedAt', sql.VarChar(10), createdAt);
-                    const recordSet = yield request.execute('SaveRepos');
-                    return recordSet.rowsAffected[0];
+                    yield request.execute('SaveRepos');
+                    //Lets bust the cache for Get
+                    const cacheKey = `GetRepo: tenantId:  org: ${org}`;
+                    let v = this.myCache.get(cacheKey);
+                    if (v) {
+                        this.myCache.del(cacheKey);
+                    }
                 }
             }
             catch (ex) {
-                console.log(`[E]  saveRepo: ${tenantId} ${org} ${ex}`);
+                console.log(`[E]  saveRepo: ${org} ${ex}`);
                 return 0;
             }
         });
@@ -1437,7 +2092,7 @@ class SQLRepository {
     }
     isUserMSRAdmin(loginId, org, bustTheCache) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cacheKey = 'isUserMSRAdmin' + loginId + org;
+            const cacheKey = 'isUserMSRAdmin' + loginId + '-' + org;
             try {
                 if (!bustTheCache) {
                     const val = this.myCache.get(cacheKey);
@@ -1445,6 +2100,7 @@ class SQLRepository {
                         return val;
                     }
                 }
+                yield this.createPool();
                 const request = yield this.pool.request();
                 request.input('login', sql.VarChar(100), loginId);
                 request.input('org', sql.VarChar(200), org);
@@ -1452,11 +2108,11 @@ class SQLRepository {
                 if (recordSet) {
                     this.myCache.set(cacheKey, recordSet.recordset);
                 }
-                return recordSet.recordset;
+                return recordSet.returnValue === 1;
             }
             catch (ex) {
                 console.log(`[E]  ${cacheKey} ${ex}`);
-                return ex;
+                return false;
             }
         });
     }
@@ -1517,6 +2173,235 @@ class SQLRepository {
                 return ex;
             }
         });
+    }
+    getOrgTree(currentOrg, userId, //Caller ID
+    bustTheCache) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = 'getOrgTree' + currentOrg + userId;
+            if (!bustTheCache) {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    return val;
+                }
+            }
+            /*
+            { key: 1, name: "Eng Management" }
+            { key: 2, name: "Rafat Sarosh", userid: 'rsarosh' , parent: 1 }
+          */
+            let _nodes = new Map();
+            let _obj;
+            return new Promise((done, fail) => {
+                try {
+                    this.getOrgChart(currentOrg, true).then(v => {
+                        if (!v[0]) {
+                            fail(`No Data for ${currentOrg}`); //  this.router.navigate(['/orgChart']);
+                        }
+                        _obj = JSON.parse(v[0].OrgChart);
+                        _obj.nodeDataArray.forEach(x => {
+                            if (x.key === 1) {
+                                let _n = new Node();
+                                _n.parent = x;
+                                _nodes.set(x.key, _n);
+                                return;
+                            }
+                            if (x.parent) {
+                                let n = _nodes.get(x.parent);
+                                if (!n) {
+                                    //parent not found, make a new node
+                                    let _n = new Node();
+                                    _n.parent = getElementfromNodeDataArray(x.parent);
+                                    _n.child.push(x);
+                                    _nodes.set(x.parent, _n);
+                                }
+                                else {
+                                    //parent found, let set the child
+                                    n.child.push(x);
+                                }
+                            }
+                        });
+                        let Data = [];
+                        _nodes.forEach(x => {
+                            let data = new TNode();
+                            data.label = x.parent.name;
+                            data.data = x.parent.userid;
+                            data.expandedIcon = 'pi';
+                            data.collapsedIcon = 'pi';
+                            for (let y of x.child) {
+                                let c = new TNode();
+                                c.label = y.name;
+                                c.data = y.userid;
+                                c.expandedIcon = 'pi ';
+                                c.collapsedIcon = 'pi ';
+                                data.children.push(c);
+                            }
+                            Data.push(data);
+                        });
+                        for (let z of Data) {
+                            if (z.children) {
+                                let cCtr = 0;
+                                for (let c of z.children) {
+                                    let n = IsChildrenExistAsNode(c.label);
+                                    if (n) {
+                                        z.children[cCtr] = n;
+                                    }
+                                    cCtr = cCtr + 1;
+                                }
+                            }
+                        }
+                        /*
+                        0: TNode
+                          children: Array(3)
+                            0: TNode
+                                children: (5) [TNode, TNode, TNode, TNode, TNode]
+                            collapsedIcon: "pi"
+                            data: "rafat.sarosh@axleinfo.com"
+                            expandedIcon: "pi"
+                            label: "Rafat Sarosh"
+                            __proto__: Object
+                      1: TNode {children: Array(1), label: "Nathan Hotaling", data: "Nathan.Hotaling@labshare.org", expandedIcon: "pi", collapsedIcon: "pi"}
+                      2: TNode {children: Array(3), label: "Reid Simon", data: "reid.simon@axleinfo.com", expandedIcon: "pi", collapsedIcon: "pi"}
+                      */
+                        this.myCache.set(cacheKey, Data);
+                        done(Data);
+                        function IsChildrenExistAsNode(lbl) {
+                            for (let n of Data) {
+                                if (n.label === lbl) {
+                                    Data = Data.filter(obj => obj !== n);
+                                    return n;
+                                }
+                            }
+                        }
+                        function getElementfromNodeDataArray(key) {
+                            for (let o of _obj.nodeDataArray) {
+                                if (o.key === key)
+                                    return o;
+                            }
+                            return null;
+                        }
+                    });
+                }
+                catch (ex) {
+                    fail(ex);
+                }
+            }); //Promise
+        });
+    }
+    //This method reads the Org JSON data and then update OrgTree Table
+    //This table is used by various alerts. Table has manager and employee relationship
+    UpdateTreeTable(currentOrg, userId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let tree = yield this.getOrgTree(currentOrg, userId, false);
+            //Now Traverse the tree and save the node
+            /*
+                  0: TNode
+                    children: Array(3)
+                      0: TNode
+                          children: (5) [TNode, TNode, TNode, TNode, TNode]
+                      collapsedIcon: "pi"
+                      data: "rafat.sarosh@axleinfo.com"
+                      expandedIcon: "pi"
+                      label: "Rafat Sarosh"
+                      __proto__: Object
+                1: TNode {children: Array(1), label: "Nathan Hotaling", data: "Nathan.Hotaling@labshare.org", expandedIcon: "pi", collapsedIcon: "pi"}
+                2: TNode {children: Array(3), label: "Reid Simon", data: "reid.simon@axleinfo.com", expandedIcon: "pi", collapsedIcon: "pi"}
+                */
+            this.processAllNodes(tree, 'null', currentOrg);
+        });
+    }
+    saveTreeNode(emp, mgr, org) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                if (mgr === undefined || mgr === null) {
+                    mgr = 'null';
+                }
+                request.input('Emp', sql.VarChar(this.LOGIN_LEN), emp);
+                request.input('Mgr', sql.VarChar(this.LOGIN_LEN), mgr);
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                const recordSet = yield request.execute('SaveOrgTreeNode');
+                return recordSet.rowsAffected[0];
+            }
+            catch (ex) {
+                console.log(`[E]  saveTreeNode: ${emp} ${mgr} ${org} ${ex}`);
+                return ex;
+            }
+        });
+    }
+    //recursive function
+    processAllNodes(tree, manager, currentOrg) {
+        return __awaiter(this, void 0, void 0, function* () {
+            //first node is "Engineering" which does not have any c.data,
+            //this is the top root node, hence we start with the childrens
+            var shadowTree;
+            if (tree[0].data == undefined || tree[0].data === null)
+                shadowTree = tree[0].children;
+            else
+                shadowTree = tree;
+            for (const c of shadowTree) {
+                this.saveTreeNode(c.data, manager, currentOrg);
+                if (c.children) {
+                    this.processAllNodes(c.children, c.data, currentOrg);
+                }
+            }
+            return true;
+        });
+    }
+    DeleteOrgTree(org) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.createPool();
+                const request = yield this.pool.request();
+                request.input('Org', sql.VarChar(this.ORG_LEN), org);
+                const recordSet = yield request.execute('DeleteOrgTree');
+                return recordSet.rowsAffected[0];
+            }
+            catch (ex) {
+                console.log(`[E]  DeleteOrgTree:  ${org} ${ex}`);
+                return ex;
+            }
+        });
+    }
+    //Is Y in tree of X -> Is X Manager of Y?
+    IsXYAllowed(currentOrg, userId, X, Y) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (X === Y) {
+                return true;
+            }
+            let tree = yield this.getOrgTree(currentOrg, userId, false);
+            let parentNode = this.GetNode4User(X, tree[0].children);
+            if (parentNode) {
+                return this.SearchAllNodes(Y, parentNode.children);
+            }
+            return false;
+        });
+    }
+    //recursive function
+    SearchAllNodes(user, tree) {
+        for (const c of tree) {
+            if (c.data === user) {
+                return true;
+            }
+            if (c.children) {
+                if (this.SearchAllNodes(user, c.children))
+                    return true;
+            }
+        }
+        return false;
+    }
+    //Get the node for a user, it searches the whole tree for the node
+    GetNode4User(user, tree) {
+        for (const c of tree) {
+            if (c.data === user) {
+                return c;
+            }
+            if (c.children) {
+                let node = this.GetNode4User(user, c.children);
+                if (node)
+                    return node;
+            }
+        }
+        return null;
     }
 }
 exports.SQLRepository = SQLRepository;
