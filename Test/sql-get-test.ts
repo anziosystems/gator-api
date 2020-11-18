@@ -12,11 +12,29 @@ import {GitRepository} from '../Lib/GitRepository';
 
 //processAllJiraHookData
 
+describe.only('DeleteOrgTree', () => {
+  it('should return true', async () => {
+    const sqlRepositoy = new SQLRepository(null);
+    await sqlRepositoy.DeleteOrgTree('axleinfo.com').then(result => {
+      expect(result).greaterThan(0);
+    });
+  });
+});
+
+describe('UpdateTreeTable', () => {
+  it('should return true', async () => {
+    const sqlRepositoy = new SQLRepository(null);
+    await sqlRepositoy.UpdateTreeTable('axleinfo.com', 'rafat.sarosh@axleinfo.com').then(result => {
+      expect(result).true;
+    });
+  });
+});
+
 describe('processAllJiraHookData', () => {
   it('should return true', async () => {
     const sqlRepositoy = new SQLRepository(null);
 
-    await sqlRepositoy.processAllJiraHookData().then(result => {
+    await sqlRepositoy.processAllHookData().then(result => {
       expect(result).true;
     });
   });
@@ -30,6 +48,17 @@ describe('getClientSecret', () => {
     await sqlRepositoy.getClientSecret(tenant).then(result => {
       let obj = JSON.parse(result);
       expect(obj.clientID.length).greaterThan(0);
+    });
+  });
+});
+
+describe('isUserMSRAdmin', () => {
+  it('should return true', async () => {
+    const sqlRepositoy = new SQLRepository(null);
+    const org = 'axleinfo.com';
+    const user = 'rafat.sarosh@axleinfo.com';
+    await sqlRepositoy.isUserMSRAdmin(user, org, true).then(result => {
+      expect(result).equals(true);
     });
   });
 });

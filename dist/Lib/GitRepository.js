@@ -75,10 +75,12 @@ class GitRepository {
                             else {
                                 if (response.statusCode === 200) {
                                     let result = yield this.sqlRepository.savePR4Repo(org, repo, body);
+                                    this.sqlRepository.saveStatus(userId, 'GET-PR-SUCCESS', `${org} - ${repo}`);
                                     resolve(result);
                                 }
                                 else {
                                     console.log('[E] GetPullRequestFromGit: ' + body);
+                                    this.sqlRepository.saveStatus(userId, 'GET-PR-FAIL', `${org} - ${repo}`);
                                     reject(0);
                                 }
                             }
@@ -132,7 +134,7 @@ class GitRepository {
     }
     // This functions fills the Dev names for the git Org, but no one care the return value
     //of this function.
-    //No one intresting call this anymore 
+    //Obselete - No one care
     getDevsFromGit(userId, org, endCursor = '') {
         return __awaiter(this, void 0, void 0, function* () {
             let graphQL = '';

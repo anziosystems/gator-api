@@ -97,6 +97,7 @@ function validateJiraUser(req, res, next) {
         console.log(`[E] validateJiraToken ${ex}`);
     });
 }
+//Get User from header
 function getUserId(req) {
     try {
         const token = req.headers['authorization']; //it is UserId in header
@@ -358,7 +359,7 @@ router.get('/TopDevForLastXDays', validateUser, (req, res) => {
         req.query.day = '1';
     }
     sqlRepository
-        .getTopDev4LastXDays(req.query.org, req.query.day)
+        .getTopDev4LastXDays(req.query.org, req.query.day, req.query.context)
         .then(result => {
         return res.json(result);
     })
@@ -664,18 +665,28 @@ router.post('/SetKudos', validateUser, (req, res) => {
         return res.json(err);
     });
 });
+//Called from Review (ic-reports) of UI to see the report of the user - Gets all reports for the user clicked, 
+//the user who is asking for report is in AuthHeader  
+//the user whoes reports are asked in query
 router.get('/getSR4User', validateUser, (req, res) => {
     const userId = getUserId(req);
     sqlRepository.getUser(userId).then(user => {
         sqlRepository
             .getSR4User(req.query.userid, Boolean(req.query.bustTheCache === 'true'))
             .then(result => {
-            sqlRepository.IsXYAllowed(result[0].org, user[0].Email, user[0].Email, req.query.userid).then(isAllowed => {
-                if (isAllowed === true) {
+            sqlRepository.isUserMSRAdmin(user[0].Email, result[0].org, false).then(YorN => {
+                if (YorN) {
                     return res.json(result);
                 }
                 else {
-                    return res.json(`${user[0].DisplayName} has no permission to see ${req.query.userid} status report. `);
+                    sqlRepository.IsXYAllowed(result[0].org, user[0].Email, user[0].Email, req.query.userid).then(isAllowed => {
+                        if (isAllowed === true) {
+                            return res.json(result);
+                        }
+                        else {
+                            return res.json(`${user[0].DisplayName} has no permission to see ${req.query.userid} status report. `);
+                        }
+                    });
                 }
             });
         })
@@ -685,9 +696,10 @@ router.get('/getSR4User', validateUser, (req, res) => {
         });
     });
 });
+//Manager wants to see all reports he need to review 
 router.get('/GetSR4User4Review', validateUser, (req, res) => {
     sqlRepository
-        .GetSR4User4Review(req.query.userid, req.query.status, req.query.userFilter, req.query.dateFilter, Boolean(req.query.bustTheCache === 'true'))
+        .GetSR4User4Review(req.query.userid, req.query.org, req.query.status, req.query.userFilter, req.query.dateFilter, Boolean(req.query.bustTheCache === 'true'))
         .then(result => {
         return res.json(result);
     })
@@ -821,7 +833,27 @@ router.post('/saveOrgChart', validateUser, (req, res) => {
 });
 router.post('/jiraHook', (req, res) => {
     sqlRepository
-        .saveJiraHook(JSON.stringify(req.body))
+        .saveRawHookData(JSON.stringify(req.body))
+        .then(result => {
+        return res.json(result);
+    })
+        .catch((ex) => {
+        console.log(ex);
+    });
+});
+router.post('/Hook', (req, res) => {
+    sqlRepository
+        .saveRawHookData(JSON.stringify(req.body))
+        .then(result => {
+        return res.json(result);
+    })
+        .catch((ex) => {
+        console.log(ex);
+    });
+});
+router.post('/TFSHook', (req, res) => {
+    sqlRepository
+        .saveRawHookData(JSON.stringify(req.body))
         .then(result => {
         return res.json(result);
     })

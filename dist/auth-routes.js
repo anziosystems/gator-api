@@ -1,5 +1,6 @@
 "use strict";
 //https://www.youtube.com/watch?v=or1_A4sJ-oY
+//https://youtu.be/996OiexHze0
 Object.defineProperty(exports, "__esModule", { value: true });
 //NOTE - Token has User
 const router = require('express').Router();
@@ -13,19 +14,25 @@ dotenv.config();
 const callbackURL = process.env.CALL_BACK_URL; //'https://gator-ui.azurewebsites.net/callback';
 const callbackURL_LSUATH = process.env.CALL_BACK_LSAUTH_URL;
 //This method is not called any more, it is here for the test
-router.get('/login', () => {
+router.get('/login', (req, res) => {
     console.log('login is called.');
-    return 'login is called';
+    res.send('login is called');
 });
 //https://localhost:3000/auth/lsauth
-router.get('/lsauth/axleinfo', passport.authenticate('axleInfoStrategy', {
-    successReturnToOrRedirect: '/',
-    scope: 'profile',
-}));
-router.get('/lsauth/labshare', passport.authenticate('axleInfoStrategy', {
-    successReturnToOrRedirect: '/',
-    scope: 'profile',
-}));
+// router.get(
+//   '/lsauth/axleinfo',
+//   passport.authenticate('axleInfoStrategy', {
+//     successReturnToOrRedirect: '/',
+//     scope: 'profile',
+//   }),
+// );
+// router.get(
+//   '/lsauth/labshare',
+//   passport.authenticate('axleInfoStrategy', {
+//     successReturnToOrRedirect: '/',
+//     scope: 'profile',
+//   }),
+// );
 router.get('/lsauth/anzio', passport.authenticate('anzioStrategy', {
     successReturnToOrRedirect: '/',
     scope: 'profile',
@@ -34,10 +41,10 @@ router.get('/lsauth', passport.authenticate('openidconnect', {
     successReturnToOrRedirect: '/',
     scope: 'profile',
 }));
-router.get('/lsauth/redirect/axleInfo', passport.authenticate('axleInfoStrategy'), (req, res) => {
-    const token = jwt.sign(req.user, process.env.Session_Key);
-    res.redirect(callbackURL_LSUATH + '?OrgToken=' + token);
-});
+// router.get('/lsauth/redirect/axleInfo', passport.authenticate('axleInfoStrategy'), (req: any, res: any) => {
+//   const token = jwt.sign(req.user, process.env.Session_Key);
+//   res.redirect(callbackURL_LSUATH + '?OrgToken=' + token);
+// });
 router.get('/lsauth/redirect/anzio', passport.authenticate('anzioStrategy'), (req, res) => {
     const token = jwt.sign(req.user, process.env.Session_Key);
     res.redirect(callbackURL_LSUATH + '?OrgToken=' + token);

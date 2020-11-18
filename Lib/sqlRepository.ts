@@ -1,6 +1,8 @@
 const sql = require('mssql');
 import * as _ from 'lodash';
+import {unescapeLeadingUnderscores} from 'typescript';
 import {isNullOrUndefined} from 'util';
+
 // import {EMLINK} from 'constants';
 //import {RedisStorage, LabShareCache} from "@labshare/services-cache";
 const NodeCache = require('node-cache');
@@ -369,8 +371,8 @@ class SQLRepository {
 
       request.input('status', sql.VarChar(this.STATUS_LEN), status);
       request.input('message', sql.VarChar(this.MESSAGE_LEN), message);
-      request.input('TenantId', sql.Int, Number(tenantId));
-      const recordSet = await request.execute('saveStatus');
+      request.input('TenantId', sql.VarChar(this.LOGIN_LEN), tenantId);
+      const recordSet = await request.execute('saveStatus2');
       if (recordSet) {
         return recordSet.rowsAffected.length;
       } else {
@@ -597,7 +599,8 @@ class SQLRepository {
       request.input('userId', sql.VarChar(this.LOGIN_LEN), userId);
       request.input('orgChart', sql.VarChar, orgChart);
       const recordSet = await request.execute('SaveOrgChart');
-      if (recordSet.recordset.length > 0) {
+      if (recordSet.rowsAffected[0] > 0) {
+        console.log(`[S]  SaveOrgChart:  Success`);
         //Org Chart is updated lets drop the cache
         let cacheKey = 'getOrgTree' + org + userId;
         let v = this.myCache.get(cacheKey);
@@ -609,8 +612,8 @@ class SQLRepository {
         if (v) {
           this.myCache.del(cacheKey);
         }
-
-        return recordSet.recordset;
+        this.UpdateTreeTable(org, userId);
+        return recordSet.rowsAffected[0];
       } else {
         return 0;
       }
@@ -681,112 +684,136 @@ class SQLRepository {
   }
 
   //
-  async saveJiraHook(message: string) {
+  async saveRawHookData(message: string) {
     try {
       await this.createPool();
       const request = await this.pool.request();
       request.input('Message', sql.Text, message);
-      await request.execute('SaveJiraHook');
-      this.processJiraHookData(message); //Process the Jira Data
-      this.processTFSHookData(message); //Process the Jira Data
-      return 200;
+      await request.execute('SaveRawHookData');
+      return this.processAllHookData();
     } catch (ex) {
-      console.log(`[E]  SaveJira:  Error: ${ex}`);
-      return 400;
+      console.log(`[E]  saveRawHookData:  Error: ${ex.message}`);
+      return false;
     }
   }
 
-  async processAllJiraHookData() {
+  async processAllHookData() {
     let hookId: number;
     // eslint-disable-next-line no-constant-condition
     while (true) {
       let jiraEvent = await this.getHookData();
-      if (!jiraEvent[0]) break; //No event
+      if (!jiraEvent[0]) {
+        return true;
+      }
+      //   if (!jiraEvent[0]) break; //No event
       let obj = jiraEvent[0];
       hookId = _.get(obj, 'Id');
-      this.processJiraHookData(obj.message);
-      this.processTFSHookData(obj.message);
+      this.processJiraHookData(hookId, obj.message).then(x => {
+        // this.processTFSHookData(hookId, obj.message).then(y => {
+        //   return x || y;
+        // });
+      });
     } //~while
   }
 
-  async processJiraHookData(jdata: any) {
-    let hookId: number;
-    // eslint-disable-next-line no-constant-condition
-    let jd: JiraData = new JiraData();
-    let obj = JSON.parse(jdata);
-    let wEvent = _.get(obj, 'webhookEvent');
-    if (!wEvent) {
-      //Not Jira event - skip for now
-    } else {
-      jd.Id = _.get(obj, 'issue.id');
-      jd.Key = _.get(obj, 'issue.key');
-      let x = _.get(obj, 'issue.self'); // "self": "https://labshare.atlassian.net/rest/api/2/42065",
-      let y = _.split(x, '.');
-      let z = y[0].substr(8);
-      jd.JiraOrg = z;
-      jd.Priority = _.get(obj, 'issue.fields.priority.name');
-      jd.Assignee = _.get(obj, 'issue.fields.assignee.displayName');
-      jd.AssigneeId = _.get(obj, 'issue.fields.assignee.accountId');
-      jd.Summary = _.get(obj, 'issue.fields.summary');
-      jd.AssigneeAvatarUrl = _.get(obj, 'issue.fields.assignee.avatarUrls.48x48');
-      jd.Status = _.get(obj, 'issue.fields.status.name');
-      jd.Reporter = _.get(obj, 'issue.fields.reporter.displayName');
-      jd.ReporterAvatarUrl = _.get(obj, 'issue.fields.reporter.avatarUrls.48x48');
-      jd.IssueType = _.get(obj, 'issue.fields.issuetype.name');
-      jd.ProjectName = _.get(obj, 'issue.fields.project.name');
-      jd.Title = _.get(obj, 'issue.fields.summary');
-      jd.CreatedDate = new Date(_.get(obj, 'issue.fields.created'));
-      jd.UpdatedDate = new Date(_.get(obj, 'issue.fields.updated'));
-      //Get The Story points
-      //jd.Story  = _.get(obj, 'issue.fields.updated');
-      this.updateJiraData(hookId, jd);
-    }
-  }
+  async processJiraHookData(hookId: number, jdata: string): Promise<Boolean> {
+    try {
+      // eslint-disable-next-line no-constant-condition
+      // - is having problem in processing
 
-  async processTFSHookData(jdata: any) {
-    let hookId: number;
-    // eslint-disable-next-line no-constant-condition
-    let jd: JiraData = new JiraData();
-    let obj = JSON.parse(jdata);
-    let wEvent = _.get(obj, 'subscriptionId');
-    if (!wEvent) {
-      //Not TFS event - skip for now
-    } else {
-      let eventType = _.get(obj, 'eventType');
-      if (eventType === 'workitem.created') {
-        jd.Id = _.get(obj, 'id');
-        let fields = _.get(obj, 'resource.fields');
-        jd.Key = fields['System.TeamProject'];
-        let rc = _.get(obj, 'resourceContainers');
-        let a = rc['account'];
-        let x = a['baseUrl']; // "https://dev.azure.com/anzio/",
-        let y = x.substr(22);
-        let z = y.replace(`/`, ``);
-        jd.JiraOrg = z;
-        jd.Priority = fields['Microsoft.VSTS.Common.Priority'];
-        jd.Assignee = fields['System.AssignedTo'];
-        jd.AssigneeId = fields['System.AssignedTo'];
-        jd.Title = fields['System.Title'];
-        jd.CreatedDate = new Date(fields['System.CreatedDate']);
-        jd.Summary = fields['System.Title'];
-        // jd.AssigneeAvatarUrl = _.get(obj, 'issue.fields.assignee.avatarUrls.48x48');
-        jd.Status = fields['System.State'];
-        jd.Reporter = fields['System.CreatedBy'];
-        // jd.ReporterAvatarUrl = _.get(obj, 'issue.fields.reporter.avatarUrls.48x48');
-        jd.IssueType = fields['System.WorkItemType'];
-        jd.ProjectName = fields['System.TeamProject'];
+      let jd: JiraData = new JiraData();
+      //  console.log(jdata);
+      // eslint-disable-next-line no-useless-escape
+      let x = jdata.replace(/[^a-zA-Z0-9$@#!\&\*\"\'\:\,\/\_\.\\\]\[\}\{\- ]/g, '');
+
+      // console.log(x);
+
+      let obj = JSON.parse(x);
+      let wEvent = _.get(obj, 'webhookEvent');
+      if (!wEvent) {
+        //Not Jira event - skip for now
+        return true;
       } else {
-        jd.Id = _.get(obj, 'id');
-        let r = _.get(obj, 'resource');
-        jd.UpdatedDate = new Date(r['revisedDate']);
+        jd.Id = _.get(obj, 'issue.id');
+        jd.Key = _.get(obj, 'issue.key');
+        let x = _.get(obj, 'issue.self'); // "self": "https://labshare.atlassian.net/rest/api/2/42065",
+        let y = _.split(x, '.');
+        let z = y[0].substr(8);
+        jd.JiraOrg = z;
+        jd.Priority = _.get(obj, 'issue.fields.priority.name');
+        jd.Assignee = _.get(obj, 'issue.fields.assignee.displayName');
+        jd.AssigneeId = _.get(obj, 'issue.fields.assignee.accountId');
+        jd.Summary = _.get(obj, 'issue.fields.summary');
+        jd.AssigneeAvatarUrl = _.get(obj, 'issue.fields.assignee.avatarUrls.48x48');
+        jd.Status = _.get(obj, 'issue.fields.status.name');
+        jd.Reporter = _.get(obj, 'issue.fields.reporter.displayName');
+        jd.ReporterAvatarUrl = _.get(obj, 'issue.fields.reporter.avatarUrls.48x48');
+        jd.IssueType = _.get(obj, 'issue.fields.issuetype.name');
+        jd.ProjectName = _.get(obj, 'issue.fields.project.name');
+        jd.Title = _.get(obj, 'issue.fields.summary');
+        jd.CreatedDate = new Date(_.get(obj, 'issue.fields.created'));
+        jd.UpdatedDate = new Date(_.get(obj, 'issue.fields.updated'));
+        //Get The Story points
+        let storyCustomColName = 'customfield_10721';
+        jd.Story = _.get(obj, `issue.fields.${storyCustomColName}`);
+        return this.updateJiraData(hookId, jd);
       }
-      //Get The Story points
-      //jd.Story  = _.get(obj, 'issue.fields.updated');
-      this.updateTFSData(hookId, jd);
+    } catch (ex) {
+      this.saveStatus('processJiraHookData', 'processJiraHookData-FAIL', ex);
+      console.log(`[E] processJiraHookData ${ex}`);
+      return false;
     }
   }
 
-  async updateTFSData(hookId: number, obj: JiraData) {
+  async processTFSHookData(hookId: number, jdata: any): Promise<Boolean> {
+    try {
+      // eslint-disable-next-line no-constant-condition
+      let jd: JiraData = new JiraData();
+      let obj = JSON.parse(jdata);
+      let wEvent = _.get(obj, 'subscriptionId');
+      if (!wEvent) {
+        //Not a TFS Event skip it
+        return true;
+      } else {
+        let eventType = _.get(obj, 'eventType');
+        if (eventType === 'workitem.created') {
+          jd.Id = _.get(obj, 'id');
+          let fields = _.get(obj, 'resource.fields');
+          jd.Key = fields['System.TeamProject'];
+          let rc = _.get(obj, 'resourceContainers');
+          let a = rc['account'];
+          let x = a['baseUrl']; // "https://dev.azure.com/anzio/",
+          let y = x.substr(22);
+          let z = y.replace(`/`, ``);
+          jd.JiraOrg = z;
+          jd.Priority = fields['Microsoft.VSTS.Common.Priority'];
+          jd.Assignee = fields['System.AssignedTo'];
+          jd.AssigneeId = fields['System.AssignedTo'];
+          jd.Title = fields['System.Title'];
+          jd.CreatedDate = new Date(fields['System.CreatedDate']);
+          jd.Summary = fields['System.Title'];
+          // jd.AssigneeAvatarUrl = _.get(obj, 'issue.fields.assignee.avatarUrls.48x48');
+          jd.Status = fields['System.State'];
+          jd.Reporter = fields['System.CreatedBy'];
+          // jd.ReporterAvatarUrl = _.get(obj, 'issue.fields.reporter.avatarUrls.48x48');
+          jd.IssueType = fields['System.WorkItemType'];
+          jd.ProjectName = fields['System.TeamProject'];
+        } else {
+          jd.Id = _.get(obj, 'id');
+          let r = _.get(obj, 'resource');
+          jd.UpdatedDate = new Date(r['revisedDate']);
+        }
+        //Get The Story points
+        //jd.Story  = _.get(obj, 'issue.fields.updated');
+        return this.updateTFSData(hookId, jd);
+      }
+    } catch (ex) {
+      console.log(`[E] processTFSHookData ${ex}`);
+      return false;
+    }
+  }
+
+  async updateTFSData(hookId: number, obj: JiraData): Promise<Boolean> {
     await this.createPool();
     const request = await this.pool.request();
     request.input('Id', sql.Int, obj.Id);
@@ -811,36 +838,45 @@ class SQLRepository {
 
     const recordSet = await request.execute('SetTFSData');
     if (recordSet.rowsAffected[0] === 1) {
-      //Delete the row
+      return this.deleteHookData(hookId);
+    } else {
+      return false;
     }
   }
   //update Jira data and then delete the row from hooktable
-  async updateJiraData(hookId: number, obj: JiraData) {
-    await this.createPool();
-    const request = await this.pool.request();
-    request.input('Id', sql.Int, obj.Id);
-    request.input('key', sql.VarChar(this.ORG_LEN), obj.Key);
+  async updateJiraData(hookId: number, obj: JiraData): Promise<Boolean> {
+    try {
+      await this.createPool();
+      const request = await this.pool.request();
+      request.input('Id', sql.Int, obj.Id);
+      request.input('key', sql.VarChar(this.ORG_LEN), obj.Key);
 
-    request.input('Title', sql.VarChar(5000), obj.Title);
-    request.input('Priority', sql.VarChar(50), obj.Priority);
-    request.input('Assignee', sql.VarChar(this.ORG_LEN), obj.Assignee);
-    request.input('Reporter', sql.VarChar(this.ORG_LEN), obj.Reporter);
-    request.input('CreatedDate', sql.Date, obj.CreatedDate);
-    request.input('UpdatedDate', sql.Date, obj.UpdatedDate);
-    request.input('IssueType', sql.VarChar(50), obj.IssueType);
-    request.input('Priority', sql.VarChar(50), obj.Priority);
-    request.input('Story', sql.Int, obj.Story);
-    request.input('ReporterAvatarUrl', sql.VarChar(1000), obj.ReporterAvatarUrl);
-    request.input('AssigneeAvatarUrl', sql.VarChar(1000), obj.AssigneeAvatarUrl);
-    request.input('Status', sql.VarChar(50), obj.Status);
-    request.input('ProjectName', sql.VarChar(1000), obj.ProjectName);
-    request.input('Org', sql.VarChar(200), obj.JiraOrg);
-    request.input('AssigneeId', sql.VarChar(500), obj.AssigneeId);
-    request.input('Summary', sql.VarChar(2000), obj.Summary);
+      request.input('Title', sql.VarChar(5000), obj.Title);
+      request.input('Priority', sql.VarChar(50), obj.Priority);
+      request.input('Assignee', sql.VarChar(this.ORG_LEN), obj.Assignee);
+      request.input('Reporter', sql.VarChar(this.ORG_LEN), obj.Reporter);
+      request.input('CreatedDate', sql.Date, obj.CreatedDate);
+      request.input('UpdatedDate', sql.Date, obj.UpdatedDate);
+      request.input('IssueType', sql.VarChar(50), obj.IssueType);
+      request.input('Priority', sql.VarChar(50), obj.Priority);
+      request.input('Story', sql.Int, obj.Story);
+      request.input('ReporterAvatarUrl', sql.VarChar(1000), obj.ReporterAvatarUrl);
+      request.input('AssigneeAvatarUrl', sql.VarChar(1000), obj.AssigneeAvatarUrl);
+      request.input('Status', sql.VarChar(50), obj.Status);
+      request.input('ProjectName', sql.VarChar(1000), obj.ProjectName);
+      request.input('Org', sql.VarChar(200), obj.JiraOrg);
+      request.input('AssigneeId', sql.VarChar(500), obj.AssigneeId);
+      request.input('Summary', sql.VarChar(2000), obj.Summary);
 
-    const recordSet = await request.execute('SetJiraData');
-    if (recordSet.rowsAffected[0] === 1) {
-      //Delete the row
+      const recordSet = await request.execute('SetJiraData');
+      if (recordSet.rowsAffected[0] === 1) {
+        return await this.deleteHookData(hookId);
+      } else {
+        return false;
+      }
+    } catch (ex) {
+      this.saveStatus('updateJiraData', 'updateJiraData-FAIL', ex);
+      return false;
     }
   }
 
@@ -855,7 +891,20 @@ class SQLRepository {
     }
   }
 
-  //
+  async deleteHookData(hookId: number): Promise<Boolean> {
+    try {
+      await this.createPool();
+      const request = await this.pool.request();
+      request.input('HookId', sql.Int, hookId);
+      const recordSet = await request.execute('DeleteHookData');
+      if (recordSet.rowsAffected[0] === 1) {
+        return true;
+      } else return false;
+    } catch (ex) {
+      this.saveStatus('deleteHookData', 'deleteHookData-FAIL', ex);
+      return false;
+    }
+  }
 
   async GetJiraData(org: string, userName: string, day = 1, bustTheCache: boolean = false) {
     if (!org) {
@@ -905,7 +954,7 @@ class SQLRepository {
     else return;
   }
 
-  async getTopDev4LastXDays(org: string, day = 1) {
+  async getTopDev4LastXDays(org: string, day = 1, context: string = '') {
     const cacheKey = 'getTopDev4LastXDays' + org + day;
     try {
       const val = this.myCache.get(cacheKey);
@@ -920,7 +969,8 @@ class SQLRepository {
       }
       request.input('Org', sql.VarChar(this.ORG_LEN), org);
       request.input('Day', sql.Int, day);
-      const recordSet = await request.execute('TopDevForLastXDays');
+      request.input('Context', sql.VarChar(100), context);
+      const recordSet = await request.execute('TopDevForLastXDays2');
       if (recordSet.recordset) {
         this.myCache.set(cacheKey, recordSet.recordset);
         return recordSet.recordset;
@@ -1520,6 +1570,7 @@ class SQLRepository {
     }
   }
 
+  //srId for MSR Table
   async getSR4Id(srId: number, bustTheCache: boolean) {
     const cacheKey = 'getMSR4Id' + srId;
     try {
@@ -1566,18 +1617,43 @@ class SQLRepository {
     }
   }
 
-  async GetSR4User4Review(userId: string, status: number, userFilter: string = null, dateFilter: string = null, bustTheCache: boolean) {
-    const cacheKey = 'GetSR4User4Review' + userId + status;
+  async GetSR4User4Review(userId: string, org: string, status: number, userFilter: string = null, dateFilter: string = null, bustTheCache: boolean) {
+    //is user MSRAdmin then turn status into 1000
+    let YorN = await this.isUserMSRAdmin(userId, org, false);
+    if (YorN) {
+      status = 1000; //User is MSRAdmin get him all the reports
+    }
+
+    if (isNullOrUndefined(userFilter)) {
+      userFilter = 'null';
+    } else {
+      userFilter = userFilter.trim();
+      if (userFilter.length === 0) {
+        userFilter = 'null';
+      }
+    }
+
+    if (isNullOrUndefined(dateFilter)) {
+      dateFilter = 'null';
+    } else {
+      dateFilter = dateFilter.trim();
+      if (dateFilter.length === 0) {
+        dateFilter = 'null';
+      }
+    }
+
+    const cacheKey = 'GetSR4User4Review' + userId + status + org;
     try {
       userFilter = userFilter.trim();
       dateFilter = dateFilter.trim();
       const request = await this.pool.request();
       request.input('UserId', sql.VarChar(100), userId);
       request.input('Status', sql.Int, status);
+      request.input('Org', sql.VarChar(this.ORG_LEN), org);
       request.input('UserFilter', sql.VarChar, userFilter != 'null' ? userFilter : null);
       request.input('DateFilter', sql.VarChar(50), dateFilter != 'null' ? dateFilter : null);
 
-      const recordSet = await request.execute('GetSR4User4Review');
+      const recordSet = await request.execute('GetSR4User4Review2');
       if (recordSet) {
         this.myCache.set(cacheKey, recordSet.recordset);
       }
@@ -1786,6 +1862,7 @@ class SQLRepository {
     }
   }
 
+  //Obselete No one cares
   async saveDevs(org: string, devs: string[]) {
     try {
       if (devs === undefined) return;
@@ -1950,8 +2027,8 @@ class SQLRepository {
     }
   }
 
-  async isUserMSRAdmin(loginId: string, org: string, bustTheCache: boolean) {
-    const cacheKey = 'isUserMSRAdmin' + loginId + org;
+  async isUserMSRAdmin(loginId: string, org: string, bustTheCache: boolean): Promise<boolean> {
+    const cacheKey = 'isUserMSRAdmin' + loginId + '-' + org;
     try {
       if (!bustTheCache) {
         const val = this.myCache.get(cacheKey);
@@ -1959,6 +2036,7 @@ class SQLRepository {
           return val;
         }
       }
+      await this.createPool();
       const request = await this.pool.request();
       request.input('login', sql.VarChar(100), loginId);
       request.input('org', sql.VarChar(200), org);
@@ -1966,10 +2044,10 @@ class SQLRepository {
       if (recordSet) {
         this.myCache.set(cacheKey, recordSet.recordset);
       }
-      return recordSet.recordset;
+      return recordSet.returnValue === 1;
     } catch (ex) {
       console.log(`[E]  ${cacheKey} ${ex}`);
-      return ex;
+      return false;
     }
   }
 
@@ -2031,7 +2109,11 @@ class SQLRepository {
     }
   }
 
-  async getOrgTree(currentOrg: string, userId: string, bustTheCache: boolean) {
+  async getOrgTree(
+    currentOrg: string,
+    userId: string, //Caller ID
+    bustTheCache: boolean,
+  ) {
     const cacheKey = 'getOrgTree' + currentOrg + userId;
     if (!bustTheCache) {
       const val = this.myCache.get(cacheKey);
@@ -2142,6 +2224,77 @@ class SQLRepository {
     }); //Promise
   }
 
+  //This method reads the Org JSON data and then update OrgTree Table
+  //This table is used by various alerts. Table has manager and employee relationship
+  async UpdateTreeTable(currentOrg: string, userId: string) {
+    let tree = await this.getOrgTree(currentOrg, userId, false);
+    //Now Traverse the tree and save the node
+    /*
+          0: TNode
+            children: Array(3)
+              0: TNode
+                  children: (5) [TNode, TNode, TNode, TNode, TNode]
+              collapsedIcon: "pi"
+              data: "rafat.sarosh@axleinfo.com"
+              expandedIcon: "pi"
+              label: "Rafat Sarosh"
+              __proto__: Object
+        1: TNode {children: Array(1), label: "Nathan Hotaling", data: "Nathan.Hotaling@labshare.org", expandedIcon: "pi", collapsedIcon: "pi"}
+        2: TNode {children: Array(3), label: "Reid Simon", data: "reid.simon@axleinfo.com", expandedIcon: "pi", collapsedIcon: "pi"}
+        */
+
+    this.processAllNodes(tree, 'null', currentOrg);
+  }
+
+  async saveTreeNode(emp: string, mgr: string, org: string) {
+    try {
+      await this.createPool();
+      const request = await this.pool.request();
+      if (mgr === undefined || mgr === null) {
+        mgr = 'null';
+      }
+      request.input('Emp', sql.VarChar(this.LOGIN_LEN), emp);
+      request.input('Mgr', sql.VarChar(this.LOGIN_LEN), mgr);
+      request.input('Org', sql.VarChar(this.ORG_LEN), org);
+      const recordSet = await request.execute('SaveOrgTreeNode');
+      return recordSet.rowsAffected[0];
+    } catch (ex) {
+      console.log(`[E]  saveTreeNode: ${emp} ${mgr} ${org} ${ex}`);
+      return ex;
+    }
+  }
+  //recursive function
+  async processAllNodes(tree: any, manager: string, currentOrg: string) {
+    //first node is "Engineering" which does not have any c.data,
+    //this is the top root node, hence we start with the childrens
+    var shadowTree;
+    if (tree [0].data == undefined || tree[0].data  === null)
+      shadowTree = tree[0].children
+    else
+      shadowTree = tree;
+    for (const c of shadowTree) {
+      this.saveTreeNode(c.data, manager, currentOrg);
+      if (c.children) {
+        this.processAllNodes(c.children, c.data, currentOrg);
+      }
+
+    }
+    return true;
+  }
+
+  async DeleteOrgTree(org: string) {
+    try {
+      await this.createPool();
+      const request = await this.pool.request();
+      request.input('Org', sql.VarChar(this.ORG_LEN), org);
+      const recordSet = await request.execute('DeleteOrgTree');
+      return recordSet.rowsAffected[0];
+    } catch (ex) {
+      console.log(`[E]  DeleteOrgTree:  ${org} ${ex}`);
+      return ex;
+    }
+  }
+
   //Is Y in tree of X -> Is X Manager of Y?
   async IsXYAllowed(currentOrg: string, userId: string, X: string, Y: string) {
     if (X === Y) {
@@ -2156,6 +2309,7 @@ class SQLRepository {
     return false;
   }
 
+  //recursive function
   SearchAllNodes(user: string, tree: any) {
     for (const c of tree) {
       if (c.data === user) {
@@ -2168,6 +2322,7 @@ class SQLRepository {
     return false;
   }
 
+  //Get the node for a user, it searches the whole tree for the node
   GetNode4User(user: string, tree: any): any {
     for (const c of tree) {
       if (c.data === user) {

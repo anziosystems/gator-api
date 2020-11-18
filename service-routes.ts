@@ -87,6 +87,7 @@ function validateJiraUser(req: any, res: any, next: any) {
     });
 }
 
+//Get User from header
 function getUserId(req: any) {
   try {
     const token = req.headers['authorization']; //it is UserId in header
@@ -361,7 +362,7 @@ router.get('/TopDevForLastXDays', validateUser, (req: any, res: any) => {
     req.query.day = '1';
   }
   sqlRepository
-    .getTopDev4LastXDays(req.query.org, req.query.day)
+    .getTopDev4LastXDays(req.query.org, req.query.day, req.query.context)
     .then(result => {
       return res.json(result);
     })
@@ -499,8 +500,8 @@ router.get('/Signup', (req: any, res: any) => {
     //Same string coming from postman remain as +
     //unfortunate hack
     let _ampToken = req.query.token.replace(' ', '+');
-   // console.log(`[I] Token Received as: ${req.query.token}`);
-   // console.log(`[I] Token after decoding: ${decodeURIComponent(req.query.token)}`);
+    // console.log(`[I] Token Received as: ${req.query.token}`);
+    // console.log(`[I] Token after decoding: ${decodeURIComponent(req.query.token)}`);
 
     sqlRepository.saveSignUpToken(decodeURIComponent(_ampToken)).then((subId: any) => {
       //https://docs.microsoft.com/en-us/azure/marketplace/partner-center-portal/pc-saas-fulfillment-api-v2
@@ -688,19 +689,31 @@ router.post('/SetKudos', validateUser, (req: any, res: any) => {
     });
 });
 
+//Called from Review (ic-reports) of UI to see the report of the user - Gets all reports for the user clicked, 
+//the user who is asking for report is in AuthHeader  
+//the user whoes reports are asked in query
+
 router.get('/getSR4User', validateUser, (req: any, res: any) => {
-  const userId = getUserId(req);
+  const userId = getUserId(req); 
   sqlRepository.getUser(userId).then(user => {
     sqlRepository
       .getSR4User(req.query.userid, Boolean(req.query.bustTheCache === 'true'))
       .then(result => {
-        sqlRepository.IsXYAllowed(result[0].org, user[0].Email, user[0].Email, req.query.userid).then(isAllowed => {
-          if (isAllowed === true) {
+        sqlRepository.isUserMSRAdmin (user[0].Email,result[0].org, false ).then (YorN => {
+          if (YorN) {
             return res.json(result);
-          } else {
-            return res.json(`${user[0].DisplayName} has no permission to see ${req.query.userid} status report. `);
+          } 
+          else {
+            sqlRepository.IsXYAllowed(result[0].org, user[0].Email, user[0].Email, req.query.userid).then(isAllowed => {
+              if (isAllowed === true) {
+                return res.json(result);
+              } else {
+                return res.json(`${user[0].DisplayName} has no permission to see ${req.query.userid} status report. `);
+              }
+            });
           }
-        });
+        })
+      
       })
       .catch(err => {
         console.log(`getSR4User: ${err}`);
@@ -709,9 +722,10 @@ router.get('/getSR4User', validateUser, (req: any, res: any) => {
   });
 });
 
+//Manager wants to see all reports he need to review 
 router.get('/GetSR4User4Review', validateUser, (req: any, res: any) => {
   sqlRepository
-    .GetSR4User4Review(req.query.userid, req.query.status, req.query.userFilter, req.query.dateFilter, Boolean(req.query.bustTheCache === 'true'))
+    .GetSR4User4Review(req.query.userid, req.query.org, req.query.status, req.query.userFilter, req.query.dateFilter, Boolean(req.query.bustTheCache === 'true'))
     .then(result => {
       return res.json(result);
     })
@@ -853,7 +867,7 @@ router.post('/saveOrgChart', validateUser, (req: any, res: any) => {
 
 router.post('/jiraHook', (req: any, res: any) => {
   sqlRepository
-    .saveJiraHook(JSON.stringify(req.body))
+    .saveRawHookData(JSON.stringify(req.body))
     .then(result => {
       return res.json(result);
     })
@@ -861,6 +875,30 @@ router.post('/jiraHook', (req: any, res: any) => {
       console.log(ex);
     });
 });
+
+
+router.post('/Hook', (req: any, res: any) => {
+  sqlRepository
+    .saveRawHookData(JSON.stringify(req.body))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch((ex: any) => {
+      console.log(ex);
+    });
+});
+
+router.post('/TFSHook', (req: any, res: any) => {
+  sqlRepository
+    .saveRawHookData(JSON.stringify(req.body))
+    .then(result => {
+      return res.json(result);
+    })
+    .catch((ex: any) => {
+      console.log(ex);
+    });
+});
+
 
 router.get('/getOrgChart', validateUser, (req: any, res: any) => {
   if (!req.query.day) {
