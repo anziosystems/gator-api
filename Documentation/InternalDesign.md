@@ -32,7 +32,7 @@ There are two kind of organization is DS. One is Tenant Org e.g. AxleInfo and th
 > How the two tenants are merged e.g. Labshare and AxleInfo?
 This merge happen at the user logged in time. Labshare user Org(Tenant) is saved as AxleInfo. There is LabShare tenant and then there is a Git org called 'Labshare'. However, in DB Labshare Tenant is rolled into AxleInfo. 
 
->When we have to Roll a NIH user to one of the Tenant, we have to update this user org in UserOrg table. For example, Mariam can login system using her NIH credential and her information will be saved in Users table, then we have to manually update the UserOrg table for her.  Later on this can be done thru a screen in Admin
+>When we have to enroll a NIH user to one of the Tenant, we have to update this user org in UserOrg table. For example, Mariam can login system using her NIH credential and her information will be saved in Users table, then we have to manually update the UserOrg table for her.  Later on this can be done thru a screen in Admin
 
 
 
