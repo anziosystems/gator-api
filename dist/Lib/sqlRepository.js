@@ -1557,7 +1557,7 @@ class SQLRepository {
             }
         });
     }
-    saveMSR(srId, userId, org, statusDetails, reviewer, status, links, manager, managerComment, managerStatus) {
+    saveMSR(srId, userId, org, statusDetails, reviewer, status, links, manager, managerComment, managerStatus, reportYear, reportMonth, reportNumber) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const request = yield this.pool.request();
@@ -1571,6 +1571,9 @@ class SQLRepository {
                 request.input('Manager', sql.VarChar(1000), manager);
                 request.input('ManagerComment', sql.VarChar(4000), managerComment);
                 request.input('ManagerStatus', sql.Int, managerStatus);
+                request.input('ReportYear', sql.Int, reportYear);
+                request.input('ReportMonth', sql.Int, reportMonth);
+                request.input('ReportNumber', sql.Int, reportNumber);
                 const recordSet = yield request.execute('SaveMSR');
                 return recordSet.rowsAffected[0];
             }
@@ -2305,6 +2308,7 @@ class SQLRepository {
                 1: TNode {children: Array(1), label: "Nathan Hotaling", data: "Nathan.Hotaling@labshare.org", expandedIcon: "pi", collapsedIcon: "pi"}
                 2: TNode {children: Array(3), label: "Reid Simon", data: "reid.simon@axleinfo.com", expandedIcon: "pi", collapsedIcon: "pi"}
                 */
+            yield this.DeleteOrgTree(currentOrg);
             this.processAllNodes(tree, 'null', currentOrg);
         });
     }
@@ -2333,18 +2337,28 @@ class SQLRepository {
         return __awaiter(this, void 0, void 0, function* () {
             //first node is "Engineering" which does not have any c.data,
             //this is the top root node, hence we start with the childrens
-            var shadowTree;
-            if (tree[0].data == undefined || tree[0].data === null)
-                shadowTree = tree[0].children;
-            else
-                shadowTree = tree;
-            for (const c of shadowTree) {
-                this.saveTreeNode(c.data, manager, currentOrg);
-                if (c.children) {
-                    this.processAllNodes(c.children, c.data, currentOrg);
+            try {
+                var shadowTree;
+                if (tree[0]) {
+                    if (tree[0].data == undefined || tree[0].data === null)
+                        shadowTree = tree[0].children;
+                    else
+                        shadowTree = tree;
+                    for (const c of shadowTree) {
+                        if (c) {
+                            this.saveTreeNode(c.data, manager, currentOrg);
+                            if (c.children) {
+                                this.processAllNodes(c.children, c.data, currentOrg);
+                            }
+                        }
+                    }
+                    return true;
                 }
             }
-            return true;
+            catch (ex) {
+                console.log(`[E]  processAllNodes:  ${currentOrg} ${ex}`);
+                return ex;
+            }
         });
     }
     DeleteOrgTree(org) {
