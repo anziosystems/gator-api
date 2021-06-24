@@ -1515,7 +1515,8 @@ class SQLRepository {
       return 0;
     }
   }
-  async saveMSR(srId: number, userId: string, org: string, statusDetails: string, reviewer: string, status: number, links: string, manager: string, managerComment: string, managerStatus: number) {
+  async saveMSR(srId: number, userId: string, org: string, statusDetails: string, reviewer: string, status: number, links: string, manager: string, managerComment: string, managerStatus: number, 
+    reportYear:number, reportMonth: number, reportNumber: number) {
     try {
       const request = await this.pool.request();
       request.input('SRId', sql.Int, srId);
@@ -1529,6 +1530,11 @@ class SQLRepository {
       request.input('Manager', sql.VarChar(1000), manager);
       request.input('ManagerComment', sql.VarChar(4000), managerComment);
       request.input('ManagerStatus', sql.Int, managerStatus);
+
+      request.input('ReportYear', sql.Int, reportYear);
+      request.input('ReportMonth', sql.Int, reportMonth);
+      request.input('ReportNumber', sql.Int, reportNumber);
+
       const recordSet = await request.execute('SaveMSR');
       return recordSet.rowsAffected[0];
     } catch (ex) {
@@ -2243,6 +2249,7 @@ class SQLRepository {
         2: TNode {children: Array(3), label: "Reid Simon", data: "reid.simon@axleinfo.com", expandedIcon: "pi", collapsedIcon: "pi"}
         */
 
+    await this.DeleteOrgTree (currentOrg);
     this.processAllNodes(tree, 'null', currentOrg);
   }
 
@@ -2263,23 +2270,33 @@ class SQLRepository {
       return ex;
     }
   }
+
   //recursive function
   async processAllNodes(tree: any, manager: string, currentOrg: string) {
     //first node is "Engineering" which does not have any c.data,
     //this is the top root node, hence we start with the childrens
-    var shadowTree;
-    if (tree [0].data == undefined || tree[0].data  === null)
-      shadowTree = tree[0].children
-    else
-      shadowTree = tree;
-    for (const c of shadowTree) {
-      this.saveTreeNode(c.data, manager, currentOrg);
-      if (c.children) {
-        this.processAllNodes(c.children, c.data, currentOrg);
+    try {
+        var shadowTree;
+        if (tree [0]) {
+          if (tree [0].data == undefined || tree[0].data  === null)
+              shadowTree = tree[0].children
+          else
+              shadowTree = tree;
+        
+          for (const c of shadowTree) {
+              if (c) {
+                  this.saveTreeNode(c.data, manager, currentOrg);
+                  if (c.children) {
+                      this.processAllNodes(c.children, c.data, currentOrg);
+                  }
+              }
+          }
+        return true;
+        }
+      } catch (ex) {
+        console.log(`[E]  processAllNodes:  ${currentOrg} ${ex}`);
+        return ex;
       }
-
-    }
-    return true;
   }
 
   async DeleteOrgTree(org: string) {
