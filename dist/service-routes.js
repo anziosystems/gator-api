@@ -622,7 +622,7 @@ router.post('/SaveMSR', validateUser, (req, res) => {
         req.query.day = '1';
     }
     sqlRepository
-        .saveMSR(req.body.srId, req.body.userId, req.body.org, req.body.statusDetails, req.body.reviewer, req.body.status, req.body.links, req.body.manager, req.body.managerComment, req.body.managerStatus)
+        .saveMSR(req.body.srId, req.body.userId, req.body.org, req.body.statusDetails, req.body.reviewer, req.body.status, req.body.links, req.body.manager, req.body.managerComment, req.body.managerStatus, req.body.reportYear, req.body.reportMonth, req.body.reportNumber)
         .then(result => {
         return res.json(result);
     })

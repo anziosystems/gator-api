@@ -16,7 +16,19 @@ Create enviorenment vaiables as follows:
 
       Npm install
       Npm run build
+      or 
+      npm run-script build
+
+      for ng error 
+      npm install -g @angular/cli      
+
       Npm start
+
+      execution error
+      Set-ExecutionPolicy -Scope "CurrentUser" -ExecutionPolicy "RemoteSigned"
+
+      
+      npm i dotenv
 
       API listens on port 3000, defined in app.ts
 

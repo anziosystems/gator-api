@@ -32,7 +32,7 @@ There are two kind of organization is DS. One is Tenant Org e.g. AxleInfo and th
 > How the two tenants are merged e.g. Labshare and AxleInfo?
 This merge happen at the user logged in time. Labshare user Org(Tenant) is saved as AxleInfo. There is LabShare tenant and then there is a Git org called 'Labshare'. However, in DB Labshare Tenant is rolled into AxleInfo. 
 
->When we have to Roll a NIH user to one of the Tenant, we have to update this user org in UserOrg table. For example, Mariam can login system using her NIH credential and her information will be saved in Users table, then we have to manually update the UserOrg table for her.  Later on this can be done thru a screen in Admin
+>When we have to enroll a NIH user to one of the Tenant, we have to update this user org in UserOrg table. For example, Mariam can login system using her NIH credential and her information will be saved in Users table, then we have to manually update the UserOrg table for her.  Later on this can be done thru a screen in Admin
 
 
 
@@ -98,24 +98,26 @@ They also see all the reviews.
 # How the hooks work
 
 ## Hook Data Flow
-Jira send the data to Hook endpoint and TFS send the data to TFSHook endpoint
+Jira send the data to JiraHook endpoint and TFS send the data to TFSHook endpoint
 
-https://gator-api-ppe.azurewebsites.net/service/Hook
+https://gator-api-ppe.azurewebsites.net/service/JiraHook
 
 https://gator-api-ppe.azurewebsites.net/service/TFSHook
 
 These API save the data into HookRawData Table. (JIRA and TFS Should have a separate tables)
 
-Service/Hook -> saveRawHookData -> Saves the data and then calls ->  processAllHookData
+Service/JiraHook -> saveRawHookData -> Saves the data and then calls ->  processAllHookData
 
 processAllHookData -> processJiraHookData -> processTFSHookData -> updateJiraData -> Deleted the data from HookRawData if successfull.
 
+SetJiraData Stored Procedure is called. 
+Which in turn update the "JiraData" Table.
 
 ## JIRA 
 All Jira hooks send the data to HookRawData table. 
 
 Hook is put in Jira
-https://gator-api-ppe.azurewebsites.net/service/Hook
+https://gator-api-ppe.azurewebsites.net/service/JiraHook
 
 
 Registering a webhook via the [Jira administration console](https://community.atlassian.com/t5/Jira-Software-questions/How-do-I-access-the-Jira-administration-console/qaq-p/824434)
@@ -173,9 +175,13 @@ Please make sure to add the following (https://gator-api-ppe.azurewebsites.net/s
 ![DB Tabels](Images/TFS3.png "TFS1A")
 Please remember you have to create total of three webhooks, one for created, deleted and updated.
 
-## hydrate
+## Hydrate
 
 Once you installed the webhooks, data will start trickling in. Dev Star have an option to hydrate with some historical data right away. For that go to Admin screen, and click on "Hydrate" option. Hydrate option will work in background and pull data in. It may take couple of minutes to hours, depending upon the data size.
 
           
 With time data in Dev Star will grow and it will become more and more valuable tool for your organization.
+
+## How the Data Flows
+JiraHook update "JiraData" Table
+This hook will put data directly in "PullRequestDetails"
