@@ -63,3 +63,12 @@ Create enviorenment vaiables as follows:
 
       Go inside docker
       docker run -ti gator-api-image bash
+
+
+      Error:
+      C:\Code\Gator\gator-api\node_modules\passport-oauth2\lib\strategy.js:86
+         if (!options.clientID) { throw new TypeError('OAuth2Strategy requires a clientID option'); }
+                          ^
+      TypeError: OAuth2Strategy requires a clientID option
+
+      This error needs .env file.
