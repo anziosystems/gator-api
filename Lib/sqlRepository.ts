@@ -1626,12 +1626,15 @@ class SQLRepository {
   async GetSR4User4Review(userId: string, org: string, status: number, userFilter: string = null, dateFilter: string = null, bustTheCache: boolean = false) {
 
     //No need to have this code, as we are adding a button for show all.
-    // //is user MSRAdmin then turn status into 1000
-    // let YorN = await this.isUserMSRAdmin(userId, org, false);
-    // if (YorN) {
-    //   status = 1000; //User is MSRAdmin get him all the reports
-    // }
+    //is user MSRAdmin then turn status into 1000
 
+    let YorN = await this.isUserMSRAdmin(userId, org, false);
+    if (YorN) {
+      if (status == 99) {
+              status = 1000; //User is MSRAdmin get him all the reports
+      }
+    }
+ 
     if (isNullOrUndefined(userFilter)) {
       userFilter = 'null';
     } else {
@@ -1655,6 +1658,7 @@ class SQLRepository {
     if (!bustTheCache) {
         const val = this.myCache.get(cacheKey);
         if (val) {
+          console.log(`[S]  ${cacheKey}  succes hitting the cache`);
           return val;
         }
     }

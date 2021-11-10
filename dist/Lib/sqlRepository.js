@@ -1667,12 +1667,15 @@ class SQLRepository {
             }
         });
     }
-    GetSR4User4Review(userId, org, status, userFilter = null, dateFilter = null, bustTheCache) {
+    GetSR4User4Review(userId, org, status, userFilter = null, dateFilter = null, bustTheCache = false) {
         return __awaiter(this, void 0, void 0, function* () {
+            //No need to have this code, as we are adding a button for show all.
             //is user MSRAdmin then turn status into 1000
             let YorN = yield this.isUserMSRAdmin(userId, org, false);
             if (YorN) {
-                status = 1000; //User is MSRAdmin get him all the reports
+                if (status == 99) {
+                    status = 1000; //User is MSRAdmin get him all the reports
+                }
             }
             if (util_1.isNullOrUndefined(userFilter)) {
                 userFilter = 'null';
@@ -1692,7 +1695,14 @@ class SQLRepository {
                     dateFilter = 'null';
                 }
             }
-            const cacheKey = 'GetSR4User4Review' + userId + status + org;
+            const cacheKey = 'GetSR4User4Review' + userId + status + org + userFilter + dateFilter;
+            if (!bustTheCache) {
+                const val = this.myCache.get(cacheKey);
+                if (val) {
+                    console.log(`[S]  ${cacheKey}  succes hitting the cache`);
+                    return val;
+                }
+            }
             try {
                 userFilter = userFilter.trim();
                 dateFilter = dateFilter.trim();
