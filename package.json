@@ -4,7 +4,7 @@
   "description": "API Service for Gator",
   "main": "./dist/app.js",
   "engines": {
-    "node": "12.14.2",
+    "node": "10.14.1",
     "npm": "6.4.1"
   },
   "scripts": {
