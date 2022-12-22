@@ -46,7 +46,7 @@
     "ejs": "^2.6.1",
     "express": "^4.16.4",
     "express-session": "^1.16.1",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "lint": "^1.1.2",
     "lodash": "^4.17.21",
     "mocha": "^6.1.4",
