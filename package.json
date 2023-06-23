@@ -46,10 +46,10 @@
     "ejs": "^2.6.1",
     "express": "^4.16.4",
     "express-session": "^1.16.1",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "lint": "^1.1.2",
     "lodash": "^4.17.21",
-    "mocha": "^6.1.4",
+    "mocha": "^10.2.0",
     "mssql": "^5.0.5",
     "node": "10.14.0",
     "node-cache": "^4.2.0",
@@ -70,12 +70,12 @@
     "zone.js": "^0.8.29"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^2.19.0",
+    "@typescript-eslint/eslint-plugin": "^5.60.0",
     "@typescript-eslint/parser": "^2.19.0",
-    "eslint": "^6.8.0",
+    "eslint": "^8.43.0",
     "eslint-config-google": "^0.14.0",
     "eslint-config-prettier": "^6.9.0",
-    "eslint-plugin-import": "^2.19.1",
+    "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-prettier": "^3.1.2"
   }
 }
